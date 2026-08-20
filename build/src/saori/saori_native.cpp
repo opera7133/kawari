@@ -217,7 +217,7 @@ bool TModuleNative::Load(void){
 	if (!func_load) return TRUE;
 
 	string basepath;
-	unsigned int pos=path.find_last_of(FILE_SEPARATOR);
+	string::size_type pos=path.find_last_of(FILE_SEPARATOR);
 	if (pos==string::npos){
 		basepath=path+FILE_SEPARATOR;
 	}else{

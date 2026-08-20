@@ -60,7 +60,7 @@ string TSplitter::Next(void)
 	if (!HasNext())
 		return "";
 
-	unsigned int idx;	// 注目中のポインタ
+	wstring::size_type idx;	// 注目中のポインタ
 	string ret;
 	if(cs.length()==0){
 		// 区切り文字無し

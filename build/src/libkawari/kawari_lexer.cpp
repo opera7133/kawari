@@ -144,7 +144,7 @@ string TKawariLexer::getLiteral(Mode m){
 				ret+=ch;
 			else
 				break;
-		}else if (map[ch]){
+		}else if (map[static_cast<unsigned char>(ch)]){
 			ret+=ch;
 		} else {
 			pp->unget();
@@ -284,7 +284,7 @@ inline Token::Type TKawariLexer::checkType(Mode m, char ch) const{
 
 	if (pp->IsWaitingModeSwitch()){
 		return Token::T_MODESWITCH;
-	}else if ((lex_map[(int)m][ch]|(char)iskanji1st(ch))){
+	}else if ((lex_map[(int)m][static_cast<unsigned char>(ch)]|(char)iskanji1st(ch))){
 		// ベア文字列
 		return Token::T_LITERAL;
 	}else if (QUOTE.find(ch)!=string::npos){
@@ -325,7 +325,7 @@ Token TKawariLexer::next(Mode m){
 
 	char ch;
 	pp->getch(ch);
-	if ((lex_map[(int)m][ch]|(char)iskanji1st(ch))){
+	if ((lex_map[(int)m][static_cast<unsigned char>(ch)]|(char)iskanji1st(ch))){
 		// ベア文字列
 		pp->unget();
 		string str=getLiteral(m);
@@ -491,7 +491,7 @@ string TKawariLexer::EncodeEntryName(const string &orgsen){
 			// 漢字は受容
 			if((pos+1)<cntsen) pos++;
 			else break;
-		} else if(!map[c]) {
+		} else if(!map[static_cast<unsigned char>(c)]) {
 			// 使えない文字は全て'_'に変換
 			entsen[pos] = '_';
 		}
