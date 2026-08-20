@@ -22,6 +22,7 @@
 #	include "saori/saori_python.h"
 #endif
 using namespace kawari_log;
+extern saori::IModuleFactory *utatane_create_builtin_saori_factory(TKawariLogger &logger);
 //---------------------------------------------------------------------------
 using namespace std;
 using namespace saori;
@@ -31,6 +32,7 @@ namespace saori{
 TModuleFactoryMaster::TModuleFactoryMaster(TKawariLogger &lgr)
 	: IModuleFactory(lgr)
 {
+	factory_list.push_back(utatane_create_builtin_saori_factory(GetLogger()));
 #ifdef ENABLE_SAORI_JAVA
 	factory_list.push_back(new TModuleFactoryJava(GetLogger()));
 #endif
