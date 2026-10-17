@@ -1,5 +1,10 @@
 ChangeLog
 
+2026/10/17 Phase 8.2.9
+ * add the Win32 version information resource to the mingw binaries
+ * speed up: small-object allocator (mingw only, FASTALLOC option in gcc.mak)
+   and cheaper word comparison in the dictionary
+
 2008/03/30 Phase 8.2.8
  * fixed "textsave" command (ignore 3rd,4th... argument)
    (Thanks: Don, ukya, xenon)

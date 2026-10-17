@@ -1,4 +1,4 @@
-プログラマブル準AI 華和梨 Phase 8.2.8
+プログラマブル準AI 華和梨 Phase 8.2.9
 
 #これは何ですか
 
@@ -35,6 +35,10 @@ KAWARI Developer Team (Meister/Nise-Meister/Sato/Shino/Suikyo)
 
 
 #ChangeLog
+
+2026/10/17 Phase 8.2.9
+ * Windows版(mingw)のバイナリにバージョン情報リソースを追加
+ * 小オブジェクト用アロケータの導入と単語比較の軽量化で処理速度を向上(mingw版)
 
 2008/03/30 Phase 8.2.8
  * textsaveコマンドが複数のエントリを同時の保存できないバグを修正

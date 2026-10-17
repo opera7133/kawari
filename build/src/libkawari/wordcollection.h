@@ -115,7 +115,10 @@ public:
 template<class T,class Compare>
 bool TWordCollection<T,Compare>::Insert(const T& word,unsigned int *id_)
 {
-	unsigned int id=Find(word);
+	// 検索と挿入を1回の探索で済ませる
+	typename std::map<T,unsigned int,Compare>::iterator it=WordIDMap.lower_bound(word);
+	unsigned int id=0;
+	if((it!=WordIDMap.end())&&(!WordIDMap.key_comp()(word,it->first))) id=it->second;
 	if(id_) *id_=id;
 
 	if(id) return(false);
@@ -125,14 +128,14 @@ bool TWordCollection<T,Compare>::Insert(const T& word,unsigned int *id_)
 		Recycle.pop_back();
 		// やばいかなー
 		WordList[id-1]=word;
-		WordIDMap[word]=id;
+		WordIDMap.insert(it,typename std::map<T,unsigned int,Compare>::value_type(word,id));
 		IDMap[id]=id;
 	}else{
 		WordList.push_back(word);
 		id=WordList.size();
 
 		IDMap.push_back(id);
-		WordIDMap[word]=id;
+		WordIDMap.insert(it,typename std::map<T,unsigned int,Compare>::value_type(word,id));
 	}
 	if(id_) *id_=id;
 

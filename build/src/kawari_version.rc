@@ -1,0 +1,56 @@
+/*
+ * Version information resource (Win32, built with windres on mingw).
+ * The numbers come from libkawari/kawari_version.h.
+ *
+ * Select the target with -DKAWARI_RES_shiori / -DKAWARI_RES_kosui,
+ * otherwise it is for the command line tools.
+ *
+ * This file is ASCII only.
+ */
+#include <winver.h>
+#include "libkawari/kawari_version.h"
+
+#if defined(KAWARI_RES_shiori)
+#	define RES_FILETYPE		VFT_DLL
+#	define RES_DESCRIPTION	"KAWARI SHIORI module"
+#	define RES_FILENAME		"shiori.dll"
+#elif defined(KAWARI_RES_kosui)
+#	define RES_FILETYPE		VFT_APP
+#	define RES_DESCRIPTION	"KAWARI test console (kosui)"
+#	define RES_FILENAME		"kosui.exe"
+#else
+#	define RES_FILETYPE		VFT_APP
+#	define RES_DESCRIPTION	"KAWARI command line tool"
+#endif
+
+VS_VERSION_INFO VERSIONINFO
+FILEVERSION		KAWARI_VERSION_RC
+PRODUCTVERSION	KAWARI_VERSION_RC
+FILEFLAGSMASK	VS_FFI_FILEFLAGSMASK
+FILEFLAGS		0
+FILEOS			VOS_NT_WINDOWS32
+FILETYPE		RES_FILETYPE
+FILESUBTYPE		VFT2_UNKNOWN
+BEGIN
+	BLOCK "StringFileInfo"
+	BEGIN
+		BLOCK "040904B0"
+		BEGIN
+			VALUE "CompanyName",		KAWARI_AUTHOR
+			VALUE "FileDescription",	RES_DESCRIPTION
+			VALUE "FileVersion",		KAWARI_VERSION_RC_STR
+			VALUE "InternalName",		KAWARI_NAME
+			VALUE "LegalCopyright",		"Copyright (C) 2001-2008 KAWARI Development Team"
+#ifdef RES_FILENAME
+			VALUE "OriginalFilename",	RES_FILENAME
+#endif
+			VALUE "ProductName",		"KAWARI"
+			VALUE "ProductVersion",		KAWARI_VERSION_RC_STR
+			VALUE "Comments",			"Core " KAWARI_CORE_VERSION
+		END
+	END
+	BLOCK "VarFileInfo"
+	BEGIN
+		VALUE "Translation", 0x0409, 0x04B0
+	END
+END

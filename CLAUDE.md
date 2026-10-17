@@ -1,6 +1,6 @@
 # CLAUDE.md
 
-華和梨 (KAWARI) — 伺か用の SHIORI (擬似AI) モジュール。C++ 製、Phase 8.2.8 (Core 3.2.8)。
+華和梨 (KAWARI) — 伺か用の SHIORI (擬似AI) モジュール。C++ 製、Phase 8.2.9 (Core 3.2.9)。
 CI は無い。最低限のテストは `build/src/test/` (下記「テスト」)。
 
 ## 文字コード (最重要)
@@ -36,6 +36,10 @@ make -f gcc.mak
   ```
   ビルドは `build/src` に `.o` と `build/mach/mingw` に成果物を作るので、作業ツリーを汚したくなければ `build/` をコピーして実行する。`"SHIORI/"SHIORIVER" ..."` の文字列連結が C++11 以降で警告になるが無害。
 - 最適化は `-O2`。かつては `-O1` 固定だった (README.jp.md の 8.2.5 の項: 辞書に半角中点があると異常動作。原因は UPX か gcc 最適化か不明のまま) が、UPX を外した上で `-O2` でも既存テスト 19 件と半角中点入り辞書の動作を確認した。
+- `FASTALLOC` (既定 yes、`MACH_TYPE=mingw` のみ): `misc/fastalloc.cpp` がグローバルの `operator new/delete` を小オブジェクト用のフリーリストに差し替える。インタプリタは小さな確保を大量に繰り返すため、実ゴースト (1000 曲プレイリスト) で処理時間が 1.4〜1.9 倍速くなった。確保済みのメモリは OS に返さない。外すなら `gmake -f gcc.mak FASTALLOC=no`。
+- バージョン情報リソース (ファイルのプロパティに出る版): `build/src/kawari_version.rc` を `windres` で `shiori.dll` / `kosui.exe` / `kawari_*.exe` に埋め込む (`MACH_TYPE=mingw` のみ)。版を上げるときは `libkawari/kawari_version.h` の `KAWARI_SUBMINOR`・`KAWARI_CORE_VERSION` に加えて、同ファイルの `KAWARI_VERSION_RC` / `KAWARI_VERSION_RC_STR` も揃えること。
+- リリース手順: 32bit MinGW でビルドした 5 ファイル (`shiori.dll` / `kosui.exe` / `kawari_encode.exe` / `kawari_encode2.exe` / `kawari_decode2.exe`) を `bin/` にコピーして版更新と同じコミットに入れ、`git push` 後に GitHub Release (タグ `v8.2.9` の形式) を作る。リリースには、`bin/` の 5 ファイルと `license.txt` (= リポジトリ直下の `LICENSE`)、`readme.1st` (= `README.jp.md`、CP932 のまま) をフラットに zip にして添付する。zip 名は `kawari-8.2.9.zip` の形式。
+- `depend.mak` は `foo.cpp : ヘッダ…` の形で、**ヘッダだけ変えても `.o` は再ビルドされない** (`touch` で確認済み)。ヘッダを触ったら `.o` を消してからビルドし直すこと。
 - ソースファイルを追加・削除したら `build/src/files.mak` を編集し、`make depend` で `depend.mak` を作り直す。VC++ 用の `vc_kawari/*.sln|*.vcproj|*.dsp` は手動メンテで、gcc.mak と同期していない可能性が高い。
 - 任意機能は `gcc.mak` のフラグで切り替える: `SAORI_NATIVE` (デフォルト yes) / `SAORI_PYTHON` / `SAORI_JAVA` / `SHIORI_PYTHON` / `STLport`。Python 関連の記述は Python 2 構文 (`print sys.version[:3]`)。
 - mingw / cygwin で gcc3 系の `wstring` が通らない場合は STLport を使う (`STLport = yes`)。

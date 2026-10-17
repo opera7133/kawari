@@ -17,7 +17,11 @@
 #define KAWARI_AUTHOR	"KawariDeveloperTeam"	// 著作者(英数字だけ)
 #define KAWARI_MAJOR	"8"		// メジャー番号(ピリオド無し、数字だけ)
 #define KAWARI_MINOR	"2"		// マイナー番号(ピリオド無し、数字だけ)
-#define KAWARI_SUBMINOR	"8"		// バグフィックス(ピリオド無し、数字だけ)
+#define KAWARI_SUBMINOR	"9"		// バグフィックス(ピリオド無し、数字だけ)
+
+// Win32のバージョン情報リソース(kawari_version.rc)用。上の番号と揃えること
+#define KAWARI_VERSION_RC		8,2,9,0
+#define KAWARI_VERSION_RC_STR	"8.2.9.0"
 
 //---------------------------------------------------------------------------
 // コア
@@ -35,7 +39,7 @@
 //   3.0.0 = Phase 8.0.0
 //   3.1.0 = Phase 8.1.0
 //   3.2.0 = Phase 8.2.0
-#define KAWARI_CORE_VERSION	"3.2.8"
+#define KAWARI_CORE_VERSION	"3.2.9"
 
 // 華和梨コア・クレジット(適当に改行で区切って連名)
 #define KAWARI_CORE_CREDITS \

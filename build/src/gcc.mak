@@ -23,6 +23,9 @@ UPX =
 ## if you want to use native SAORI, set SAORI_NATIVE=yes (default)
 SAORI_NATIVE = yes
 
+## if you want to disable the small-object allocator (mingw only), set FASTALLOC=no
+FASTALLOC = yes
+
 ## if you want to use Python SAORI, set SAORI_PYTHON=yes
 # SAORI_PYTHON = yes
 
@@ -76,6 +79,12 @@ endif
 ifeq ($(SAORI_NATIVE),yes)
 	CFLAGS  := -DENABLE_SAORI_NATIVE $(CFLAGS)
 	CORESRC  := $(CORESRC) $(CORESRC_NATIVE)
+endif
+
+ifeq ($(FASTALLOC),yes)
+	ifeq ($(MACH_TYPE),mingw)
+		CORESRC := $(CORESRC) $(CORESRC_FASTALLOC)
+	endif
 endif
 
 ifeq ($(SAORI_JAVA),yes)
@@ -136,6 +145,17 @@ CRYPTOBJ = $(CRYPTSRC:.cpp=$(OBJEXT))
 KOSUIOBJ = $(KOSUISRC:.cpp=$(OBJEXT))
 TOOLOBJ =  $(TOOLSRC:.cpp=$(OBJEXT))
 
+# version information resources (mingw only, built with windres)
+ifeq ($(MACH_TYPE),mingw)
+	ifeq ($(strip $(WINDRES)),)
+		WINDRES := windres
+	endif
+	VERRES_SHIORI = kawari_ver_shiori$(OBJEXT)
+	VERRES_KOSUI  = kawari_ver_kosui$(OBJEXT)
+	VERRES_TOOL   = kawari_ver_tool$(OBJEXT)
+endif
+VERRESOBJ = $(VERRES_SHIORI) $(VERRES_KOSUI) $(VERRES_TOOL)
+
 ALLTARGET = $(MACH)/$(DYNLIBPREFIX)$(SHIORI)$(DYNLIBEXT) \
             $(MACH)/kosui$(EXEEXT) \
             $(MACH)/kawari_encode$(EXEEXT) \
@@ -147,20 +167,20 @@ ALLTARGET = $(MACH)/$(DYNLIBPREFIX)$(SHIORI)$(DYNLIBEXT) \
 
 all : $(ALLTARGET) upx
 
-$(MACH)/$(DYNLIBPREFIX)$(SHIORI)$(DYNLIBEXT) : $(SHIOOBJ) $(COREOBJ) $(DEPLIB)
-	$(CXX) -o $@ $(SHARED_$(MACH_TYPE)) $(LDFLAGS) $(SHIOOBJ) $(COREOBJ) $(LIBS)
+$(MACH)/$(DYNLIBPREFIX)$(SHIORI)$(DYNLIBEXT) : $(SHIOOBJ) $(COREOBJ) $(VERRES_SHIORI) $(DEPLIB)
+	$(CXX) -o $@ $(SHARED_$(MACH_TYPE)) $(LDFLAGS) $(SHIOOBJ) $(COREOBJ) $(VERRES_SHIORI) $(LIBS)
 
-$(MACH)/kosui$(EXEEXT) : $(KOSUIOBJ) $(COREOBJ) $(DEPLIB)
-	$(CXX) -o $@ $(LDFLAGS) $(KOSUIOBJ) $(COREOBJ) $(LIBS)
+$(MACH)/kosui$(EXEEXT) : $(KOSUIOBJ) $(COREOBJ) $(VERRES_KOSUI) $(DEPLIB)
+	$(CXX) -o $@ $(LDFLAGS) $(KOSUIOBJ) $(COREOBJ) $(VERRES_KOSUI) $(LIBS)
 
-$(MACH)/kawari_encode$(EXEEXT) : tool/kawari_encode$(OBJEXT) $(CRYPTOBJ)
-	$(CXX) -o $@ tool/kawari_encode$(OBJEXT) $(CRYPTOBJ) $(LDFLAGS)
+$(MACH)/kawari_encode$(EXEEXT) : tool/kawari_encode$(OBJEXT) $(CRYPTOBJ) $(VERRES_TOOL)
+	$(CXX) -o $@ tool/kawari_encode$(OBJEXT) $(CRYPTOBJ) $(VERRES_TOOL) $(LDFLAGS)
 
-$(MACH)/kawari_encode2$(EXEEXT) : tool/kawari_encode2$(OBJEXT) $(CRYPTOBJ)
-	$(CXX) -o $@ tool/kawari_encode2$(OBJEXT) $(CRYPTOBJ) $(LDFLAGS)
+$(MACH)/kawari_encode2$(EXEEXT) : tool/kawari_encode2$(OBJEXT) $(CRYPTOBJ) $(VERRES_TOOL)
+	$(CXX) -o $@ tool/kawari_encode2$(OBJEXT) $(CRYPTOBJ) $(VERRES_TOOL) $(LDFLAGS)
 
-$(MACH)/kawari_decode2$(EXEEXT) : tool/kawari_decode2$(OBJEXT) $(CRYPTOBJ)
-	$(CXX) -o $@ tool/kawari_decode2$(OBJEXT) $(CRYPTOBJ) $(LDFLAGS)
+$(MACH)/kawari_decode2$(EXEEXT) : tool/kawari_decode2$(OBJEXT) $(CRYPTOBJ) $(VERRES_TOOL)
+	$(CXX) -o $@ tool/kawari_decode2$(OBJEXT) $(CRYPTOBJ) $(VERRES_TOOL) $(LDFLAGS)
 
 $(MACH)/libjvm.dll.a : win32jvm.def
 	dlltool --def win32jvm.def -l $@ --dllname jvm.dll -k -C -a
@@ -170,8 +190,11 @@ $(MACH)/libjvm.dll.a : win32jvm.def
 %.o : %.cpp
 	$(CXX) $(CFLAGS) -o $@ -c $<
 
+kawari_ver_%.o : kawari_version.rc libkawari/kawari_version.h
+	$(WINDRES) -O coff -I. -DKAWARI_RES_$* -o $@ $<
+
 clean :
-	-rm $(COREOBJ) $(SHIOOBJ) $(KOSUIOBJ) $(TOOLOBJ) $(TEMPORARY_FILES)
+	-rm $(COREOBJ) $(SHIOOBJ) $(KOSUIOBJ) $(TOOLOBJ) $(VERRESOBJ) $(TEMPORARY_FILES)
 
 cleanall : clean
 	-rm $(ALLTARGET)

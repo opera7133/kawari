@@ -63,6 +63,8 @@ CORESRC_PYTHON = saori/saori_python.cpp
 
 CORESRC_NATIVE = saori/saori_native.cpp
 
+CORESRC_FASTALLOC = misc/fastalloc.cpp
+
 SHIOSRC_PYTHON = shiori/py_shiori.cpp
 
 KOSUISRC_cygwin = tool/kosui_dsstp.cpp \

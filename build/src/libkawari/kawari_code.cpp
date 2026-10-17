@@ -29,13 +29,18 @@
 #include "misc/misc.h"
 //---------------------------------------------------------------------------
 #include <cctype>
+#include <cstring>
+#include <typeinfo>
 //---------------------------------------------------------------------------
 using namespace std;
 //---------------------------------------------------------------------------
 // Comparator (for STL)
 bool TKVMCode_baseP_Less::operator()(const TKVMCode_base *L,const TKVMCode_base *R) const{
-	if(typeid(*L)==typeid(*R)) return (L->Less(*R));
-	return(string(typeid(*L).name())<string(typeid(*R).name()));
+	const type_info &lt=typeid(*L);
+	const type_info &rt=typeid(*R);
+	if(lt==rt) return (L->Less(*R));
+	// 型名での比較(std::stringの一時オブジェクトを作らない)
+	return(strcmp(lt.name(), rt.name())<0);
 }
 
 //---------------------------------------------------------------------------
@@ -49,7 +54,8 @@ ostream& TKVMCode_base::DebugIndent(ostream& os,unsigned int level) const
 //---------------------------------------------------------------------------
 // 中間コードの基底クラス(リストを持つもの)
 bool TKVMCodeList_base::Less(const TKVMCode_base &r_) const{
-	const TKVMCodeList_base& r=dynamic_cast<const TKVMCodeList_base&>(r_);
+	// 比較子で同一クラスであることを確認済みなのでstatic_cast
+	const TKVMCodeList_base& r=static_cast<const TKVMCodeList_base&>(r_);
 	unsigned int lsize=list.size();
 	if(lsize!=r.list.size()) return(lsize<r.list.size());
 

@@ -132,6 +132,8 @@
 
 ./misc/base64.h : ./config.h
 
+./misc/fastalloc.cpp : ./config.h
+
 ./misc/l10n.cpp : ./config.h ./misc/l10n.h ./misc/misc.h
 
 ./misc/l10n.h : ./config.h
