@@ -5,6 +5,7 @@
 華和梨 Phase9 βリリース版です。
 ライセンスを始め、新仕様に関するかなりの情報がドキュメント化されています。
 document/index.htmlを、ご使用のブラウザでご覧下さい。
+オンライン版: https://ukatech.github.io/kawari/
 
 #備考
 
