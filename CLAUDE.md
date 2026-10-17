@@ -25,8 +25,7 @@ make -f gcc.mak
 
 - ターゲット機種は `gcc.mak` 冒頭の `MACH_TYPE` (`cygwin|mingw|linux|freebsd|darwin|js`、デフォルト `mingw`) で決まる。機種ごとの差分は `gcc-mach.mak`。FreeBSD は `gmake`。
 - 成果物は `build/mach/<MACH_TYPE>/` に出る (`shiori` 共有ライブラリ、`kosui`、`kawari_encode` / `kawari_encode2` / `kawari_decode2`)。リポジトリ直下の `bin/` はコミット済みのリリース用バイナリで、ビルドしても更新されない。
-- `all` は最後に `upx` ターゲットを実行し、`UPX = upx` がデフォルト有効。upx が PATH に無い環境ではコメントアウトするか `UPX=` を空にしないと失敗する。
-  - `make -f gcc.mak UPX=` のようにコマンドラインで空にすれば、upx 無しでも `all` は通る (動作確認済み)。
+- `all` は最後に `upx` ターゲットを実行するが、`UPX` は既定で空 (圧縮しない)。UPX 圧縮はマルウェア誤検知の元になるため外した。使うなら `make -f gcc.mak UPX=upx`。
 - `CXX` は `ifndef CXX` で決まるため、**環境変数 `CXX` が設定されているとそれが優先される**。存在しないパスが入っていると全コンパイルが失敗するので、`CXX=g++` を明示するのが安全。
 - Windows では `make` ではなく `mingw32-make` (または `gmake`) を使う。MinGW に同梱されている。
 - **64bit の MinGW-w64 ではビルドが通らない** (g++ 13.2 / x86_64-w64-mingw32 で確認)。`saori/saori_native.cpp` と `tool/kosui_dsstp.cpp` が 32bit 前提のポインタ⇔整数キャストでエラーになり、`shiori.dll` と `kosui.exe` が作れない (`kawari_encode` / `encode2` / `decode2` だけは出来る)。`SAORI_NATIVE=no` でも `saori_module.cpp` が native 実装を参照していてリンクに失敗する。リリース版 `bin/shiori.dll` も i386 (32bit)。
@@ -36,7 +35,7 @@ make -f gcc.mak
   cd build/src && gmake -f gcc.mak CXX=g++ UPX=
   ```
   ビルドは `build/src` に `.o` と `build/mach/mingw` に成果物を作るので、作業ツリーを汚したくなければ `build/` をコピーして実行する。`"SHIORI/"SHIORIVER" ..."` の文字列連結が C++11 以降で警告になるが無害。
-- 最適化は `-O1` 固定。gcc の最適化起因の異常動作 (README.jp.md の 8.2.5 の項を参照) を避けるための意図的な設定なので上げないこと。
+- 最適化は `-O2`。かつては `-O1` 固定だった (README.jp.md の 8.2.5 の項: 辞書に半角中点があると異常動作。原因は UPX か gcc 最適化か不明のまま) が、UPX を外した上で `-O2` でも既存テスト 19 件と半角中点入り辞書の動作を確認した。
 - ソースファイルを追加・削除したら `build/src/files.mak` を編集し、`make depend` で `depend.mak` を作り直す。VC++ 用の `vc_kawari/*.sln|*.vcproj|*.dsp` は手動メンテで、gcc.mak と同期していない可能性が高い。
 - 任意機能は `gcc.mak` のフラグで切り替える: `SAORI_NATIVE` (デフォルト yes) / `SAORI_PYTHON` / `SAORI_JAVA` / `SHIORI_PYTHON` / `STLport`。Python 関連の記述は Python 2 構文 (`print sys.version[:3]`)。
 - mingw / cygwin で gcc3 系の `wstring` が通らない場合は STLport を使う (`STLport = yes`)。

@@ -13,9 +13,9 @@ MACH_TYPE = mingw
 ## output name
 SHIORI = shiori
 
-## if you have 'upx' and want to use it
+## if you have 'upx' and want to use it (disabled by default)
 # UPX = upx
-UPX = upx
+UPX =
 
 ## if you want to use STLport, set STLport=yes
 # STLport = yes
@@ -33,7 +33,7 @@ SAORI_NATIVE = yes
 # SHIORI_PYTHON = yes
 
 ## Global options
-CFLAGS  = -O1 -I. -DNDEBUG -Wall -fomit-frame-pointer
+CFLAGS  = -O2 -I. -DNDEBUG -Wall -fomit-frame-pointer
 LDFLAGS = -s
 
 #==========================================================================
