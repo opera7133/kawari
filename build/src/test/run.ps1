@@ -167,6 +167,7 @@ function Test-Kosui([string]$Work) {
     Write-Host "== kosui ($($cases.Count) cases)"
     $banner = "'.' is mode change command.`n"
     $index = 0
+    $attachAnswer = ''
     foreach ($case in $cases) {
         $index++
         $name = "kosui:$($case.Line) $($case.Verb) $($case.Rest)"
@@ -175,8 +176,17 @@ function Test-Kosui([string]$Work) {
         Copy-Item -Path (Join-Path $fixture 'kawarirc.kis') -Destination $dir
 
         if ($case.Verb -eq 'cmd') { $session = ".`n$($case.Rest)`nexit`n" } else { $session = "$($case.Rest)`nexit`n" }
-        $run = Invoke-Program $exe @() $dir $session
+        $run = Invoke-Program $exe @() $dir ($attachAnswer + $session)
         $out = $run.StdOut -replace "`r`n", "`n"
+        # A running ghost (SSP etc.) makes kosui ask "Attach :" first, which swallows the first line
+        # of the session (the prompt is still reached afterwards, so every case would just fail).
+        # Answer "0" (interpreter mode) in front of the sessions and run this case again.
+        if (-not $attachAnswer -and -not $run.TimedOut -and $out.Contains('Attach :')) {
+            Write-Host "note: a running ghost was found; answering 'Attach :' with 0 (interpreter mode)"
+            $attachAnswer = "0`n"
+            $run = Invoke-Program $exe @() $dir ($attachAnswer + $session)
+            $out = $run.StdOut -replace "`r`n", "`n"
+        }
         $expected = $case.Expected -join "`n"
 
         if ($run.TimedOut) {
@@ -185,9 +195,7 @@ function Test-Kosui([string]$Work) {
         }
         $pos = $out.IndexOf($banner)
         if ($pos -lt 0) {
-            $hint = ''
-            if ($out.Contains('Attach :')) { $hint = ' (a running ghost was found and kosui asked which one to attach to; quit the ghost)' }
-            Write-Result $false $name @("kosui did not reach its prompt$hint", "output: $(Show-Text $out)")
+            Write-Result $false $name @("kosui did not reach its prompt", "output: $(Show-Text $out)")
             continue
         }
         $rest = $out.Substring($pos + $banner.Length)

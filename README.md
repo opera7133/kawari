@@ -2,37 +2,13 @@
 
 #これは何ですか
 
-
 華和梨 Phase9 βリリース版です。
 ライセンスを始め、新仕様に関するかなりの情報がドキュメント化されています。
 document/index.htmlを、ご使用のブラウザでご覧下さい。
 
-ディレクトリ構成は以下のようになっています。
-
-    kawari-828/       …… プロジェクトルート
-           readme.1st     …… この文書
-           license.txt    …… 修正BSDライセンス文
-
-           bin/           …… 各種実行ファイル
-               shiori.dll         …… SHIORI (栞サブシステム)
-               kosui.exe          …… 幸水 (デバッグ用コンソールアプリ)
-               kawari_encode2.exe …… 辞書暗号化ツール
-               kawari_decode2.exe …… 辞書複合化ツール
-
-           document/      …… ドキュメント
-               index.html         …… ドキュメントトップページ
-
-           build/         …… ビルド環境
-               BUILD.TXT          …… ビルド方法
-               contrib/           …… 取り込んだパッチ
-
 #備考
 
 リリース版のコンパイルはMinimalist GNU Win32環境で行っています。
-
-2008/03/30
-KAWARI Developer Team (Meister/Nise-Meister/Sato/Shino/Suikyo)
-
 
 #ChangeLog
 

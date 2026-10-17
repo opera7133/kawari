@@ -17,3 +17,5 @@
 *.a
 *.lib
 
+__pycache__
+
