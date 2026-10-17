@@ -62,6 +62,17 @@ shiori_harness <dll> <ゴーストのフォルダ> <出力ファイル> <リク�
 
 対話モード: `<出力ファイル>` に `-` を渡し、リクエストファイルは渡さない。標準入力から「4 バイト (リトルエンディアン) の長さ + 生のバイト列」のフレームでリクエストを読み、応答を同じ形式で標準出力へ返す。入力が尽きると `unload` して終わる。応答を見て次のリクエストを決めるドライバ (下の `ghost_compat.py`) が使う。
 
+## baseware スイート (`baseware/`)
+
+本体 (SSP) との連携 (`getproperty` / `setproperty` / `executesstp` と SAORI over DirectSSTP) のテスト。書式は shiori スイートと同じ (`baseware/cases.txt`、`baseware/kawarirc.kis`)。ハーネスが環境変数 `HARNESS_BASEWARE` で、本体の代役の窓 (スタブ baseware) を同じプロセスに作る。リクエスト中の `%HWND%` はその窓のハンドル (10 進) に置き換わるので、`NOTIFY hwnd %HWND%` で DLL に送り先を教えられる。
+
+```
+powershell -NoProfile -ExecutionPolicy Bypass -File build/src/test/run.ps1 -Suite baseware
+```
+
+- スタブが答えるもの: `EXECUTE SSTP` の `GetProperty` (`test.value` だけ。他は 204) / `SetProperty` (空の値は 400) / `GetNames` (alpha, beta, gamma)、他は 501。`EXECUTE SAORI` の `internal_system` `ListModules` (`internal_test` だけ) / `internal_test` `Echo`、他のモジュールは 400 `unknown module`。
+- DLL と窓が同じスレッドなので、`SendMessage` は窓プロシージャを直接呼ぶ (実際の SSP は別スレッド)。ninix (POSIX) は対象外。
+
 ## スタブ SAORI (`harness/stub_saori.c`)
 
 実在のゴーストを動かすと、SAORI (`exec.dll`、`process.dll`、`bln.dll` など) が本物のプログラムを起動したり窓を開いたりする。このスタブはその代わりに置く DLL で、どんなリクエストにも `SAORI/1.0 200 OK` と `Result: 0` だけを返し (例えば `process exist <exe>` は「動いていない」になる)、受け取ったリクエストを `<DLL名>.log` に記録する。

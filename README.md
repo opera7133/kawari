@@ -1,6 +1,6 @@
 # 華和梨 (KAWARI)
 
-**プログラマブル準AI 華和梨 Phase 9.0.0 β1**
+**プログラマブル準AI 華和梨 Phase 9.0.0 β2**
 
 伺か用の SHIORI (擬似AI) モジュールです。
 
@@ -42,6 +42,21 @@ Phase 9 系は、オリジナルの華和梨をフォークし、[ponapalt](http
 新しい順に並べています。「非公開」とあるものは一般には公開されなかった版です。
 
 ### Phase 9
+
+#### 2026/10/18 Phase 9.0.0 β2 (Core 4.0.0)
+
+**本体との連携**
+
+- 本体 (SSP / ninix) のプロパティシステムと SSTP の `EXECUTE` を使う KIS コマンドを追加
+  - `getproperty プロパティ名 [既定値]` / `setproperty プロパティ名 値`
+  - `executesstp コマンド [引数...]` / `executesstpx 格納エントリ コマンド [引数...]`
+  - 応答コードは `System.SSTP.ResponseCode`、追加データは `System.SSTP.Data` に入る (`executesstpx` は指定エントリにも入る)
+  - 送り先は `NOTIFY hwnd` で知る本体のウィンドウ (Windows は Direct SSTP の `WM_COPYDATA`、POSIX は ninix の UNIX ソケット)
+- SAORI over DirectSSTP に対応
+  - 本体に内蔵されたモジュール (`internal_crypto` など、互換の `houchi` / `httpc` / `string` など) を、DLL なしの SAORI として `callsaori` で呼べる
+  - `saoriregist` に実体のない DLL 名を指定するか、未登録の `internal_*` を直接呼ぶ (初回に `internal_system` の `ListModules` で確かめて自動登録)。DLL の実体があれば従来どおり DLL として読む
+- 上記は SecurityLevel が local 以外のリクエストの処理からは使えない
+- Linux のビルドに `-lrt -lpthread` を追加 (ninix の FMO)
 
 #### 2026/10/18 Phase 9.0.0 β1 (Core 4.0.0)
 

@@ -57,12 +57,14 @@ TKawariEngine::TKawariEngine(void)
 	logger=new TKawariLogger();
 	Dictionary=new TNS_KawariDictionary((*logger));
 	KawariVM=new TKawariVM(*this, *Dictionary, (*logger));
-	SaoriPark=new saori::TSaoriPark((*logger));
+	Baseware=new dsstp::TBasewareLink();
+	SaoriPark=new saori::TSaoriPark((*logger), Baseware);
 }
 //---------------------------------------------------------------------------
 TKawariEngine::~TKawariEngine()
 {
 	delete SaoriPark;
+	delete Baseware;
 	delete KawariVM;
 	delete Dictionary;
 	delete logger;

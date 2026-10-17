@@ -61,7 +61,7 @@ make -f gcc.mak
 
 ## テスト
 
-ビルド後に `powershell -NoProfile -ExecutionPolicy Bypass -File build/src/test/run.ps1` (詳細は `build/src/test/README.md`)。`kosui.exe` に 1 行ずつ評価させる kosui スイートと、`shiori.dll` を直接 `load` / `request` / `unload` する shiori スイートがあり、ケースは `kosui/cases.txt` / `shiori/cases.txt` に足す。
+ビルド後に `powershell -NoProfile -ExecutionPolicy Bypass -File build/src/test/run.ps1` (詳細は `build/src/test/README.md`)。`kosui.exe` に 1 行ずつ評価させる kosui スイートと、`shiori.dll` を直接 `load` / `request` / `unload` する shiori スイート、本体の代役の窓を使う baseware スイート (Windows のみ) があり、ケースは `kosui/cases.txt` / `shiori/cases.txt` に足す。
 
 - POSIX (linux / darwin) では `python3 build/src/test/run_posix.py --bin-dir build/mach/linux` (同じ cases.txt を使い、SHIORI は ctypes で直接呼ぶ。UTF-8 の往復も見る)。GitHub Actions の `posix-build` (手動実行) がこれを走らせる。
 - shiori スイートは C のハーネスをその場でビルドするので、**DLL と同じ 32bit の gcc** が `PATH` の先頭に必要 (ビット数が違うとランナーが止まる)。
@@ -71,6 +71,14 @@ make -f gcc.mak
 - 9.0.0 の互換性の確認結果 (kakera + OpenKEEPS、8.2.8 との比較): 応答・SAORI への送信・UTF-8・日本語/ACP 外のパス・`load`/`unload` の繰り返しは差分なし。意図した差は、`GET Version SHIORI/2.6` の応答に `Charset` が付くことと、SAORI の `GET Version` を UTF-8 で問い合わせること。新版が書いた `save`/`savecrypt` は旧版で読めない (UTF-8 BOM)。
 - kosui を手で使うときの注意: 入力の最後に `exit` が無いと EOF で無限ループする。非 ASCII を含む出力は未検証。KIS の要素数は `size <エントリ>`。辞書のカンマは単語の区切りで、複数単語のエントリはランダムに 1 つが選ばれる (期待値が揺れる原因)。
 - .NET Framework の `Process` は標準入力の先頭に UTF-8 BOM を付ける。kosui のような stdin を読むツールには、`cmd /c "exe < file"` で渡すこと (`run.ps1` はそうしている)。
+
+## 本体との連携 (Direct SSTP、9.0.0 β2 以降)
+
+- `misc/dsstp.*` が本体との通信 (`TBasewareLink`、エンジンが 1 つ持つ)。Windows は `WM_COPYDATA` (dwData=9801) で応答用の隠し窓を作って送る、POSIX は ninix の FMO から UNIX ソケットを探す、js は常に送れない。送り先は `NOTIFY hwnd` の Reference0 (`kawari_shiori.cpp`)。
+- KIS は `kis/kis_sstp.*` (`getproperty` / `setproperty` / `executesstp` / `executesstpx`)。結果は `System.SSTP.ResponseCode` / `System.SSTP.Data`。
+- SAORI over DirectSSTP は `saori/saori_dsstp.*`。`TModuleFactoryDirectSSTP` が `TModuleFactoryMaster` の先頭にあり、DLL の実体が無い `internal_*` と互換名 (houchi など) のパスを引き受ける。`TModule::RequestMessage` はシリアライズ前のメッセージを直接受けるための口 (空の `ArgumentN` を位置として残すため)。未登録の `internal_*` は `TSaoriPark::GetModule` が `ListModules` を問い合わせて自動登録する。
+- リクエストの SecurityLevel が local 以外なら `TBasewareLink::IsAllowed` が偽になり、上のどれも送らない (Direct SSTP は常に Local 扱いになるため)。
+- テストは `-Suite baseware` (`test/baseware/`)。ハーネスの `HARNESS_BASEWARE` が本体の代役の窓 (スタブ baseware) を同じプロセスに作り、リクエスト中の `%HWND%` を窓ハンドルに置き換える。POSIX 側 (ninix) と実際の SSP は未検証。
 
 ## 華和梨スクリプト (KIS) の勘所
 

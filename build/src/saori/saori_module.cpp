@@ -12,6 +12,7 @@
 #include "config.h"
 #include "saori/saori_module.h"
 #include "saori/saori_unique.h"
+#include "saori/saori_dsstp.h"
 #ifdef ENABLE_SAORI_NATIVE
 #	include "saori/saori_native.h"
 #endif
@@ -28,9 +29,11 @@ using namespace saori;
 //---------------------------------------------------------------------------
 namespace saori{
 //---------------------------------------------------------------------------
-TModuleFactoryMaster::TModuleFactoryMaster(TKawariLogger &lgr)
+TModuleFactoryMaster::TModuleFactoryMaster(TKawariLogger &lgr, const dsstp::TBasewareLink *link)
 	: IModuleFactory(lgr)
 {
+	// 本体の内蔵モジュール (DLLの実体が無いinternal_*など) は最初に引き受ける
+	factory_list.push_back(new TModuleFactoryDirectSSTP(GetLogger(), link));
 #ifdef ENABLE_SAORI_JAVA
 	factory_list.push_back(new TModuleFactoryJava(GetLogger()));
 #endif

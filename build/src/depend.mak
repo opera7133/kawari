@@ -10,7 +10,7 @@
 
 ./kis/kis_communicate.h : ./config.h ./kis/kis_base.h
 
-./kis/kis_config.h : ./kis/kis_echo.h ./kis/kis_dict.h ./kis/kis_date.h ./kis/kis_counter.h ./kis/kis_math.h ./kis/kis_file.h ./kis/kis_escape.h ./kis/kis_help.h ./kis/kis_substitute.h ./kis/kis_split.h ./kis/kis_string.h ./kis/kis_communicate.h ./kis/kis_xargs.h ./kis/kis_saori.h ./kis/kis_system.h ./kis/kis_urllist.h
+./kis/kis_config.h : ./kis/kis_echo.h ./kis/kis_dict.h ./kis/kis_date.h ./kis/kis_counter.h ./kis/kis_math.h ./kis/kis_file.h ./kis/kis_escape.h ./kis/kis_help.h ./kis/kis_substitute.h ./kis/kis_split.h ./kis/kis_string.h ./kis/kis_communicate.h ./kis/kis_xargs.h ./kis/kis_saori.h ./kis/kis_sstp.h ./kis/kis_system.h ./kis/kis_urllist.h
 
 ./kis/kis_counter.cpp : ./config.h ./kis/kis_counter.h ./libkawari/kawari_engine.h ./libkawari/kawari_rc.h ./misc/misc.h
 
@@ -49,6 +49,10 @@
 ./kis/kis_split.cpp : ./config.h ./kis/kis_split.h ./libkawari/kawari_engine.h
 
 ./kis/kis_split.h : ./config.h ./kis/kis_base.h
+
+./kis/kis_sstp.cpp : ./config.h ./kis/kis_sstp.h ./libkawari/kawari_engine.h ./libkawari/kawari_log.h ./misc/dsstp.h ./misc/misc.h
+
+./kis/kis_sstp.h : ./config.h ./kis/kis_base.h
 
 ./kis/kis_string.cpp : ./config.h ./kis/kis_string.h ./libkawari/kawari_engine.h ./misc/misc.h
 
@@ -100,7 +104,7 @@
 
 ./libkawari/kawari_engine.cpp : ./config.h ./libkawari/kawari_engine.h ./libkawari/kawari_dict.h ./libkawari/kawari_compiler.h ./libkawari/kawari_vm.h ./libkawari/kawari_crypt.h ./libkawari/kawari_codeset.h ./libkawari/kawari_rc.h ./misc/misc.h ./saori/saori.h
 
-./libkawari/kawari_engine.h : ./config.h ./libkawari/kawari_compiler.h ./libkawari/kawari_dict.h ./libkawari/kawari_code.h ./libkawari/kawari_vm.h ./libkawari/kawari_log.h ./saori/saori.h ./misc/charset.h
+./libkawari/kawari_engine.h : ./config.h ./libkawari/kawari_compiler.h ./libkawari/kawari_dict.h ./libkawari/kawari_code.h ./libkawari/kawari_vm.h ./libkawari/kawari_log.h ./saori/saori.h ./misc/dsstp.h ./misc/charset.h
 
 ./libkawari/kawari_lexer.cpp : ./config.h ./libkawari/kawari_lexer.h ./misc/misc.h ./misc/charset.h ./libkawari/kawari_crypt.h ./libkawari/kawari_log.h ./libkawari/kawari_rc.h
 
@@ -136,6 +140,10 @@
 
 ./misc/charset.h : ./config.h
 
+./misc/dsstp.cpp : ./config.h ./misc/dsstp.h ./misc/charset.h ./misc/misc.h
+
+./misc/dsstp.h : ./config.h
+
 ./misc/fastalloc.cpp : ./config.h
 
 ./misc/l10n.h : ./config.h ./misc/charset.h
@@ -158,17 +166,21 @@
 
 ./misc/wfile.h : ./config.h ./misc/charset.h
 
-./saori/saori.cpp : ./config.h ./saori/saori.h ./saori/saori_module.h ./libkawari/kawari_log.h
+./saori/saori.cpp : ./config.h ./saori/saori.h ./saori/saori_module.h ./saori/saori_dsstp.h ./libkawari/kawari_log.h ./misc/misc.h
 
-./saori/saori.h : ./config.h ./misc/phttp.h ./misc/charset.h ./libkawari/kawari_log.h
+./saori/saori.h : ./config.h ./misc/phttp.h ./misc/charset.h ./misc/dsstp.h ./libkawari/kawari_log.h
+
+./saori/saori_dsstp.cpp : ./config.h ./saori/saori_dsstp.h ./libkawari/kawari_log.h ./misc/misc.h ./misc/charset.h
+
+./saori/saori_dsstp.h : ./config.h ./saori/saori_module.h ./misc/dsstp.h ./misc/phttp.h ./libkawari/kawari_log.h
 
 ./saori/saori_java.cpp : ./config.h ./saori/saori_java.h ./libkawari/kawari_log.h ./misc/misc.h
 
 ./saori/saori_java.h : ./config.h ./saori/saori_module.h
 
-./saori/saori_module.cpp : ./config.h ./saori/saori_module.h ./saori/saori_unique.h ./saori/saori_native.h ./saori/saori_java.h ./saori/saori_python.h
+./saori/saori_module.cpp : ./config.h ./saori/saori_module.h ./saori/saori_unique.h ./saori/saori_dsstp.h ./saori/saori_native.h ./saori/saori_java.h ./saori/saori_python.h
 
-./saori/saori_module.h : ./config.h ./libkawari/kawari_log.h
+./saori/saori_module.h : ./config.h ./libkawari/kawari_log.h ./misc/phttp.h ./misc/charset.h ./misc/dsstp.h
 
 ./saori/saori_native.cpp : ./config.h ./saori/saori_native.h ./libkawari/kawari_log.h ./misc/misc.h
 

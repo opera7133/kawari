@@ -262,6 +262,12 @@ TABLE.command CAPTION{
 <TR><TD><A href="#callsaori">callsaori</A></TD><TD>登録したSAORIを呼び出す</TD></TR>
 <TR><TD><A href="#callsaorix">callsaorix</A></TD><TD>登録したSAORIを呼び出す(高機能版)</TD></TR>
 
+<TR class="genre"><TD colspan="2">本体との連携</TD></TR>
+<TR><TD><A href="#getproperty">getproperty</A></TD><TD>本体のプロパティシステムから値を取得する</TD></TR>
+<TR><TD><A href="#setproperty">setproperty</A></TD><TD>本体のプロパティシステムに値を設定する</TD></TR>
+<TR><TD><A href="#executesstp">executesstp</A></TD><TD>本体にSSTPのEXECUTEを送る</TD></TR>
+<TR><TD><A href="#executesstpx">executesstpx</A></TD><TD>本体にSSTPのEXECUTEを送る(追加データをエントリに格納)</TD></TR>
+
 <TR class="genre"><TD colspan="2">コミュニケート機能</TD></TR>
 <TR><TD><A href="#communicate">communicate</A></TD><TD>あるエントリの全ての単語を評価し、値から一つをランダムで選ぶ</TD></TR>
 <TR><TD><A href="#matchall">matchall</A></TD><TD>全てのキーワードに対してマッチング</TD></TR>
@@ -3542,13 +3548,39 @@ TABLE.command CAPTION{
     なければ以後Shift_JISで送る(古いSAORI互換)。
     応答はそのCharsetに従って解釈し、Charsetがなければ、
     Shift_JISで送った場合はShift_JIS、そうでなければ自動判定する。
-    応答に有効なCharsetがあれば、次回からその文字コードで送る。
+    応答に有効なCharsetがあれば、次回からその文字コードで送る。<BR>
+    <BR>
+    <B>SAORI over DirectSSTP</B> (Phase 9.0.0 β2以降、Windows (SSP 2.9.13以降) と ninix のみ):
+    本体に内蔵されたモジュール(internal_crypto、internal_data、internal_random など)を、
+    DLLなしのSAORIとして呼べる。
+    SAORI/1.0の要求をDLLではなく本体へDirect SSTPで送る。
+    <UL>
+      <LI>エイリアスの登録は、<SPAN class="tt">saoriregist</SPAN>に、実体のないDLLの名前を
+        <SPAN class="tt">internal_</SPAN>で始まる名前で指定する(フォルダは問わない)。
+        本体が互換機能を内蔵するSAORI(houchi、clipcopy、textcopy、saori_ip、saori_cpuid、
+        mciaudio、cpuusage、httpc、string、hanayu)も、DLLが無ければ本体の機能を呼ぶ。
+        DLLの実体があるときは、これまでどおりDLLとして読む。</LI>
+      <LI>登録しなくても、<SPAN class="tt">internal_</SPAN>で始まるモジュール名をそのままエイリアスにして呼べる。
+        初めて呼ぶとき、本体の<SPAN class="tt">internal_system</SPAN>の<SPAN class="tt">ListModules</SPAN>で
+        内蔵モジュールの一覧を確かめ、一覧にあれば自動で登録する。</LI>
+      <LI>1つ目の引数が関数名、2つ目以降がその関数の引数と<SPAN class="tt">--オプション=値</SPAN>。
+        詳細は
+        <A href="https://ssp.shillest.net/ukadoc/manual/spec_saori_ex.html">SAORI over DirectSSTP</A>
+        を参照。</LI>
+      <LI>本体のウィンドウは、本体からのNOTIFY <SPAN class="tt">hwnd</SPAN>で知る。それより前は呼べない。</LI>
+      <LI>常にUTF-8で送る。引数に改行は書けない(送らずに失敗)。空の引数も位置として数える。</LI>
+      <LI>Direct SSTPは常にLocalとして扱われるため、SecurityLevelがlocal以外のリクエストの処理からは呼ばない。</LI>
+      <LI>本体の応答を最大30秒待つ。時間のかかる処理は、モジュール側の<SPAN class="tt">--async=識別子</SPAN>で非同期にする。</LI>
+    </UL>
   </TD>
 </TR>
 <TR><TD colspan="2">
 <PRE>
 例
   sentence : \0\s[0]ここのOSは$(callsaori cpuid os.name)ね。\e
+
+  # 登録なしで、本体のモジュールを呼ぶ
+  sentence : $(callsaori internal_crypto Digest sha256 abc)
 </PRE>
 </TD></TR>
 </TABLE>
@@ -3598,6 +3630,164 @@ TABLE.command CAPTION{
 
     callsaorix wmove $@arg[2] GET_POSITION ${@characterHWnd};
   );
+  =end
+</PRE>
+</TD></TR>
+</TABLE>
+
+<TABLE class="command" width="100%">
+<CAPTION>
+  getproperty<A name="getproperty"></A>
+</CAPTION>
+<TR>
+  <TD width="10%">書式</TD>
+  <TD class="tt">
+    getproperty プロパティ名 [ 既定値 ]
+  </TD>
+</TR>
+<TR>
+  <TD>戻り値</TD>
+  <TD>
+    プロパティの値。取得できなかったときは既定値(省略時は空文字列)
+  </TD>
+</TR>
+<TR>
+  <TD>機能</TD>
+  <TD>
+    本体(SSPなど)のプロパティシステムから値を取得する(Phase 9.0.0 β2以降)。
+    本体にSSTPの<SPAN class="tt">EXECUTE</SPAN>で<SPAN class="tt">GetProperty</SPAN>を送る。
+    プロパティ名の仕様は、本体のドキュメント(SSPならUKADOCのプロパティシステム)を参照。<BR>
+    応答コードが200のときだけ値を返し、それ以外は既定値を返す。
+    存在しないプロパティ(204)、本体のウィンドウがまだ分からないとき、本体が5秒以内に応答しなかったときも既定値になる。
+    応答コードは<SPAN class="tt">System.SSTP.ResponseCode</SPAN>で確かめられる
+    (<A href="#executesstp">executesstp</A>を参照)。<BR>
+    送り先は、本体からのNOTIFY <SPAN class="tt">hwnd</SPAN>で知るので、Windowsでは本体がSHIORI/3.0でNOTIFYを送る環境で使える。
+    ninixではFMOからUNIXソケットを探す。
+    SecurityLevelがlocal以外のリクエストの処理からは送らない。
+  </TD>
+</TR>
+<TR><TD colspan="2">
+<PRE>
+例
+  sentence : 現在のゴーストは$(getproperty currentghost.name 不明)です。
+</PRE>
+</TD></TR>
+</TABLE>
+
+<TABLE class="command" width="100%">
+<CAPTION>
+  setproperty<A name="setproperty"></A>
+</CAPTION>
+<TR>
+  <TD width="10%">書式</TD>
+  <TD class="tt">
+    setproperty プロパティ名 値
+  </TD>
+</TR>
+<TR>
+  <TD>戻り値</TD>
+  <TD>
+    なし
+  </TD>
+</TR>
+<TR>
+  <TD>機能</TD>
+  <TD>
+    本体のプロパティシステムに値を設定する(Phase 9.0.0 β2以降)。
+    本体にSSTPの<SPAN class="tt">EXECUTE</SPAN>で<SPAN class="tt">SetProperty</SPAN>を送る。
+    送り先や条件は<A href="#getproperty">getproperty</A>と同じ。
+    応答コードは<SPAN class="tt">System.SSTP.ResponseCode</SPAN>に入る。
+    値を空にはできない(SSPは空の値を受け取らず、400になる)。
+  </TD>
+</TR>
+<TR><TD colspan="2">
+<PRE>
+例
+  # オーナードローメニューの「シェル」から、masterシェルを隠す
+  sentence : $(setproperty "currentghost.shelllist(master).menu" hidden)
+</PRE>
+</TD></TR>
+</TABLE>
+
+<TABLE class="command" width="100%">
+<CAPTION>
+  executesstp<A name="executesstp"></A>
+</CAPTION>
+<TR>
+  <TD width="10%">書式</TD>
+  <TD class="tt">
+    executesstp コマンド [ 引数 引数 ... ]
+  </TD>
+</TR>
+<TR>
+  <TD>戻り値</TD>
+  <TD>
+    応答の追加データの1行目。応答コードが200番台でないとき、追加データがないとき、送れなかったときは空文字列
+  </TD>
+</TR>
+<TR>
+  <TD>機能</TD>
+  <TD>
+    本体にSSTPの<SPAN class="tt">EXECUTE</SPAN>を送り、その応答を受け取る(Phase 9.0.0 β2以降)。
+    <SPAN class="tt">Command:</SPAN>にコマンド(<SPAN class="tt">GetVersion</SPAN>、<SPAN class="tt">GetNames</SPAN>など)を、
+    引数を<SPAN class="tt">Reference0:</SPAN>、<SPAN class="tt">Reference1:</SPAN>...に入れて送る
+    (<SPAN class="tt">Charset</SPAN>はUTF-8)。
+    コマンドの種類は、本体のドキュメント(SSPならUKADOCのSSTPの仕様)を参照。<BR>
+    実行するたびに、次のエントリが書き換わる。
+    <UL>
+      <LI><SPAN class="tt">System.SSTP.ResponseCode</SPAN> : 応答コード。
+        200=成功、204=成功したが返す値がない、400や501など=本体が受け付けなかった、
+        0=送れなかった・応答がなかった</LI>
+      <LI><SPAN class="tt">System.SSTP.Data</SPAN> : 追加データ(1行を1単語として格納。無ければ空)</LI>
+    </UL>
+    0になるのは、本体のウィンドウがまだ分からないとき(NOTIFY hwndの前)、
+    コマンドや引数が空、またはコマンドや引数に改行を含むとき(ヘッダを書き換えられてしまうため送らない)、
+    SecurityLevelがlocal以外のリクエストの処理中のとき、本体が5秒以内に応答しないとき。
+    理由はログに出る。<BR>
+    SSPはSHIORIをメインスレッドとは別のスレッドから呼ぶため、
+    メインスレッドがSHIORIの処理を待っているときは<SPAN class="tt">EXECUTE</SPAN>に応答できず、
+    最大5秒待たされて0になる。大事な処理では応答コードを確かめること。
+  </TD>
+</TR>
+<TR><TD colspan="2">
+<PRE>
+例
+  sentence : 本体は$(executesstp GetVersion)です。
+</PRE>
+</TD></TR>
+</TABLE>
+
+<TABLE class="command" width="100%">
+<CAPTION>
+  executesstpx<A name="executesstpx"></A>
+</CAPTION>
+<TR>
+  <TD width="10%">書式</TD>
+  <TD class="tt">
+    executesstpx 追加データ格納エントリ コマンド [ 引数 引数 ... ]
+  </TD>
+</TR>
+<TR>
+  <TD>戻り値</TD>
+  <TD>
+    応答の追加データの1行目(<A href="#executesstp">executesstp</A>と同じ)
+  </TD>
+</TR>
+<TR>
+  <TD>機能</TD>
+  <TD>
+    <A href="#executesstp">executesstp</A>と同じだが、追加データの全行を、
+    指定したエントリに1行1単語で格納する(エントリはいったん空になる)。
+    <SPAN class="tt">GetNames</SPAN>のように複数行を返すコマンド向け。
+    行数は<SPAN class="tt">size</SPAN>コマンドで得られる。
+  </TD>
+</TR>
+<TR><TD colspan="2">
+<PRE>
+例
+  =kis
+  executesstpx names GetNames;
+  # namesエントリにインストール済みのゴースト名が入る
   =end
 </PRE>
 </TD></TR>

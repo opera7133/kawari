@@ -228,6 +228,10 @@ void TKawariShioriAdapter::Request(TPHMessage &request, TPHMessage &response, TK
 	TSecurityLevel::TSenderPath sender_path;
 	GetSenderPath(request[L"SecurityLevel"],sender_path,sender_path_name);
 
+	// 本体へ送る機能 (getproperty, 内蔵モジュールなど) は、localなリクエストからだけ使える
+	Engine.GetBaseware().SetAllowed(
+		(sender_path==TSecurityLevel::tsidLocal)||(sender_path==TSecurityLevel::tsidSystem));
+
 	if(SecurityLevel.Check(sender_path)) {
 
 		// リクエストヘッダを辞書に格納
@@ -282,6 +286,9 @@ void TKawariShioriAdapter::Request(TPHMessage &request, TPHMessage &response, TK
 			const wstring &reqid=request[L"ID"];
 			if (reqid==L"ownerghostname"){
 				GhostName=request[L"Reference0"];
+			}else if (reqid==L"hwnd"){
+				// 本体のウィンドウ。getproperty, 内蔵モジュールなどの送り先になる
+				Engine.GetBaseware().SetHandleFromReference(request[L"Reference0"]);
 			}
 			wstring aistr=EnumExec(L"System.Callback.OnNOTIFY");
 

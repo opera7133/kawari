@@ -1,5 +1,19 @@
 ChangeLog
 
+2026/10/18 Phase 9.0.0 beta2 (Core 4.0.0)
+ * add "getproperty", "setproperty" and "executesstp"/"executesstpx":
+   property system and SSTP EXECUTE commands sent to the baseware (SSP, ninix)
+   by Direct SSTP. The window of the baseware is taken from "NOTIFY hwnd".
+   The response code is stored to System.SSTP.ResponseCode and the additional
+   data to System.SSTP.Data ("executesstpx" also stores it to the given entry)
+ * SAORI over DirectSSTP: the modules built in the baseware (internal_*, and
+   the compatible ones such as houchi/httpc/string) can be called with
+   "callsaori" like a SAORI without a DLL. "saoriregist" a name without a DLL
+   file, or call an unregistered "internal_*" name (checked with ListModules of
+   internal_system). A DLL file, if it exists, is loaded as before
+ * the commands above are refused for requests whose SecurityLevel is not local
+ * Linux: link with -lrt -lpthread (FMO of ninix)
+
 2026/10/18 Phase 9.0.0 beta1 (Core 4.0.0)
  * changed the internal strings to wchar_t (UTF-16 on Windows, UTF-32 on
    POSIX). Characters outside the BMP (e.g. emoji) count as 2 characters

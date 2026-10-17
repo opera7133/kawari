@@ -1,0 +1,26 @@
+# Fixture ghost for the baseware suite (build/src/test/run.ps1 -Suite baseware).
+#
+# getproperty / setproperty / executesstp and SAORI over DirectSSTP, against the
+# stub baseware window of the harness (see harness/shiori_harness.c).
+# This file is ASCII only.
+
+System.Callback.OnGET: $(
+    if $(match_at ${System.Request.ID} On)
+        ${event.${System.Request.ID}}
+    else
+        ${resource.${System.Request.ID}} )
+
+=kis
+saoriregist saori/internal_test.dll tst;
+=end
+
+event.OnGetProp: $(getproperty test.value fb)|${System.SSTP.ResponseCode}
+event.OnGetPropMissing: $(getproperty no.such fb)|${System.SSTP.ResponseCode}
+event.OnSetProp: $(setproperty test.value changed)$(getproperty test.value fb)
+event.OnSetPropEmpty: $(setproperty test.value "")${System.SSTP.ResponseCode}
+event.OnExecList: $(executesstpx lst GetNames)|${System.SSTP.ResponseCode}|$(size lst)|$(size System.SSTP.Data)
+event.OnExecUnknown: $(executesstp Bogus)|${System.SSTP.ResponseCode}
+event.OnSaoriDirect: $(callsaori internal_test Echo a b c)
+event.OnSaoriEmptyArg: $(callsaori internal_test Echo a "" c)
+event.OnSaoriRegistered: $(callsaori tst Echo x y z)
+event.OnSaoriUnknown: [$(callsaori internal_nosuch Echo a)]

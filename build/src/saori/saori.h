@@ -7,6 +7,7 @@
 //
 //  2002.04.15  Phase 8.0.0   えびさわさんバージョンを参考に導入
 //  2026.10.18  Phase 9.0.0   wchar_t化 (SAORIとの送受信はCharsetに従う)
+//                            SAORI over DirectSSTP対応 (本体の内蔵モジュール)
 //
 //---------------------------------------------------------------------------
 #ifndef SAORI_H
@@ -15,10 +16,12 @@
 #include "config.h"
 #include "misc/phttp.h"
 #include "misc/charset.h"
+#include "misc/dsstp.h"
 #include "libkawari/kawari_log.h"
 //---------------------------------------------------------------------------
 #include <string>
 #include <map>
+#include <set>
 #include <vector>
 //---------------------------------------------------------------------------
 namespace saori{
@@ -74,13 +77,15 @@ public:
 	void EraseModule(const std::wstring &alias);
 
 	// モジュールを得る
+	// 登録されていないinternal_で始まる名前は、本体の内蔵モジュールにあれば登録してから返す
 	TBind *const GetModule(const std::wstring &alias);
 
 	// 登録済みモジュール名のリストを得る
 	int ListModule(std::vector<std::wstring> &list);
 
 	// コンストラクタ
-	TSaoriPark(TKawariLogger &logger);
+	// link : 本体への接続 (SAORI over DirectSSTPで使う)
+	TSaoriPark(TKawariLogger &logger, dsstp::TBasewareLink *link);
 
 	// 全モジュールのアンロード
 	~TSaoriPark();
@@ -88,9 +93,25 @@ public:
 private:
 	class TModuleFactoryMaster *factory;
 	TKawariLogger &logger;
+	dsstp::TBasewareLink *link;
 
 	// alias -> Module
 	std::map<std::wstring, TBind *> aliasmap;
+
+	// 本体の内蔵モジュールの一覧 (internal_systemのListModulesで得る)
+	enum TInternalModules {
+		IM_UNKNOWN,	// まだ問い合わせていない (本体のウィンドウが分からない場合を含む)
+		IM_LISTED,	// 一覧を得た
+		IM_ANY,		// 一覧は得られないが、SAORI over DirectSSTPには対応している
+		IM_NONE		// 対応していない
+	} internalstate;
+	std::set<std::wstring> internalmodules;
+
+	// 本体に内蔵モジュールの一覧を問い合わせる
+	void FetchInternalModules(void);
+
+	// aliasが本体の内蔵モジュール(internal_*)の名前なら、登録してtrueを返す
+	bool RegisterInternalModule(const std::wstring &alias);
 
 	friend class TBind;
 };

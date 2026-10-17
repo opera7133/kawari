@@ -15,6 +15,9 @@
             Every expected text must be found in the matching response. This tests the SHIORI layer.
             The harness is built with -CC and must have the same bitness as shiori.dll (32bit).
 
+    baseware  Same as shiori, with the ghost and cases in test/baseware and a stub baseware window in the
+            harness (HARNESS_BASEWARE): getproperty / setproperty / executesstp and SAORI over DirectSSTP.
+
     The binaries must already be built (build/src: gmake -f gcc.mak). Nothing is written to the
     repository: the work files go to a temporary folder.
 
@@ -23,7 +26,7 @@
 .PARAMETER BinDir
     Folder with kosui.exe and shiori.dll (default: build/mach/mingw).
 .PARAMETER Suite
-    all (default), kosui or shiori.
+    all (default), kosui, shiori or baseware.
 .PARAMETER CC
     C compiler for the harness (default: gcc). Put the 32bit MinGW first in PATH or give its full path.
 .PARAMETER KeepWork
@@ -36,7 +39,7 @@
 [CmdletBinding()]
 param(
     [string]$BinDir,
-    [ValidateSet('all', 'kosui', 'shiori')]
+    [ValidateSet('all', 'kosui', 'shiori', 'baseware')]
     [string]$Suite = 'all',
     [string]$CC = 'gcc',
     [int]$TimeoutSeconds = 30,
@@ -211,10 +214,10 @@ function Test-Kosui([string]$Work) {
 
 # ---- shiori ---------------------------------------------------------------------------------
 
-function Test-Shiori([string]$Work) {
+function Test-Shiori([string]$Work, [string]$Name) {
     $dll = Join-Path $BinDir 'shiori.dll'
     if (-not (Test-Path -LiteralPath $dll)) { Stop-Setup "shiori.dll was not found in $BinDir" }
-    $fixture = Join-Path $PSScriptRoot 'shiori'
+    $fixture = Join-Path $PSScriptRoot $Name
     $cases = Read-Cases (Join-Path $fixture 'cases.txt') '~' @('GET', 'NOTIFY')
 
     # The harness loads the DLL into its own process, so both must be the same bitness.
@@ -236,7 +239,7 @@ function Test-Shiori([string]$Work) {
         Stop-Setup "building the harness failed:`n$($build.StdErr)"
     }
 
-    $ghost = Join-Path $Work 'ghost'
+    $ghost = Join-Path $Work "ghost_$Name"
     New-Item -ItemType Directory -Path $ghost | Out-Null
     Copy-Item -Path (Join-Path $fixture 'kawarirc.kis') -Destination $ghost
     Copy-Item -Path $dll -Destination $ghost
@@ -262,11 +265,14 @@ function Test-Shiori([string]$Work) {
         $requests.Add((Quote-Arg $file))
     }
 
-    $outFile = Join-Path $Work 'responses.txt'
+    $outFile = Join-Path $Work "responses_$Name.txt"
     $argList = @((Quote-Arg $dll), (Quote-Arg $ghost), (Quote-Arg $outFile)) + $requests
     # The harness loads the copy in the ghost folder, so shiori.dll itself is never touched.
     $argList[0] = Quote-Arg (Join-Path $ghost 'shiori.dll')
+    # The stub baseware window is only for the baseware suite.
+    if ($Name -eq 'baseware') { $env:HARNESS_BASEWARE = '1' } else { Remove-Item Env:HARNESS_BASEWARE -ErrorAction SilentlyContinue }
     $run = Invoke-Program $harness $argList $Work ''
+    Remove-Item Env:HARNESS_BASEWARE -ErrorAction SilentlyContinue
     if ($run.TimedOut) { Stop-Setup "the harness did not finish within $TimeoutSeconds seconds" }
     if ($run.ExitCode -ne 0) { Stop-Setup "the harness failed (exit code $($run.ExitCode)): $($run.StdErr.Trim())" }
 
@@ -276,17 +282,17 @@ function Test-Shiori([string]$Work) {
         Stop-Setup "expected $($cases.Count) responses but the harness wrote $($responses.Count - 1)"
     }
 
-    Write-Host "== shiori ($($cases.Count) cases)"
+    Write-Host "== $Name ($($cases.Count) cases)"
     $index = 0
     foreach ($case in $cases) {
         $response = $responses[$index]
         $index++
-        $name = "shiori:$($case.Line) $($case.Verb) $($case.Rest)"
+        $label = "${Name}:$($case.Line) $($case.Verb) $($case.Rest)"
         $missing = @($case.Expected | Where-Object { -not $response.Contains($_) })
         $detail = @()
         foreach ($text in $missing) { $detail += "missing: $text" }
         if ($missing.Count -gt 0) { $detail += "response: $(Show-Text $response)" }
-        Write-Result ($missing.Count -eq 0) $name $detail
+        Write-Result ($missing.Count -eq 0) $label $detail
     }
 }
 
@@ -300,7 +306,8 @@ $work = Join-Path ([IO.Path]::GetTempPath()) ('kawari-test-' + [guid]::NewGuid()
 New-Item -ItemType Directory -Path $work | Out-Null
 try {
     if ($Suite -eq 'all' -or $Suite -eq 'kosui') { Test-Kosui $work }
-    if ($Suite -eq 'all' -or $Suite -eq 'shiori') { Test-Shiori $work }
+    if ($Suite -eq 'all' -or $Suite -eq 'shiori') { Test-Shiori $work 'shiori' }
+    if ($Suite -eq 'all' -or $Suite -eq 'baseware') { Test-Shiori $work 'baseware' }
 } finally {
     if ($KeepWork) {
         Write-Host "work folder kept: $work"

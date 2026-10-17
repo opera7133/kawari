@@ -16,6 +16,7 @@ KISSRC =   kis/kis_echo.cpp \
            kis/kis_string.cpp \
            kis/kis_help.cpp \
            kis/kis_saori.cpp \
+           kis/kis_sstp.cpp \
            kis/kis_system.cpp
 
 CRYPTSRC = libkawari/kawari_crypt.cpp \
@@ -38,8 +39,10 @@ CORESRC =  libkawari/kawari_engine.cpp \
            misc/misc.cpp \
            misc/mt19937ar.cpp \
            misc/phttp.cpp \
+           misc/dsstp.cpp \
            saori/saori.cpp \
            saori/saori_module.cpp \
+           saori/saori_dsstp.cpp \
            saori/saori_unique.cpp \
            $(KISSRC) \
            $(CRYPTSRC)

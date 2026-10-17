@@ -13,8 +13,10 @@
 //---------------------------------------------------------------------------
 #include "saori/saori.h"
 #include "saori/saori_module.h"
+#include "saori/saori_dsstp.h"
 #include "libkawari/kawari_log.h"
 //---------------------------------------------------------------------------
+#include "misc/misc.h"
 using namespace kawari_log;
 using namespace std;
 using namespace saori;
@@ -55,20 +57,26 @@ bool TBind::Query(const TPHMessage &request, TPHMessage &response, TKawariCharse
 		req.Dump(logger.GetStream());
 	}
 
-	// シリアライズ
-	string reqstr=req.Serialize(sendcs);
-
-	// Request
-	string resstr=module->Request(reqstr);
-
-	// デシリアライズ
-	// 応答のCharsetに従う。無ければ、送ったのがSJISならSJIS、そうでなければ自動判定
-	TKawariCharset rcs=TPHMessage::ScanCharset(resstr);
-	TKawariCharset dcs=rcs;
-	if (dcs==KC_NULL)
-		dcs=(sendcs==KC_SJIS)?KC_SJIS:KC_NULL;
+	TKawariCharset rcs=KC_NULL;
 	response=TPHMessage();
-	response.Deserialize(resstr, dcs);
+	if (!module->RequestMessage(req, response, rcs)){
+		// シリアライズ
+		string reqstr=req.Serialize(sendcs);
+
+		// Request
+		string resstr=module->Request(reqstr);
+
+		// デシリアライズ
+		// 応答のCharsetに従う。無ければ、送ったのがSJISならSJIS、そうでなければ自動判定
+		rcs=TPHMessage::ScanCharset(resstr);
+		TKawariCharset dcs=rcs;
+		if (dcs==KC_NULL)
+			dcs=(sendcs==KC_SJIS)?KC_SJIS:KC_NULL;
+		response=TPHMessage();
+		response.Deserialize(resstr, dcs);
+	}
+	// (RequestMessageで処理するモジュール (SAORI over DirectSSTP) は、
+	//  DLLのようにシリアライズせずにメッセージのまま受け渡す)
 
 	// 応答に有効なCharsetがあれば、次回以降の送信に使う
 	if (rcs!=KC_NULL)
@@ -154,10 +162,86 @@ void TSaoriPark::EraseModule(const wstring &alias){
 TBind * const TSaoriPark::GetModule(const wstring &alias) {
 	if (aliasmap.count(alias)){
 		return aliasmap[alias];
+	}else if (RegisterInternalModule(alias)){
+		return aliasmap[alias];
 	}else{
 		logger.GetStream(LOG_ERROR) << L"[SAORI] module (" << alias << L") not found." << endl;
 		return NULL;
 	}
+}
+//---------------------------------------------------------------------------
+// 本体に内蔵モジュールの一覧を問い合わせる (internal_systemのListModules)
+void TSaoriPark::FetchInternalModules(void){
+	TPHMessage request, response;
+	request.SetStartline(L"EXECUTE SAORI/1.0");
+	request.Add(L"Argument0", L"ListModules");
+	TKawariCharset rcs=KC_NULL;
+	CallDirectSSTPModule(*link, logger, L"internal_system", request, response, rcs, 5000);
+
+	const wstring &startline=response.GetStartline();
+	wstring::size_type space=startline.find(L' ');
+	int code=(space==wstring::npos)?0:StringToInt(startline.substr(space+1));
+	wstring description;
+	TPHMessage::const_iterator ei=response.find(L"ErrorDescription");
+	if (ei!=response.end()) description=ei->second;
+
+	if ((code==200)||(code==204)){
+		// Value0, Value1, ... に1つずつ。無ければResultのカンマ区切り
+		vector<wstring> names;
+		for (int i=0; ; i++){
+			TPHMessage::const_iterator vi=response.find(L"Value"+IntToString(i));
+			if (vi==response.end()) break;
+			names.push_back(vi->second);
+		}
+		TPHMessage::const_iterator ri=response.find(L"Result");
+		if (names.empty()&&(ri!=response.end())){
+			const wstring &list=ri->second;
+			wstring::size_type st=0;
+			while (st<=list.size()){
+				wstring::size_type en=list.find(L',', st);
+				if (en==wstring::npos) en=list.size();
+				names.push_back(list.substr(st, en-st));
+				st=en+1;
+			}
+		}
+		for (vector<wstring>::const_iterator it=names.begin(); it!=names.end(); it++){
+			wstring name=LowerModuleName(StringTrim(*it));
+			if (!name.empty()) internalmodules.insert(name);
+		}
+		internalstate=IM_LISTED;
+	}else if ((code==400)&&(description==L"unknown module")){
+		// SAORI over DirectSSTPには対応しているが、internal_systemが無い本体
+		internalstate=IM_ANY;
+	}else if (description==L"baseware does not support SAORI over DirectSSTP"){
+		internalstate=IM_NONE;
+	}
+	// 応答が無かったときは、次の呼び出しで再び問い合わせる
+}
+//---------------------------------------------------------------------------
+// aliasが本体の内蔵モジュール(internal_*)の名前なら、登録する。
+// ＠SAORIに「alias,saori/<小文字の名前>.dll」と書いたのと同じ扱いになる
+bool TSaoriPark::RegisterInternalModule(const wstring &alias){
+	if ((!link)||(!IsInternalModuleName(alias))) return false;
+	if (!link->IsAllowed()) return false;
+	// 本体のウィンドウが分からないうちは問い合わせられない。次の呼び出しで再び試す
+	if (!link->IsReady()) return false;
+
+	if (internalstate==IM_UNKNOWN)
+		FetchInternalModules();
+
+	const wstring name=LowerModuleName(alias);
+	switch (internalstate){
+	case IM_LISTED:
+		if (!internalmodules.count(name)) return false;
+		break;
+	case IM_ANY:
+		break;
+	default:
+		return false;
+	}
+
+	RegisterModule(alias, wstring(DIRECTSSTP_PREFIX)+name, LOADONCALL);
+	return aliasmap.count(alias)!=0;
 }
 //---------------------------------------------------------------------------
 // 登録済みモジュール名のリストを得る
@@ -174,8 +258,9 @@ int TSaoriPark::ListModule(vector<wstring> &list)
 	return ret;
 }
 //---------------------------------------------------------------------------
-TSaoriPark::TSaoriPark(TKawariLogger &lgr) : logger(lgr) {
-	factory=new TModuleFactoryMaster(logger);
+TSaoriPark::TSaoriPark(TKawariLogger &lgr, dsstp::TBasewareLink *lnk)
+	: logger(lgr), link(lnk), internalstate(IM_UNKNOWN) {
+	factory=new TModuleFactoryMaster(logger, link);
 }
 //---------------------------------------------------------------------------
 // 全モジュールのアンロード

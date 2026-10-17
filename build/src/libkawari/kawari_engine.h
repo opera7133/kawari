@@ -42,6 +42,7 @@ using namespace std;
 #include "libkawari/kawari_vm.h"
 #include "libkawari/kawari_log.h"
 #include "saori/saori.h"
+#include "misc/dsstp.h"
 #include "misc/charset.h"
 //---------------------------------------------------------------------------
 struct TEntryRange;
@@ -62,6 +63,9 @@ private:
 
 	// SAORI
 	class saori::TSaoriPark *SaoriPark;
+
+	// 本体(SSP, ninixなど)への接続 (Direct SSTP)
+	dsstp::TBasewareLink *Baseware;
 
 public:
 	// 範囲外のインデックス
@@ -247,6 +251,12 @@ public:
 	int ListSAORIModule(std::vector<wstring> &list);
 
 	// 指定SAORIモジュールの情報を得る
+
+
+	// 本体との通信API (Direct SSTP)
+
+	// 本体への接続を得る
+	dsstp::TBasewareLink &GetBaseware(void) { return *Baseware; }
 
 
 	// コンテキスト関係 API

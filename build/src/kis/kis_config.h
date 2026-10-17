@@ -23,6 +23,7 @@
 #include "kis/kis_communicate.h"	// 新コミュニケート機構
 #include "kis/kis_xargs.h"			// 引数展開実行
 #include "kis/kis_saori.h"			// SAORI/1.0
+#include "kis/kis_sstp.h"			// 本体との連携 (EXECUTE SSTP)
 #include "kis/kis_system.h"			// システム操作
 #include "kis/kis_urllist.h"		// SHIORI/2.5 URLリスト
 //---------------------------------------------------------------------------

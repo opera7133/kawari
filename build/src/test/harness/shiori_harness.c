@@ -24,6 +24,9 @@
  * HARNESS_DIR_W also makes the harness load the DLL as <HARNESS_DIR_W>\<file name of
  * <dll>> with LoadLibraryW, for a folder whose name is outside the ANSI code page.
  *
+ * If HARNESS_BASEWARE is set, a stub baseware window answers Direct SSTP (see bw_proc), and
+ * "%HWND%" in a request file is replaced by its window handle.
+ *
  * No character code conversion is done for requests. Build with the same bitness as the
  * DLL (the DLL is 32bit), for example:
  *   gcc -O1 -Wall -o shiori_harness.exe shiori_harness.c
@@ -44,6 +47,138 @@
 typedef BOOL (__cdecl *LOADF)(HGLOBAL, long);
 typedef HGLOBAL (__cdecl *REQF)(HGLOBAL, long *);
 typedef BOOL (__cdecl *UNLOADF)(void);
+
+/*
+ * Stub baseware (HARNESS_BASEWARE): a window in this process that answers Direct SSTP
+ * (WM_COPYDATA, dwData 9801) like SSP does. "%HWND%" in a request file is replaced by
+ * its window handle (decimal), so a NOTIFY hwnd request can point the DLL to it.
+ *   EXECUTE SSTP : GetProperty (test.value only, else 204), SetProperty (test.value; an empty
+ *                  value is 400), GetNames (alpha, beta, gamma), other commands are 501
+ *   EXECUTE SAORI: internal_system ListModules (internal_test), internal_test Echo
+ *                  (Result: Argument1|Argument2|..., Value<n>: Argument<n+1>), other modules
+ *                  are 400 "unknown module"
+ * The DLL and the window are in the same thread, so SendMessage calls the window procedure directly.
+ */
+#define BW_PORT 9801
+static HWND g_bw;
+static char g_propval[256] = "stub-value";
+
+static int bw_header(const char *req, const char *name, char *out, size_t outsz)
+{
+	char key[64];
+	const char *p;
+	size_t n = 0;
+	out[0] = 0;
+	sprintf(key, "\r\n%s:", name);
+	p = strstr(req, key);
+	if (!p) return 0;
+	p += strlen(key);
+	while (*p == ' ') p++;
+	while (*p && *p != '\r' && n + 1 < outsz) out[n++] = *p++;
+	out[n] = 0;
+	return 1;
+}
+
+static void bw_reply(HWND to, const char *s)
+{
+	COPYDATASTRUCT c;
+	c.dwData = BW_PORT;
+	c.cbData = (DWORD)strlen(s);
+	c.lpData = (PVOID)s;
+	SendMessage(to, WM_COPYDATA, (WPARAM)g_bw, (LPARAM)&c);
+}
+
+static LRESULT CALLBACK bw_proc(HWND h, UINT m, WPARAM w, LPARAM l)
+{
+	if (m == WM_COPYDATA) {
+		const COPYDATASTRUCT *c = (const COPYDATASTRUCT *)l;
+		char *req, cmd[64], mod[64], a[6][128], out[1024];
+		int i;
+		if (!c || c->dwData != BW_PORT) return FALSE;
+		req = (char *)malloc(c->cbData + 1);
+		memcpy(req, c->lpData, c->cbData);
+		req[c->cbData] = 0;
+		if (strncmp(req, "EXECUTE SSTP/", 13) == 0) {
+			bw_header(req, "Command", cmd, sizeof(cmd));
+			bw_header(req, "Reference0", a[0], sizeof(a[0]));
+			bw_header(req, "Reference1", a[1], sizeof(a[1]));
+			if (strcmp(cmd, "GetProperty") == 0) {
+				if (strcmp(a[0], "test.value") == 0)
+					sprintf(out, "SSTP/1.4 200 OK\r\nCharset: UTF-8\r\n\r\n%s\r\n\r\n", g_propval);
+				else
+					sprintf(out, "SSTP/1.4 204 No Content\r\nCharset: UTF-8\r\n\r\n");
+			} else if (strcmp(cmd, "SetProperty") == 0) {
+				if (!a[1][0]) {
+					sprintf(out, "SSTP/1.4 400 Bad Request\r\nCharset: UTF-8\r\n\r\n");
+				} else {
+					if (strcmp(a[0], "test.value") == 0) strcpy(g_propval, a[1]);
+					sprintf(out, "SSTP/1.4 200 OK\r\nCharset: UTF-8\r\n\r\n");
+				}
+			} else if (strcmp(cmd, "GetNames") == 0) {
+				sprintf(out, "SSTP/1.4 200 OK\r\nCharset: UTF-8\r\n\r\nalpha\r\nbeta\r\ngamma\r\n\r\n");
+			} else {
+				sprintf(out, "SSTP/1.4 501 Not Implemented\r\nCharset: UTF-8\r\n\r\n");
+			}
+		} else if (strncmp(req, "EXECUTE SAORI/", 14) == 0) {
+			bw_header(req, "Module", mod, sizeof(mod));
+			for (i = 0; i < 6; i++) {
+				char key[16];
+				sprintf(key, "Argument%d", i);
+				bw_header(req, key, a[i], sizeof(a[i]));
+			}
+			if (strcmp(mod, "internal_system") == 0 && strcmp(a[0], "ListModules") == 0) {
+				sprintf(out, "SAORI/1.0 200 OK\r\nCharset: UTF-8\r\nResult: internal_test\r\n\r\n");
+			} else if (strcmp(mod, "internal_test") == 0 && strcmp(a[0], "Echo") == 0) {
+				sprintf(out, "SAORI/1.0 200 OK\r\nCharset: UTF-8\r\nResult: %s|%s|%s\r\nValue0: %s\r\nValue1: %s\r\n\r\n",
+					a[1], a[2], a[3], a[1], a[2]);
+			} else {
+				sprintf(out, "SAORI/1.0 400 Bad Request\r\nCharset: UTF-8\r\nErrorDescription: unknown module\r\n\r\n");
+			}
+		} else {
+			sprintf(out, "SSTP/1.4 400 Bad Request\r\n\r\n");
+		}
+		free(req);
+		bw_reply((HWND)w, out);
+		return TRUE;
+	}
+	return DefWindowProc(h, m, w, l);
+}
+
+static void bw_create(void)
+{
+	WNDCLASS wc;
+	memset(&wc, 0, sizeof(wc));
+	wc.lpfnWndProc = bw_proc;
+	wc.hInstance = GetModuleHandle(NULL);
+	wc.lpszClassName = "harness_baseware";
+	RegisterClass(&wc);
+	g_bw = CreateWindow("harness_baseware", "harness_baseware", 0, 0, 0, 100, 100, NULL, NULL, wc.hInstance, NULL);
+}
+
+/* replaces "%HWND%" in buf (malloc'ed, *len bytes) by the handle of the stub baseware */
+static char *bw_subst(char *buf, long *len)
+{
+	char num[32];
+	char *out, *p, *q;
+	size_t cap;
+	if (!g_bw) return buf;
+	sprintf(num, "%lu", (unsigned long)(UINT_PTR)g_bw);
+	cap = (size_t)*len + 1 + 16 * 8;
+	out = (char *)malloc(cap + 1);
+	q = out;
+	for (p = buf; p < buf + *len; ) {
+		if (strncmp(p, "%HWND%", 6) == 0 && (size_t)(q - out) + strlen(num) < cap) {
+			strcpy(q, num);
+			q += strlen(num);
+			p += 6;
+		} else {
+			*q++ = *p++;
+		}
+	}
+	*len = (long)(q - out);
+	free(buf);
+	return out;
+}
 
 static char *readfile(const char *fn, long *len)
 {
@@ -116,6 +251,8 @@ int main(int argc, char **argv)
 		fprintf(stderr, "load / request / unload is not exported by %s\n", argv[1]);
 		return 3;
 	}
+
+	if (getenv("HARNESS_BASEWARE")) bw_create();
 
 	if (interactive) {
 		_setmode(_fileno(stdin), _O_BINARY);
@@ -231,6 +368,7 @@ int main(int argc, char **argv)
 			fwrite("\n=====\n", 1, 7, out);
 			continue;
 		}
+		req = bw_subst(req, &len);
 		/* request() takes ownership of the request buffer and frees it with GlobalFree. */
 		g = GlobalAlloc(GMEM_FIXED, len);
 		memcpy(g, req, len);

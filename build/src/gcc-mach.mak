@@ -58,6 +58,6 @@ SHARED_darwin = -bundle
 LIBS_cygwin = -lshell32
 LIBS_mingw = -lshell32
 LIBS_js =
-LIBS_linux = -ldl
+LIBS_linux = -ldl -lrt -lpthread
 LIBS_freebsd = -liconv
 LIBS_darwin = -lstdc++ -liconv

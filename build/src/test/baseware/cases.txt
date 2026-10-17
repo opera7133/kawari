@@ -1,0 +1,48 @@
+# Cases for the baseware suite (getproperty, setproperty, executesstp, SAORI over DirectSSTP).
+# The harness runs a stub baseware window; "%HWND%" is replaced by its window handle.
+# Same format as shiori/cases.txt. Use ASCII only.
+
+# the window of the baseware is not known before NOTIFY hwnd: the default value, code 0
+GET OnGetProp
+~ SHIORI/3.0 200 OK
+~ Value: fb|0
+
+NOTIFY hwnd %HWND%
+~ SHIORI/3.0 204 No Content
+
+GET OnGetProp
+~ Value: stub-value|200
+
+# a property that does not exist is 204: the default value
+GET OnGetPropMissing
+~ Value: fb|204
+
+GET OnSetProp
+~ Value: changed
+
+# an empty value is 400
+GET OnSetPropEmpty
+~ Value: 400
+
+# the additional data goes to the stem and System.SSTP.Data
+GET OnExecList
+~ Value: alpha|200|3|3
+
+GET OnExecUnknown
+~ Value: |501
+
+# SAORI over DirectSSTP: called by the name only (internal_*)
+GET OnSaoriDirect
+~ Value: a|b|c
+
+# an empty argument keeps its position
+GET OnSaoriEmptyArg
+~ Value: a||c
+
+# registered with saoriregist (no file, so it goes to the baseware)
+GET OnSaoriRegistered
+~ Value: x|y|z
+
+# not in the module list of the baseware
+GET OnSaoriUnknown
+~ Value: []
