@@ -5,6 +5,7 @@
 //      Programed by Suikyo
 //
 //  2002.04.12  Phase 8.0.0   インターフェース切り直し
+//  2026.10.18  Phase 9.0.0   wchar_t化
 //
 //---------------------------------------------------------------------------
 #include "config.h"
@@ -33,16 +34,16 @@ private:
 
 public:
 
-	TKawariKosuiAdapter(const string& datapath,const string& inifile)
+	TKawariKosuiAdapter(const wstring& datapath,const wstring& inifile)
 	{
 		// 乱数初期化
 		SRandom((unsigned int)time(NULL));
 
-		engine.CreateEntry("System.DataPath").Push(engine.CreateStrWord(datapath));
-		engine.WriteProtect("System.DataPath");
+		engine.CreateEntry(L"System.DataPath").Push(engine.CreateStrWord(datapath));
+		engine.WriteProtect(L"System.DataPath");
 
 		// セットアップ
-		engine.GetLogger().SetStream(&cout);
+		engine.GetLogger().SetStreamStdOut();
 		engine.SetDataPath(datapath);
 
 		if (inifile.size())
@@ -51,22 +52,22 @@ public:
 
 	~TKawariKosuiAdapter()
 	{
-		TEntry entry=engine.GetEntry("System.Callback.OnUnload");
+		TEntry entry=engine.GetEntry(L"System.Callback.OnUnload");
 		unsigned int size=entry.Size();
 		for(unsigned int i=0;i<size;i++) engine.Parse(entry.Index(i));
 	}
 
-	// 情報を得る
-	virtual string GetInformation(void)
+	// 情報を得る (バージョン情報はASCIIのみ)
+	virtual wstring GetInformation(void)
 	{
-		return (
+		return AtoW(string(
 			"Version : " KAWARI_NAME "/" KAWARI_MAJOR "." KAWARI_MINOR "." KAWARI_SUBMINOR "\n"
 			"Kernel Version : " KAWARI_CORE_VERSION "  / " KAWARI_CORE_CODENAME "\n"
-			KAWARI_CORE_CREDITS);
+			KAWARI_CORE_CREDITS));
 	}
 
 	// 与えられたスクリプトを解釈・実行する
-	virtual string Parse(const string& script)
+	virtual wstring Parse(const wstring& script)
 	{
 		return(engine.Parse(script));
 	}

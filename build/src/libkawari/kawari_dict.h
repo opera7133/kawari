@@ -42,7 +42,7 @@ private:
 	class TContext : public TNameSpace {
 	public:
 		// 履歴参照スタック
-		std::vector<std::string> history;
+		std::vector<std::wstring> history;
 		// ループの入れ子数
 		unsigned int loopcount;
 
@@ -51,7 +51,7 @@ private:
 	};
 
 	// NameSpaceを得る
-	TNameSpace *SearchNameSpace(const string &entry) {
+	TNameSpace *SearchNameSpace(const wstring &entry) {
 		if (IsLocalEntry(entry)) return GetCurrentContext();
 		else return GlobalNameSpace;
 	}
@@ -79,7 +79,7 @@ private:
 	TContext *GetCurrentContext(void) const;
 
 	// ローカルエントリ名を判別
-	bool IsLocalEntry(const std::string &entry_name) const;
+	bool IsLocalEntry(const std::wstring &entry_name) const;
 
 
 	// ログ
@@ -118,12 +118,12 @@ public:
 
 	// エントリ獲得
 	// 戻り値 : エントリ
-	TEntry GetEntry(const string &entry);
+	TEntry GetEntry(const wstring &entry);
 
 	// エントリを生成する
 	// 既にエントリが存在する場合は、生成せずにIDを返す
 	// 戻り値 : 生成したエントリのID
-	TEntry CreateEntry(const string& entry);
+	TEntry CreateEntry(const wstring& entry);
 
 	// エントリIDを全て列挙
 	// 戻り値 : エントリの個数
@@ -183,10 +183,10 @@ public:
 	unsigned int GetContextStackDepth(void);
 
 	// 履歴参照スタックに置換結果文字列をpushする。
-	void PushToHistory (const string &str);
+	void PushToHistory (const wstring &str);
 
 	// 履歴参照
-	string GetHistory (int index);
+	wstring GetHistory (int index);
 
 	// ロガーを返す
 	TKawariLogger &GetLogger(void) {
@@ -196,12 +196,12 @@ public:
 };
 //--------------------------------------------------------------------------
 // ローカルエントリ名を判別
-inline bool TNS_KawariDictionary::IsLocalEntry(const std::string &entry_name) const{
-	return (entry_name.size()&&(entry_name[0]=='@'));
+inline bool TNS_KawariDictionary::IsLocalEntry(const std::wstring &entry_name) const{
+	return (entry_name.size()&&(entry_name[0]==L'@'));
 }
 //---------------------------------------------------------------------------
 // エントリID取得
-inline TEntry TNS_KawariDictionary::GetEntry(const string& entry)
+inline TEntry TNS_KawariDictionary::GetEntry(const wstring& entry)
 {
 	TNameSpace *ns=SearchNameSpace(entry);
 	return (ns) ? ns->Get(entry):TEntry(GlobalNameSpace, 0);

@@ -43,13 +43,13 @@ class TKVMCodeEntryIndex;	// エントリ配列アクセス
 class TKVMCode_base {
 public:
 	// 実行
-	virtual std::string Run(TKawariVM &vm)=0;
+	virtual std::wstring Run(TKawariVM &vm)=0;
 	// 逆コンパイル
-	virtual std::string DisCompile(void) const { return ""; }
+	virtual std::wstring DisCompile(void) const { return L""; }
 	// Debugで出力をそろえる
-	virtual std::ostream &DebugIndent(std::ostream& os, unsigned int level=0) const;
+	virtual std::wostream &DebugIndent(std::wostream& os, unsigned int level=0) const;
 	// デバッグ用ツリー表示
-	virtual std::ostream &Debug(std::ostream& os, unsigned int level=0) const=0;
+	virtual std::wostream &Debug(std::wostream& os, unsigned int level=0) const=0;
 	// 序列 同じクラスの場合のみ呼ばれる。
 	virtual bool Less(const TKVMCode_base& R_) const =0;
 	// デストラクタ
@@ -74,11 +74,11 @@ public:
 	std::vector<TKVMCode_base *> list;
 
 	virtual bool Less(const TKVMCode_base &R_) const;
-	virtual std::ostream &Debug(std::ostream& os, unsigned int level=0) const;
+	virtual std::wostream &Debug(std::wostream& os, unsigned int level=0) const;
 	virtual ~TKVMCodeList_base();
 	TKVMCodeList_base (const std::vector<TKVMCode_base *> &tmplist);
 protected:
-	virtual const std::string GetName(void) const=0;
+	virtual const std::wstring GetName(void) const=0;
 };
 
 //--------------------------------------------------------------------------
@@ -86,12 +86,12 @@ protected:
 // 持っているCodeを連続的に実行し、全ての結果を結合して出力
 class TKVMCodeList : public TKVMCodeList_base {
 public:
-	virtual std::string Run(class TKawariVM &vm);
-	virtual std::string DisCompile(void) const;
+	virtual std::wstring Run(class TKawariVM &vm);
+	virtual std::wstring DisCompile(void) const;
 	virtual ~TKVMCodeList() {}
 	TKVMCodeList(const std::vector<TKVMCode_base *> &tmplist) : TKVMCodeList_base(tmplist) {}
 protected:
-	virtual const std::string GetName(void) const { return ""; }
+	virtual const std::wstring GetName(void) const { return L""; }
 };
 
 //--------------------------------------------------------------------------
@@ -99,33 +99,33 @@ protected:
 // done.
 class TKVMCodeString : public TKVMCode_base {
 public:
-	std::string s;
+	std::wstring s;
 
-	virtual std::string Run(class TKawariVM &vm) { return s; }
-	virtual std::string DisCompile(void) const;
+	virtual std::wstring Run(class TKawariVM &vm) { return s; }
+	virtual std::wstring DisCompile(void) const;
 	virtual bool Less(const TKVMCode_base &r_) const{
 		// 比較子で同一クラスであることを確認済みなのでstatic_cast
 		const TKVMCodeString& r=static_cast<const TKVMCodeString&>(r_);
 		return(s<r.s);
 	}
-	virtual std::ostream &Debug(std::ostream& os, unsigned int level=0) const {
-		return DebugIndent(os, level) << "S(" << s << ")" << std::endl;
+	virtual std::wostream &Debug(std::wostream& os, unsigned int level=0) const {
+		return DebugIndent(os, level) << L"S(" << s << L")" << std::endl;
 	}
 	virtual ~TKVMCodeString() {}
-	TKVMCodeString(const std::string &str);
+	TKVMCodeString(const std::wstring &str);
 };
 
 //--------------------------------------------------------------------------
 // ID文字列 (IdLiteral)
 class TKVMCodeIDString : public TKVMCodeString {
 public:
-	virtual std::string DisCompile(void) const {
+	virtual std::wstring DisCompile(void) const {
 		return s;
 	}
-	virtual std::ostream &Debug(std::ostream& os, unsigned int level=0) const {
-		return DebugIndent(os, level) << "ID(" << s << ")" << std::endl;
+	virtual std::wostream &Debug(std::wostream& os, unsigned int level=0) const {
+		return DebugIndent(os, level) << L"ID(" << s << L")" << std::endl;
 	}
-	TKVMCodeIDString(const std::string &str) : TKVMCodeString(str) {}
+	TKVMCodeIDString(const std::wstring &str) : TKVMCodeString(str) {}
 };
 
 //--------------------------------------------------------------------------
@@ -133,25 +133,25 @@ public:
 // 基本的にStatementと同じ。
 class TKVMCodeScriptStatement : public TKVMCodeList_base {
 public:
-	virtual std::string GetArg0(void);
-	virtual std::string Run(class TKawariVM &vm);
-	virtual std::string DisCompile(void) const;
+	virtual std::wstring GetArg0(void);
+	virtual std::wstring Run(class TKawariVM &vm);
+	virtual std::wstring DisCompile(void) const;
 	virtual ~TKVMCodeScriptStatement() {}
 	TKVMCodeScriptStatement(const std::vector<TKVMCode_base *> &tmplist):TKVMCodeList_base(tmplist) {}
 protected:
-	virtual const std::string GetName(void) const { return "ScriptStatement"; }
+	virtual const std::wstring GetName(void) const { return L"ScriptStatement"; }
 };
 
 //--------------------------------------------------------------------------
 // インラインスクリプト ( '$(' ScriptStatementSeq ') )
 class TKVMCodeInlineScript : public TKVMCodeList_base {
 public:
-	virtual std::string Run(class TKawariVM &vm);
-	virtual std::string DisCompile(void) const;
+	virtual std::wstring Run(class TKawariVM &vm);
+	virtual std::wstring DisCompile(void) const;
 	virtual ~TKVMCodeInlineScript() {}
 	TKVMCodeInlineScript(const std::vector<TKVMCode_base *> &tmplist):TKVMCodeList_base(tmplist) {}
 protected:
-	virtual const std::string GetName(void) const { return "InlineScriptSubst"; }
+	virtual const std::wstring GetName(void) const { return L"InlineScriptSubst"; }
 };
 
 //--------------------------------------------------------------------------
@@ -162,10 +162,10 @@ public:
 	TKVMCode_base *entry_id;
 	TKVMCode_base *expr;	// 本来TKawariExprが入る
 
-	virtual std::string Run(class TKawariVM &vm);
-	virtual std::string DisCompile(void) const;
+	virtual std::wstring Run(class TKawariVM &vm);
+	virtual std::wstring DisCompile(void) const;
 	virtual bool Less(const TKVMCode_base &R_) const;
-	virtual std::ostream &Debug(std::ostream& os, unsigned int level=0) const;
+	virtual std::wostream &Debug(std::wostream& os, unsigned int level=0) const;
 	virtual ~TKVMCodeEntryIndex();
 	TKVMCodeEntryIndex(TKVMCode_base *eid, TKVMCode_base *e):entry_id(eid), expr(e) {}
 };

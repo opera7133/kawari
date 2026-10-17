@@ -6,12 +6,14 @@
 //      Programed by Suikyo.
 //
 //  2002.06.16  Phase 8.0.0   i10nバージョン作成
+//  2026.10.18  Phase 9.0.0   wchar_t化 (SJIS表は実行時にwide化)
 //
 //--------------------------------------------------------------------------
 #include "config.h"
 //--------------------------------------------------------------------------
 #include "libkawari/kawari_rc.h"
 #include "libkawari/kawari_rc_sjis_encoded.h"
+#include "misc/charset.h"
 using namespace kawari::resource;
 //--------------------------------------------------------------------------
 #include <string>
@@ -87,24 +89,26 @@ namespace kawari{
 namespace resource{
 //--------------------------------------------------------------------------
 TResourceManager::TResourceManager(void){
-	current = rcmap["iso-8859-1"] = TResourceASCII;
-	rcmap["shift_jis"] = TResourceSJIS;
+	initialized = false;
+	use_japanese = false;
 }
 //--------------------------------------------------------------------------
-void TResourceManager::SwitchTo(const string &charset)
+// 静的初期化順序の問題を避けるため、初回利用時にwstring化する
+void TResourceManager::Initialize(void)
 {
-	string formal;
-
-	// 'transform(,,,tolower)' does not work with Borland C++
-	unsigned int max=charset.length();
-	for (unsigned int i=0; i<max; i++){
-		formal += tolower(charset[i]);
+	ascii.resize(ID__END);
+	japanese.resize(ID__END);
+	for (int i=0; i<ID__END; i++){
+		ascii[i] = AtoW(TResourceASCII[i]);
+		japanese[i] = SJIStoW(TResourceSJIS[i]);
 	}
-	if (rcmap.count(formal)){
-		current = rcmap[formal];
-	}else{
-		current = rcmap["iso-8859-1"];
-	}
+	initialized = true;
+}
+//--------------------------------------------------------------------------
+void TResourceManager::SwitchTo(const wstring &charset)
+{
+	TKawariCharset cs = CharsetFromName(charset);
+	use_japanese = ((cs == KC_SJIS) || (cs == KC_UTF8));
 }
 //--------------------------------------------------------------------------
 TResourceManager ResourceManager;

@@ -27,16 +27,16 @@ public:
 	// Initで名前その他の情報を設定してください
 	virtual bool Init(void)
 	{
-		Name_="toupper";
-		Format_="toupper Word1 ...";
-		Returnval_="Word1 ...";
-		Information_="replace a lower character into an upper character in all arguments";
+		Name_=L"toupper";
+		Format_=L"toupper Word1 ...";
+		Returnval_=L"Word1 ...";
+		Information_=L"replace a lower character into an upper character in all arguments";
 
 		return(true);
 	}
 
 	// インタープリタ
-	virtual string Function(const vector<string>& args);
+	virtual wstring Function(const vector<wstring>& args);
 };
 //---------------------------------------------------------------------------
 class KIS_tolower : public TKisFunction_base {
@@ -45,16 +45,16 @@ public:
 	// Initで名前その他の情報を設定してください
 	virtual bool Init(void)
 	{
-		Name_="tolower";
-		Format_="tolower Word1 ...";
-		Returnval_="Word1 ...";
-		Information_="replace an upper character into a lower character in all arguments";
+		Name_=L"tolower";
+		Format_=L"tolower Word1 ...";
+		Returnval_=L"Word1 ...";
+		Information_=L"replace an upper character into a lower character in all arguments";
 
 		return(true);
 	}
 
 	// インタープリタ
-	virtual string Function(const vector<string>& args);
+	virtual wstring Function(const vector<wstring>& args);
 };
 //---------------------------------------------------------------------------
 #endif

@@ -6,6 +6,7 @@
 //      Programed by Suikyo.
 //
 //  2002.04.15  Phase 8.0.0   えびさわさんバージョンを参考に導入
+//  2026.10.18  Phase 9.0.0   wchar_t化 (Charset対応)
 //
 //---------------------------------------------------------------------------
 #include "config.h"
@@ -18,8 +19,8 @@ using namespace kawari_log;
 using namespace std;
 using namespace saori;
 //---------------------------------------------------------------------------
-TBind::TBind(IModuleFactory &fac, TKawariLogger &lgr, const string &path, const LOADTYPE t)
-	 : type(t), libpath(path), module(NULL), factory(fac), logger(lgr)
+TBind::TBind(IModuleFactory &fac, TKawariLogger &lgr, const wstring &path, const LOADTYPE t)
+	 : type(t), libpath(path), module(NULL), factory(fac), logger(lgr), sendcs(KC_UTF8)
 {
 	if (type==PRELOAD)
 		Attach();
@@ -40,27 +41,44 @@ bool TBind::Request(const TPHMessage &request, TPHMessage &response)
 	return ret;
 }
 //---------------------------------------------------------------------------
-bool TBind::Query(const TPHMessage &request, TPHMessage &response){
+// respcs : 応答のCharsetヘッダ (無い/不明ならKC_NULL)
+bool TBind::Query(const TPHMessage &request, TPHMessage &response, TKawariCharset *respcs){
+
+	// 送信するCharsetを要求ヘッダに反映する
+	TPHMessage req(request);
+	req.erase(L"Charset");
+	req.Add(L"Charset", CharsetName(sendcs));
 
 	if (logger.Check(LOG_INFO)){
-		logger.GetStream() << "[SAORI] Query to ("+libpath+")" << endl
-			<< "---------------------- REQUEST" << endl;
-		request.Dump(logger.GetStream());
+		logger.GetStream() << L"[SAORI] Query to ("+libpath+L")" << endl
+			<< L"---------------------- REQUEST" << endl;
+		req.Dump(logger.GetStream());
 	}
 
 	// シリアライズ
-	string reqstr=request.Serialize();
+	string reqstr=req.Serialize(sendcs);
 
 	// Request
 	string resstr=module->Request(reqstr);
 
 	// デシリアライズ
-	response.Deserialize(resstr);
+	// 応答のCharsetに従う。無ければ、送ったのがSJISならSJIS、そうでなければ自動判定
+	TKawariCharset rcs=TPHMessage::ScanCharset(resstr);
+	TKawariCharset dcs=rcs;
+	if (dcs==KC_NULL)
+		dcs=(sendcs==KC_SJIS)?KC_SJIS:KC_NULL;
+	response=TPHMessage();
+	response.Deserialize(resstr, dcs);
+
+	// 応答に有効なCharsetがあれば、次回以降の送信に使う
+	if (rcs!=KC_NULL)
+		sendcs=rcs;
+	if (respcs) *respcs=rcs;
 
 	if (logger.Check(LOG_INFO)){
-		logger.GetStream() << "----------------------RESPONSE" << endl;
+		logger.GetStream() << L"----------------------RESPONSE" << endl;
 		response.Dump(logger.GetStream());
-		logger.GetStream() << "[SAORI] Query end." << endl;
+		logger.GetStream() << L"[SAORI] Query end." << endl;
 	}
 
 	return true;
@@ -70,25 +88,30 @@ void TBind::Attach(void){
 	if (module) return;
 	module=factory.CreateModule(libpath);
 	if (!module){
-		logger.GetStream(LOG_ERROR) << "[SAORI] module attach failed" << endl;
+		logger.GetStream(LOG_ERROR) << L"[SAORI] module attach failed" << endl;
 		return;
 	}
 
 	TPHMessage request, response;
 
 	// GET Version チェック
-	request.SetStartline("GET Version SAORI/1.0");
-	request["Charset"]="Shift_JIS";
-	request["Sender"]="kawari";
+	// 最初はUTF-8で送り、応答のCharsetがあればそれを以後使う。
+	// 無ければ以後はShift_JISで送る。
+	sendcs=KC_UTF8;
+	request.SetStartline(L"GET Version SAORI/1.0");
+	request[L"Sender"]=L"kawari";
 
-	Query(request, response);
+	TKawariCharset rcs=KC_NULL;
+	Query(request, response, &rcs);
+	if (rcs==KC_NULL)
+		sendcs=KC_SJIS;
 
-	if (response.GetStartline().find("SAORI/1.")!=0){
-		logger.GetStream(LOG_ERROR) << "[SAORI] SAORI version mismatch." << endl;
+	if (response.GetStartline().find(L"SAORI/1.")!=0){
+		logger.GetStream(LOG_ERROR) << L"[SAORI] SAORI version mismatch." << endl;
 		Detach();
 		return;
 	}else{
-		logger.GetStream(LOG_INFO) << "[SAORI] (" << libpath << ") attached." << endl;
+		logger.GetStream(LOG_INFO) << L"[SAORI] (" << libpath << L") attached." << endl;
 	}
 }
 //---------------------------------------------------------------------------
@@ -97,7 +120,7 @@ void TBind::Detach(void){
 		factory.DeleteModule(module);
 		module=NULL;
 	}
-	logger.GetStream(LOG_INFO) << "[SAORI] (" << libpath << ") detached." << endl;
+	logger.GetStream(LOG_INFO) << L"[SAORI] (" << libpath << L") detached." << endl;
 }
 //---------------------------------------------------------------------------
 TBind::~TBind(){
@@ -105,46 +128,46 @@ TBind::~TBind(){
 }
 //---------------------------------------------------------------------------
 // モジュールの登録
-void TSaoriPark::RegisterModule(const string &aliasname, const string &path, const saori::LOADTYPE type){
+void TSaoriPark::RegisterModule(const wstring &aliasname, const wstring &path, const saori::LOADTYPE type){
 	// 2002/09/02 多重ロード対策 suikyo@yk.rim.or.jp
 	if (aliasmap.count(aliasname))
 		EraseModule(aliasname);
 	TBind *module=new TBind((*factory), logger, path, type);
 	aliasmap[aliasname]=module;
 
-	logger.GetStream(LOG_INFO) << "[SAORI] Registered \"" << aliasname << "\" = (" << path << ")" << endl;
+	logger.GetStream(LOG_INFO) << L"[SAORI] Registered \"" << aliasname << L"\" = (" << path << L")" << endl;
 }
 //---------------------------------------------------------------------------
 // モジュール登録の削除
-void TSaoriPark::EraseModule(const string &alias){
+void TSaoriPark::EraseModule(const wstring &alias){
 	if (aliasmap.count(alias)){
 		TBind *module=aliasmap[alias];
 		delete module;
 		aliasmap.erase(alias);
-		logger.GetStream(LOG_INFO) << "[SAORI] Unregistered (" << alias << ")" << endl;
+		logger.GetStream(LOG_INFO) << L"[SAORI] Unregistered (" << alias << L")" << endl;
 	}else{
-		logger.GetStream(LOG_WARNING) << "[SAORI] Can not unregister (" << alias << "). not found." << endl;
+		logger.GetStream(LOG_WARNING) << L"[SAORI] Can not unregister (" << alias << L"). not found." << endl;
 	}
 }
 //---------------------------------------------------------------------------
 // モジュールを得る
-TBind * const TSaoriPark::GetModule(const string &alias) {
+TBind * const TSaoriPark::GetModule(const wstring &alias) {
 	if (aliasmap.count(alias)){
 		return aliasmap[alias];
 	}else{
-		logger.GetStream(LOG_ERROR) << "[SAORI] module (" << alias << ") not found." << endl;
+		logger.GetStream(LOG_ERROR) << L"[SAORI] module (" << alias << L") not found." << endl;
 		return NULL;
 	}
 }
 //---------------------------------------------------------------------------
 // 登録済みモジュール名のリストを得る
-int TSaoriPark::ListModule(vector<string> &list)
+int TSaoriPark::ListModule(vector<wstring> &list)
 {
-	logger.GetStream(LOG_INFO) << "listmodule" << endl;
+	logger.GetStream(LOG_INFO) << L"listmodule" << endl;
 	int ret=0;
-	map<string, TBind *>::const_iterator it=aliasmap.begin();
+	map<wstring, TBind *>::const_iterator it=aliasmap.begin();
 	for(;it!=aliasmap.end(); it++){
-		logger.GetStream(LOG_INFO) << "[SAORI] found(" << it->first << ")" << endl;
+		logger.GetStream(LOG_INFO) << L"[SAORI] found(" << it->first << L")" << endl;
 		list.push_back(it->first);
 		ret++;
 	}
@@ -157,7 +180,7 @@ TSaoriPark::TSaoriPark(TKawariLogger &lgr) : logger(lgr) {
 //---------------------------------------------------------------------------
 // 全モジュールのアンロード
 TSaoriPark::~TSaoriPark(){
-	for(map<string, TBind *>::iterator it=aliasmap.begin(); it!=aliasmap.end(); it++){
+	for(map<wstring, TBind *>::iterator it=aliasmap.begin(); it!=aliasmap.end(); it++){
 		if (it->second){
 			delete it->second;
 		}

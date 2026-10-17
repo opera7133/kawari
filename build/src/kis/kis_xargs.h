@@ -26,16 +26,16 @@ public:
 	// Initで名前その他の情報を設定してください
 	virtual bool Init(void)
 	{
-		Name_="xargs";
-		Format_="xargs Index1 Arg1 ...";
-		Returnval_="result";
-		Information_="expand Index1 and run function Arg1";
+		Name_=L"xargs";
+		Format_=L"xargs Index1 Arg1 ...";
+		Returnval_=L"result";
+		Information_=L"expand Index1 and run function Arg1";
 
 		return(true);
 	}
 
 	// インタープリタ
-	virtual string Function(const vector<string>& args);
+	virtual wstring Function(const vector<wstring>& args);
 };
 //---------------------------------------------------------------------------
 #endif

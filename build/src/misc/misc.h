@@ -4,6 +4,8 @@
 //
 //      Programed by NAKAUE.T (Meister)
 //
+//  2026.10.18  Phase 9.0.0   wchar_t化
+//
 //---------------------------------------------------------------------------
 #ifndef MISC_H
 #define MISC_H
@@ -12,9 +14,12 @@
 //---------------------------------------------------------------------------
 #include <string>
 #include <cstdlib>
+#include <cwchar>
 using namespace std;
 //---------------------------------------------------------------------------
 #include "misc/mt19937ar.h"
+#include "misc/charset.h"
+#include "misc/wfile.h"
 #include "libkawari/kawari_log.h"
 //---------------------------------------------------------------------------
 extern TMTRandomGenerator MTRandomGenerator;
@@ -32,50 +37,57 @@ inline void SRandom(int seed)
 }
 //---------------------------------------------------------------------------
 // 文字列の前後の空白を取り除く
-inline string StringTrim(const string& str)
+inline wstring StringTrim(const wstring& str)
 {
-	string::size_type linetop=str.find_first_not_of(" \t\r\n");
-//	string::size_type lineend=str.find_last_not_of(" \t\r\n");
-	string::size_type lineend=str.find_last_not_of('\0');
-	lineend=str.find_last_not_of(" \t\r\n",lineend);
-	if(linetop==string::npos) return(string(""));
+	wstring::size_type linetop=str.find_first_not_of(L" \t\r\n");
+//	wstring::size_type lineend=str.find_last_not_of(L" \t\r\n");
+	wstring::size_type lineend=str.find_last_not_of(L'\0');
+	lineend=str.find_last_not_of(L" \t\r\n",lineend);
+	if(linetop==wstring::npos) return(wstring(L""));
 
 	return(str.substr(linetop,lineend-linetop+1));
 }
 //---------------------------------------------------------------------------
 // 整数値から文字列を得る
-string IntToString(int n);
+wstring IntToString(int n);
+//---------------------------------------------------------------------------
+// 文字列から整数値を得る (atoi相当。数値で始まらなければ0)
+inline int StringToInt(const std::wstring &str)
+{
+	return (int)wcstol(str.c_str(), NULL, 10);
+}
+
 //---------------------------------------------------------------------------
 // 整数値判定
-bool IsInteger (const std::string &str);
+bool IsInteger (const std::wstring &str);
 //---------------------------------------------------------------------------
 // 真偽判定
-inline bool IsTrue (const std::string &str) {
-	return (!((str=="")||(str=="0")||(str=="false")));
+inline bool IsTrue (const std::wstring &str) {
+	return (!((str==L"")||(str==L"0")||(str==L"false")));
 }
 //---------------------------------------------------------------------------
 // パス表現の正規化
 #ifdef KAWARI_MS
-#	define FILE_SEPARATOR		'\\'
-#	define FILE_SEPARATOR_ALT	'/'
+#	define FILE_SEPARATOR		L'\\'
+#	define FILE_SEPARATOR_ALT	L'/'
 #else
-#	define FILE_SEPARATOR		'/'
-#	define FILE_SEPARATOR_ALT	'\\'
+#	define FILE_SEPARATOR		L'/'
+#	define FILE_SEPARATOR_ALT	L'\\'
 #endif
-string CanonicalPath(const string &path);
-string CanonicalPath(const string &basepath, const string &path);
-inline bool IsAbsolutePath(const string &path){
+wstring CanonicalPath(const wstring &path);
+wstring CanonicalPath(const wstring &basepath, const wstring &path);
+inline bool IsAbsolutePath(const wstring &path){
 #ifdef KAWARI_MS
-	return (((path.size()>0)&&(path[0]=='\\'))||((path.size()>1)&&(path[1]==':')));
+	return (((path.size()>0)&&(path[0]==L'\\'))||((path.size()>1)&&(path[1]==L':')));
 #else
-	return ((path.size()>0)&&(path[0]=='/'));
+	return ((path.size()>0)&&(path[0]==L'/'));
 #endif
 }
-string PathToFileName(const string &path);
-string PathToBaseDir(const string &path);
+wstring PathToFileName(const wstring &path);
+wstring PathToBaseDir(const wstring &path);
 //---------------------------------------------------------------------------
 template <class T>
-int StringCompare(const basic_string<T> &str0, const basic_string<T> &str1, size_t s=0, size_t n=string::npos){
+int StringCompare(const basic_string<T> &str0, const basic_string<T> &str1, size_t s=0, size_t n=basic_string<T>::npos){
 #if defined(__GNUC__) && (__GNUC__ < 3)
 	return str0.compare(str1, s, n);
 #else

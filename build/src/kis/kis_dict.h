@@ -76,16 +76,16 @@ public:
 	// Initで名前その他の情報を設定してください
 	virtual bool Init(void)
 	{
-		Name_="encode_entryname";
-		Format_="encode_entryname Word1";
-		Returnval_="encoded entry name";
-		Information_="encode Word1 to entry name";
+		Name_=L"encode_entryname";
+		Format_=L"encode_entryname Word1";
+		Returnval_=L"encoded entry name";
+		Information_=L"encode Word1 to entry name";
 
 		return(true);
 	}
 
 	// インタープリタ
-	virtual string Function(const vector<string>& args);
+	virtual wstring Function(const vector<wstring>& args);
 };
 //---------------------------------------------------------------------------
 class KIS_eval : public TKisFunction_base {
@@ -94,16 +94,16 @@ public:
 	// Initで名前その他の情報を設定してください
 	virtual bool Init(void)
 	{
-		Name_="eval";
-		Format_="eval Word1 ...";
-		Returnval_="decode result";
-		Information_="parse all arguments and return its decode result";
+		Name_=L"eval";
+		Format_=L"eval Word1 ...";
+		Returnval_=L"decode result";
+		Information_=L"parse all arguments and return its decode result";
 
 		return(true);
 	}
 
 	// インタープリタ
-	virtual string Function(const vector<string>& args);
+	virtual wstring Function(const vector<wstring>& args);
 };
 //---------------------------------------------------------------------------
 class KIS_size : public TKisFunction_base {
@@ -112,39 +112,39 @@ public:
 	// Initで名前その他の情報を設定してください
 	virtual bool Init(void)
 	{
-		Name_="size";
-		Format_="size Entry1";
-		Returnval_="a word number in Entry1";
-		Information_="return a word number in Entry1";
+		Name_=L"size";
+		Format_=L"size Entry1";
+		Returnval_=L"a word number in Entry1";
+		Information_=L"return a word number in Entry1";
 
 		return(true);
 	}
 
 	// インタープリタ
-	virtual string Function(const vector<string>& args);
+	virtual wstring Function(const vector<wstring>& args);
 };
 //---------------------------------------------------------------------------
 class KIS_set : public TKisFunction_base {
 protected:
 
 	// インタープリタの実体
-	string Function_(const vector<string>& args,bool flag);
+	wstring Function_(const vector<wstring>& args,bool flag);
 
 public:
 
 	// Initで名前その他の情報を設定してください
 	virtual bool Init(void)
 	{
-		Name_="set";
-		Format_="set Index1 Word1";
-		Returnval_="(NULL)";
-		Information_="set Word1 to Index1";
+		Name_=L"set";
+		Format_=L"set Index1 Word1";
+		Returnval_=L"(NULL)";
+		Information_=L"set Word1 to Index1";
 
 		return(true);
 	}
 
 	// インタープリタ
-	virtual string Function(const vector<string>& args)
+	virtual wstring Function(const vector<wstring>& args)
 	{
 		return(Function_(args,false));
 	}
@@ -156,16 +156,16 @@ public:
 	// Initで名前その他の情報を設定してください
 	virtual bool Init(void)
 	{
-		Name_="setstr";
-		Format_="setstr Index1 Str1";
-		Returnval_="(NULL)";
-		Information_="set string Str1 to Index1 (equals to 'set')";
+		Name_=L"setstr";
+		Format_=L"setstr Index1 Str1";
+		Returnval_=L"(NULL)";
+		Information_=L"set string Str1 to Index1 (equals to 'set')";
 
 		return(true);
 	}
 
 	// インタープリタ
-	virtual string Function(const vector<string>& args)
+	virtual wstring Function(const vector<wstring>& args)
 	{
 		return(Function_(args,true));
 	}
@@ -175,23 +175,23 @@ class KIS_adddict : public TKisFunction_base {
 protected:
 
 	// インタープリタの実体
-	string Function_(const vector<string>& args,bool flag);
+	wstring Function_(const vector<wstring>& args,bool flag);
 
 public:
 
 	// Initで名前その他の情報を設定してください
 	virtual bool Init(void)
 	{
-		Name_="adddict";
-		Format_="adddict Entry1 Word1";
-		Returnval_="(NULL)";
-		Information_="append Word1 to Entry1";
+		Name_=L"adddict";
+		Format_=L"adddict Entry1 Word1";
+		Returnval_=L"(NULL)";
+		Information_=L"append Word1 to Entry1";
 
 		return(true);
 	}
 
 	// インタープリタ
-	virtual string Function(const vector<string>& args)
+	virtual wstring Function(const vector<wstring>& args)
 	{
 		return(Function_(args,false));
 	}
@@ -203,16 +203,16 @@ public:
 	// Initで名前その他の情報を設定してください
 	virtual bool Init(void)
 	{
-		Name_="adddictstr";
-		Format_="adddictstr Entry1 Str1";
-		Returnval_="(NULL)";
-		Information_="append string Str1 to Entry1";
+		Name_=L"adddictstr";
+		Format_=L"adddictstr Entry1 Str1";
+		Returnval_=L"(NULL)";
+		Information_=L"append string Str1 to Entry1";
 
 		return(true);
 	}
 
 	// インタープリタ
-	virtual string Function(const vector<string>& args)
+	virtual wstring Function(const vector<wstring>& args)
 	{
 		return(Function_(args,true));
 	}
@@ -224,10 +224,10 @@ public:
 	// Initで名前その他の情報を設定してください
 	virtual bool Init(void)
 	{
-		Name_="push";
-		Format_="push Entry1 Word1";
-		Returnval_="(NULL)";
-		Information_="append Word1 to Entry1(equals to 'adddict')";
+		Name_=L"push";
+		Format_=L"push Entry1 Word1";
+		Returnval_=L"(NULL)";
+		Information_=L"append Word1 to Entry1(equals to 'adddict')";
 
 		return(true);
 	}
@@ -239,10 +239,10 @@ public:
 	// Initで名前その他の情報を設定してください
 	virtual bool Init(void)
 	{
-		Name_="pushstr";
-		Format_="pushstr Entry1 Str1";
-		Returnval_="(NULL)";
-		Information_="append string Str1 to Entry1(equals to 'adddictstr')";
+		Name_=L"pushstr";
+		Format_=L"pushstr Entry1 Str1";
+		Returnval_=L"(NULL)";
+		Information_=L"append string Str1 to Entry1(equals to 'adddictstr')";
 
 		return(true);
 	}
@@ -252,23 +252,23 @@ class KIS_unshift : public TKisFunction_base {
 protected:
 
 	// インタープリタの実体
-	string Function_(const vector<string>& args,bool flag);
+	wstring Function_(const vector<wstring>& args,bool flag);
 
 public:
 
 	// Initで名前その他の情報を設定してください
 	virtual bool Init(void)
 	{
-		Name_="unshift";
-		Format_="unshift Entry1 Word1";
-		Returnval_="(NULL)";
-		Information_="insert Word1 to the top of Entry1";
+		Name_=L"unshift";
+		Format_=L"unshift Entry1 Word1";
+		Returnval_=L"(NULL)";
+		Information_=L"insert Word1 to the top of Entry1";
 
 		return(true);
 	}
 
 	// インタープリタ
-	virtual string Function(const vector<string>& args)
+	virtual wstring Function(const vector<wstring>& args)
 	{
 		return(Function_(args,false));
 	}
@@ -280,16 +280,16 @@ public:
 	// Initで名前その他の情報を設定してください
 	virtual bool Init(void)
 	{
-		Name_="unshiftstr";
-		Format_="unshiftstr Entry1 Str1";
-		Returnval_="(NULL)";
-		Information_="insert string Str1 to the top of Entry1";
+		Name_=L"unshiftstr";
+		Format_=L"unshiftstr Entry1 Str1";
+		Returnval_=L"(NULL)";
+		Information_=L"insert string Str1 to the top of Entry1";
 
 		return(true);
 	}
 
 	// インタープリタ
-	virtual string Function(const vector<string>& args)
+	virtual wstring Function(const vector<wstring>& args)
 	{
 		return(Function_(args,true));
 	}
@@ -299,23 +299,23 @@ class KIS_pop : public TKisFunction_base {
 protected:
 
 	// インタープリタの実体
-	string Function_(const vector<string>& args,bool flag,bool flag2);
+	wstring Function_(const vector<wstring>& args,bool flag,bool flag2);
 
 public:
 
 	// Initで名前その他の情報を設定してください
 	virtual bool Init(void)
 	{
-		Name_="pop";
-		Format_="pop Entry1";
-		Returnval_="word";
-		Information_="remove last word of Entry1 and returns it";
+		Name_=L"pop";
+		Format_=L"pop Entry1";
+		Returnval_=L"word";
+		Information_=L"remove last word of Entry1 and returns it";
 
 		return(true);
 	}
 
 	// インタープリタ
-	virtual string Function(const vector<string>& args)
+	virtual wstring Function(const vector<wstring>& args)
 	{
 		return(Function_(args,false,false));
 	}
@@ -327,16 +327,16 @@ public:
 	// Initで名前その他の情報を設定してください
 	virtual bool Init(void)
 	{
-		Name_="shift";
-		Format_="shift Entry1";
-		Returnval_="word";
-		Information_="remove first word of Entry1 and returns it";
+		Name_=L"shift";
+		Format_=L"shift Entry1";
+		Returnval_=L"word";
+		Information_=L"remove first word of Entry1 and returns it";
 
 		return(true);
 	}
 
 	// インタープリタ
-	virtual string Function(const vector<string>& args)
+	virtual wstring Function(const vector<wstring>& args)
 	{
 		return(Function_(args,true,false));
 	}
@@ -348,16 +348,16 @@ public:
 	// Initで名前その他の情報を設定してください
 	virtual bool Init(void)
 	{
-		Name_="popcode";
-		Format_="popcode Entry1";
-		Returnval_="word";
-		Information_="remove last word of Entry1 and return it";
+		Name_=L"popcode";
+		Format_=L"popcode Entry1";
+		Returnval_=L"word";
+		Information_=L"remove last word of Entry1 and return it";
 
 		return(true);
 	}
 
 	// インタープリタ
-	virtual string Function(const vector<string>& args)
+	virtual wstring Function(const vector<wstring>& args)
 	{
 		return(Function_(args,false,true));
 	}
@@ -369,16 +369,16 @@ public:
 	// Initで名前その他の情報を設定してください
 	virtual bool Init(void)
 	{
-		Name_="shiftcode";
-		Format_="shiftcode Entry1";
-		Returnval_="word";
-		Information_="remove first word of Entry1 and return it";
+		Name_=L"shiftcode";
+		Format_=L"shiftcode Entry1";
+		Returnval_=L"word";
+		Information_=L"remove first word of Entry1 and return it";
 
 		return(true);
 	}
 
 	// インタープリタ
-	virtual string Function(const vector<string>& args)
+	virtual wstring Function(const vector<wstring>& args)
 	{
 		return(Function_(args,true,true));
 	}
@@ -390,16 +390,16 @@ public:
 	// Initで名前その他の情報を設定してください
 	virtual bool Init(void)
 	{
-		Name_="getrandom";
-		Format_="getrandom Entry1 [Word1]";
-		Returnval_="${Entry1} or Word1";
-		Information_="equivalent to \"${Entry1}\"";
+		Name_=L"getrandom";
+		Format_=L"getrandom Entry1 [Word1]";
+		Returnval_=L"${Entry1} or Word1";
+		Information_=L"equivalent to \"${Entry1}\"";
 
 		return(true);
 	}
 
 	// インタープリタ
-	virtual string Function(const vector<string>& args);
+	virtual wstring Function(const vector<wstring>& args);
 };
 //---------------------------------------------------------------------------
 class KIS_entry : public KIS_getrandom {
@@ -408,10 +408,10 @@ public:
 	// Initで名前その他の情報を設定してください
 	virtual bool Init(void)
 	{
-		Name_="entry";
-		Format_="entry Entry1 [Word1]";
-		Returnval_="${Entry1} or Word1";
-		Information_="equivalent to \"${Entry1}\"";
+		Name_=L"entry";
+		Format_=L"entry Entry1 [Word1]";
+		Returnval_=L"${Entry1} or Word1";
+		Information_=L"equivalent to \"${Entry1}\"";
 
 		return(true);
 	}
@@ -421,23 +421,23 @@ class KIS_get : public TKisFunction_base {
 protected:
 
 	// インタープリタの実体
-	string Function_(const vector<string>& args,bool flag);
+	wstring Function_(const vector<wstring>& args,bool flag);
 
 public:
 
 	// Initで名前その他の情報を設定してください
 	virtual bool Init(void)
 	{
-		Name_="get";
-		Format_="get Index1";
-		Returnval_="word";
-		Information_="enumerate and join all words in Entry1 from start to end";
+		Name_=L"get";
+		Format_=L"get Index1";
+		Returnval_=L"word";
+		Information_=L"enumerate and join all words in Entry1 from start to end";
 
 		return(true);
 	}
 
 	// インタープリタ
-	virtual string Function(const vector<string>& args)
+	virtual wstring Function(const vector<wstring>& args)
 	{
 		return(Function_(args,false));
 	}
@@ -449,16 +449,16 @@ public:
 	// Initで名前その他の情報を設定してください
 	virtual bool Init(void)
 	{
-		Name_="getcode";
-		Format_="get Index1";
-		Returnval_="word";
-		Information_="enumerate and join all words in Entry1 from start to end";
+		Name_=L"getcode";
+		Format_=L"get Index1";
+		Returnval_=L"word";
+		Information_=L"enumerate and join all words in Entry1 from start to end";
 
 		return(true);
 	}
 
 	// インタープリタ
-	virtual string Function(const vector<string>& args)
+	virtual wstring Function(const vector<wstring>& args)
 	{
 		return(Function_(args,true));
 	}
@@ -470,38 +470,38 @@ public:
 	// Initで名前その他の情報を設定してください
 	virtual bool Init(void)
 	{
-		Name_="clear";
-		Format_="clear Index1";
-		Returnval_="(NULL)";
-		Information_="clear all content of Index1";
+		Name_=L"clear";
+		Format_=L"clear Index1";
+		Returnval_=L"(NULL)";
+		Information_=L"clear all content of Index1";
 
 		return(true);
 	}
 
 	// インタープリタ
-	virtual string Function(const vector<string>& args);
+	virtual wstring Function(const vector<wstring>& args);
 };
 //---------------------------------------------------------------------------
 class KIS_insert : public TKisFunction_base {
 protected:
 	// インタープリタの実体
-	string Function_(const vector<string>& args,bool flag);
+	wstring Function_(const vector<wstring>& args,bool flag);
 
 public:
 
 	// Initで名前その他の情報を設定してください
 	virtual bool Init(void)
 	{
-		Name_="insert";
-		Format_="insert Index1 Word1";
-		Returnval_="(NULL)";
-		Information_="Insert Word1 into before Index1";
+		Name_=L"insert";
+		Format_=L"insert Index1 Word1";
+		Returnval_=L"(NULL)";
+		Information_=L"Insert Word1 into before Index1";
 
 		return(true);
 	}
 
 	// インタープリタ
-	virtual string Function(const vector<string>& args)
+	virtual wstring Function(const vector<wstring>& args)
 	{
 		return(Function_(args,false));
 	}
@@ -513,16 +513,16 @@ public:
 	// Initで名前その他の情報を設定してください
 	virtual bool Init(void)
 	{
-		Name_="insertstr";
-		Format_="insertstr Index1 Str1";
-		Returnval_="(NULL)";
-		Information_="Insert Str1 into before Index1";
+		Name_=L"insertstr";
+		Format_=L"insertstr Index1 Str1";
+		Returnval_=L"(NULL)";
+		Information_=L"Insert Str1 into before Index1";
 
 		return(true);
 	}
 
 	// インタープリタ
-	virtual string Function(const vector<string>& args)
+	virtual wstring Function(const vector<wstring>& args)
 	{
 		return(Function_(args,true));
 	}
@@ -534,16 +534,16 @@ public:
 	// Initで名前その他の情報を設定してください
 	virtual bool Init(void)
 	{
-		Name_="writeprotect";
-		Format_="writeprotect Entry";
-		Returnval_="(NULL)";
-		Information_="Let Entry be protected. Contents of Entry can't change anymore";
+		Name_=L"writeprotect";
+		Format_=L"writeprotect Entry";
+		Returnval_=L"(NULL)";
+		Information_=L"Let Entry be protected. Contents of Entry can't change anymore";
 
 		return(true);
 	}
 
 	// インタープリタ
-	virtual string Function(const vector<string>& args);
+	virtual wstring Function(const vector<wstring>& args);
 };
 //---------------------------------------------------------------------------
 class KIS_wordcount : public TKisFunction_base {
@@ -552,16 +552,16 @@ public:
 	// Initで名前その他の情報を設定してください
 	virtual bool Init(void)
 	{
-		Name_="wordcount";
-		Format_="wordcount";
-		Returnval_="number of words in dictionary";
-		Information_="Count number of all words in dictionary";
+		Name_=L"wordcount";
+		Format_=L"wordcount";
+		Returnval_=L"number of words in dictionary";
+		Information_=L"Count number of all words in dictionary";
 
 		return(true);
 	}
 
 	// インタープリタ
-	virtual string Function(const vector<string>& args);
+	virtual wstring Function(const vector<wstring>& args);
 };
 //---------------------------------------------------------------------------
 class KIS_entrycount : public TKisFunction_base {
@@ -570,16 +570,16 @@ public:
 	// Initで名前その他の情報を設定してください
 	virtual bool Init(void)
 	{
-		Name_="entrycount";
-		Format_="entrycount";
-		Returnval_="number of entries in dictionary";
-		Information_="Count number of all entries in dictionary";
+		Name_=L"entrycount";
+		Format_=L"entrycount";
+		Returnval_=L"number of entries in dictionary";
+		Information_=L"Count number of all entries in dictionary";
 
 		return(true);
 	}
 
 	// インタープリタ
-	virtual string Function(const vector<string>& args);
+	virtual wstring Function(const vector<wstring>& args);
 };
 //---------------------------------------------------------------------------
 class KIS_find : public TKisFunction_base {
@@ -588,16 +588,16 @@ public:
 	// Initで名前その他の情報を設定してください
 	virtual bool Init(void)
 	{
-		Name_="find";
-		Format_="find Entry Word [ StartIndex ]";
-		Returnval_="Index(0+) if found, or -1";
-		Information_="Search upword for specified Word in Entry, from StartIndex(default:0).";
+		Name_=L"find";
+		Format_=L"find Entry Word [ StartIndex ]";
+		Returnval_=L"Index(0+) if found, or -1";
+		Information_=L"Search upword for specified Word in Entry, from StartIndex(default:0).";
 
 		return(true);
 	}
 
 	// インタープリタ
-	virtual string Function(const vector<string>& args);
+	virtual wstring Function(const vector<wstring>& args);
 };
 //---------------------------------------------------------------------------
 class KIS_rfind : public TKisFunction_base {
@@ -606,16 +606,16 @@ public:
 	// Initで名前その他の情報を設定してください
 	virtual bool Init(void)
 	{
-		Name_="rfind";
-		Format_="rfind Entry Word [ StartIndex ] ";
-		Returnval_="Index(0+) if found, or -1";
-		Information_="Search downword for specified Word in Entry, from StartIndex(default:size of Entry).";
+		Name_=L"rfind";
+		Format_=L"rfind Entry Word [ StartIndex ] ";
+		Returnval_=L"Index(0+) if found, or -1";
+		Information_=L"Search downword for specified Word in Entry, from StartIndex(default:size of Entry).";
 
 		return(true);
 	}
 
 	// インタープリタ
-	virtual string Function(const vector<string>& args);
+	virtual wstring Function(const vector<wstring>& args);
 };
 //---------------------------------------------------------------------------
 class KIS_cleartree : public TKisFunction_base {
@@ -624,39 +624,39 @@ public:
 	// Initで名前その他の情報を設定してください
 	virtual bool Init(void)
 	{
-		Name_="cleartree";
-		Format_="cleartree Entry1";
-		Returnval_="(NULL)";
-		Information_="Clear all entries whose name starts with \"Entry1\"";
+		Name_=L"cleartree";
+		Format_=L"cleartree Entry1";
+		Returnval_=L"(NULL)";
+		Information_=L"Clear all entries whose name starts with \"Entry1\"";
 
 		return(true);
 	}
 
 	// インタープリタ
-	virtual string Function(const vector<string>& args);
+	virtual wstring Function(const vector<wstring>& args);
 };
 //---------------------------------------------------------------------------
 class KIS_listsub : public TKisFunction_base {
 protected:
 	// subflag : trueの時, ent_list動作。 falseの時allentry動作。
-	void _Function(const vector<string>& args, bool subflag);
+	void _Function(const vector<wstring>& args, bool subflag);
 public:
 
 	// Initで名前その他の情報を設定してください
 	virtual bool Init(void)
 	{
-		Name_="listsub";
-		Format_="listsub Entry1 Entry2";
-		Returnval_="(NULL)";
-		Information_="List all sub entries of Entry2 to Entry1";
+		Name_=L"listsub";
+		Format_=L"listsub Entry1 Entry2";
+		Returnval_=L"(NULL)";
+		Information_=L"List all sub entries of Entry2 to Entry1";
 
 		return(true);
 	}
 
 	// インタープリタ
-	virtual string Function(const vector<string>& args){
+	virtual wstring Function(const vector<wstring>& args){
 		_Function(args, true);
-		return ("");
+		return (L"");
 	}
 };
 //---------------------------------------------------------------------------
@@ -666,66 +666,66 @@ public:
 	// Initで名前その他の情報を設定してください
 	virtual bool Init(void)
 	{
-		Name_="listtree";
-		Format_="listtree Entry1 Entry2";
-		Returnval_="(NULL)";
-		Information_="List all entries whose name starts with \"Entry2\" to Entry1";
+		Name_=L"listtree";
+		Format_=L"listtree Entry1 Entry2";
+		Returnval_=L"(NULL)";
+		Information_=L"List all entries whose name starts with \"Entry2\" to Entry1";
 
 		return(true);
 	}
 
 	// インタープリタ
-	virtual string Function(const vector<string>& args){
+	virtual wstring Function(const vector<wstring>& args){
 		_Function(args, false);
-		return ("");
+		return (L"");
 	}
 };
 //---------------------------------------------------------------------------
 class KIS_copy : public TKisFunction_base {
 protected:
 	// rmflag : trueの時, move動作
-	void _Function(const vector<string>& args, bool rmflag);
+	void _Function(const vector<wstring>& args, bool rmflag);
 public:
 
 	// Initで名前その他の情報を設定してください
 	virtual bool Init(void)
 	{
-		Name_="copy";
-		Format_="copy Entry1 Entry2";
-		Returnval_="(NULL)";
-		Information_="copy words of Entry1 to Entry2";
+		Name_=L"copy";
+		Format_=L"copy Entry1 Entry2";
+		Returnval_=L"(NULL)";
+		Information_=L"copy words of Entry1 to Entry2";
 
 		return(true);
 	}
 
 	// インタープリタ
-	virtual string Function(const vector<string>& args){
+	virtual wstring Function(const vector<wstring>& args){
 		_Function(args, false);
-		return ("");
+		return (L"");
 	}
 };
 //---------------------------------------------------------------------------
 class KIS_copytree : public TKisFunction_base {
 protected:
 	// rmflag : trueの時, move動作
-	void _Function(const vector<string>& args, bool rmflag);
+	void _Function(const vector<wstring>& args, bool rmflag);
 public:
 
 	// Initで名前その他の情報を設定してください
 	virtual bool Init(void)
 	{
-		Name_="copytree";
-		Format_="copytree Entry1 Entry2";
-		Returnval_="(NULL)";
-		Information_="copy Entry1 to Entry2 recursively";
+		Name_=L"copytree";
+		Format_=L"copytree Entry1 Entry2";
+		Returnval_=L"(NULL)";
+		Information_=L"copy Entry1 to Entry2 recursively";
 
 		return(true);
 	}
 
 	// インタープリタ
-	virtual string Function(const vector<string>& args){
+	virtual wstring Function(const vector<wstring>& args){
 		_Function(args, false);
-		return ("");
+		return (L"");
 	}
 };
 //---------------------------------------------------------------------------
@@ -735,18 +735,18 @@ public:
 	// Initで名前その他の情報を設定してください
 	virtual bool Init(void)
 	{
-		Name_="move";
-		Format_="move Entry1 Entry2";
-		Returnval_="(NULL)";
-		Information_="move words of Entry1 to Entry2";
+		Name_=L"move";
+		Format_=L"move Entry1 Entry2";
+		Returnval_=L"(NULL)";
+		Information_=L"move words of Entry1 to Entry2";
 
 		return(true);
 	}
 
 	// インタープリタ
-	virtual string Function(const vector<string>& args){
+	virtual wstring Function(const vector<wstring>& args){
 		_Function(args, true);
-		return ("");
+		return (L"");
 	}
 };
 //---------------------------------------------------------------------------
@@ -756,18 +756,18 @@ public:
 	// Initで名前その他の情報を設定してください
 	virtual bool Init(void)
 	{
-		Name_="movetree";
-		Format_="movetree Entry1 Entry2";
-		Returnval_="(NULL)";
-		Information_="move Entry1 to Entry2 recursively";
+		Name_=L"movetree";
+		Format_=L"movetree Entry1 Entry2";
+		Returnval_=L"(NULL)";
+		Information_=L"move Entry1 to Entry2 recursively";
 
 		return(true);
 	}
 
 	// インタープリタ
-	virtual string Function(const vector<string>& args){
+	virtual wstring Function(const vector<wstring>& args){
 		_Function(args, true);
-		return ("");
+		return (L"");
 	}
 };
 //---------------------------------------------------------------------------

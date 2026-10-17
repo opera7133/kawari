@@ -20,6 +20,7 @@
 //  2002.07.10  Phase 8.1.0   isdir/isexist/isfile追加
 //  2008.01.23  Phase 8.2.5   isexist(ルートディレクトリ誤認対策)
 //  2008.03.30  Phase 8.2.8   textsave修正(複数のエントリを保存できない)
+//  2026.10.18  Phase 9.0.0   wchar_t化 (textload自動判定/textsave UTF-8, ListDirectory/PathStat使用)
 //
 //---------------------------------------------------------------------------
 #include "config.h"
@@ -28,33 +29,23 @@
 #include "libkawari/kawari_engine.h"
 #include "libkawari/kawari_rc.h"
 #include "misc/misc.h"
-#include "misc/l10n.h"
 using namespace kawari::resource;
 using namespace kawari_log;
 //---------------------------------------------------------------------------
 #include <string>
 #include <vector>
-#include <fstream>
-#include <sys/types.h>
-#include <sys/stat.h>
-#if defined(_WIN32) && defined(NOHAVE_READDIR)
-#	include "misc/_dirent.h"
-#	define S_ISDIR(m) ((m&_S_IFDIR)!=0)
-#	define S_ISREG(m) ((m&_S_IFREG)!=0)
-#else
-#	include <dirent.h>
-#endif
+#include "misc/wfile.h"
 using namespace std;
 //---------------------------------------------------------------------------
-void KIS_save::Run(const vector<string>& args, bool crypt)
+void KIS_save::Run(const vector<wstring>& args, bool crypt)
 {
 	if(!AssertArgument(args, 3)) return;
 
-	vector<string> entry;
+	vector<wstring> entry;
 	entry.insert(entry.end(),args.begin()+2,args.end());
 
 	// saveは相対パスのみ
-	string filename;
+	wstring filename;
 	if (IsAbsolutePath(CanonicalPath(args[1])))
 		filename=PathToFileName(args[1]);
 	else
@@ -68,105 +59,113 @@ void KIS_save::Run(const vector<string>& args, bool crypt)
 	return;
 }
 //---------------------------------------------------------------------------
-string KIS_load::Function(const vector<string>& args)
+wstring KIS_load::Function(const vector<wstring>& args)
 {
-	if(!AssertArgument(args, 2, 2)) return ("");
+	if(!AssertArgument(args, 2, 2)) return (L"");
 
-	string filename=CanonicalPath(Engine->GetDataPath(), args[1]);
+	wstring filename=CanonicalPath(Engine->GetDataPath(), args[1]);
 
 	if(!Engine->LoadKawariDict(filename)) {
 		// エラー
 		GetLogger().GetStream(LOG_ERROR) << args[0] << RC.S(ERR_KIS_FILE_LOAD_FAILED) << filename << endl;
 	}
 
-	return("");
+	return(L"");
 }
 //---------------------------------------------------------------------------
-string KIS_textload::Function(const vector<string>& args)
+wstring KIS_textload::Function(const vector<wstring>& args)
 {
-	if(!AssertArgument(args, 3, 3)) return ("");
+	if(!AssertArgument(args, 3, 3)) return (L"");
 
-	string filename=CanonicalPath(Engine->GetDataPath(), args[2]);
+	wstring filename=CanonicalPath(Engine->GetDataPath(), args[2]);
 
-	ifstream ifs;
-	ifs.open(filename.c_str());
-	if(!ifs.is_open()) {
+	wstring text;
+	if(!ReadTextFile(filename, text)) {
 		// エラー
 		GetLogger().GetStream(LOG_ERROR) << args[0] << RC.S(ERR_KIS_FILE_LOAD_FAILED) << filename << endl;
-		return("");
+		return(L"");
 	}
 
 	TEntry entry=Engine->CreateEntry(args[1]);
 
-	string buff;
-	while(getline(ifs,buff)) {
+	// 1行ずつ分割 (CRLF/LF対応。最後の改行の後ろは空行にしない)
+	wstring::size_type pos=0;
+	while(pos<text.size()) {
+		wstring::size_type nl=text.find(L'\n', pos);
+		wstring buff;
+		if(nl==wstring::npos) {
+			buff=text.substr(pos);
+			pos=text.size();
+		} else {
+			buff=text.substr(pos, nl-pos);
+			pos=nl+1;
+		}
+		if((buff.size()>0)&&(buff[buff.size()-1]==L'\r')) buff.erase(buff.size()-1);
 		entry.Push(Engine->CreateStrWord(buff));
 	}
 
-	ifs.close();
-
-	return("");
+	return(L"");
 }
 //---------------------------------------------------------------------------
-string KIS_textsave::Function_(const vector<string>& args,bool flag)
+wstring KIS_textsave::Function_(const vector<wstring>& args,bool flag)
 {
-	if(!AssertArgument(args, 3)) return ("");
+	if(!AssertArgument(args, 3)) return (L"");
 
 	// saveは相対パスのみ
-	string filename;
+	wstring filename;
 	if (IsAbsolutePath(CanonicalPath(args[1])))
 		filename=PathToFileName(args[1]);
 	else
 		filename=CanonicalPath(Engine->GetDataPath(), args[1]);
 
-	ofstream ofs;
-	if(flag) ofs.open(filename.c_str());
-	 else ofs.open(filename.c_str(), ios::app);
-	if(!ofs.is_open()) {
-		// エラー
-		GetLogger().GetStream(LOG_ERROR) << args[0] << RC.S(ERR_KIS_FILE_LOAD_FAILED) << filename << endl;
-		return("");
-	}
-
+#ifdef KAWARI_MS
+	const wchar_t *eol=L"\r\n";
+#else
+	const wchar_t *eol=L"\n";
+#endif
+	wstring text;
 	for(unsigned int i=2;i<args.size();i++) {
 		TEntry entry=Engine->CreateEntry(args[i]);
 		unsigned int size=entry.Size();
 
 		for(unsigned int l=0;l<size;l++) {
-			ofs << Engine->IndexParse(entry,l) << endl;
+			text+=Engine->IndexParse(entry,l);
+			text+=eol;
 		}
 	}
 
-	ofs.close();
+	// UTF-8 (BOMなし)で書き出す
+	if(!WriteTextFile(filename, text, KC_UTF8, false, !flag)) {
+		// エラー
+		GetLogger().GetStream(LOG_ERROR) << args[0] << RC.S(ERR_KIS_FILE_LOAD_FAILED) << filename << endl;
+		return(L"");
+	}
 
-	return("");
+	return(L"");
 }
 //---------------------------------------------------------------------------
-string KIS_readdir::Function(const vector<string>& args)
+wstring KIS_readdir::Function(const vector<wstring>& args)
 {
-	if(!AssertArgument(args, 3, 3)) return ("");
+	if(!AssertArgument(args, 3, 3)) return (L"");
 
-	string dirname=CanonicalPath(Engine->GetDataPath(), args[2]);
+	wstring dirname=CanonicalPath(Engine->GetDataPath(), args[2]);
 
-	DIR *dirhandle;
-	struct dirent *direntry;
-	if((dirhandle=opendir(dirname.c_str()))==NULL) return("");
+	vector<wstring> names;
+	if(!ListDirectory(dirname, names)) return(L"");
 
 	Engine->ClearEntry(args[1]);
 
-	while((direntry=readdir(dirhandle))!=NULL) {
-		string entry=direntry->d_name;
-		if((entry!=".")&&(entry!="..")) Engine->CreateEntry(args[1]).Push(Engine->CreateStrWord(entry));
+	for(unsigned int i=0;i<names.size();i++) {
+		const wstring &entry=names[i];
+		if((entry!=L".")&&(entry!=L"..")) Engine->CreateEntry(args[1]).Push(Engine->CreateStrWord(entry));
 	}
 
-	closedir(dirhandle);
-
-	return("");
+	return(L"");
 }
 //---------------------------------------------------------------------------
-string KIS_cncpath::Function(const vector<string>& args)
+wstring KIS_cncpath::Function(const vector<wstring>& args)
 {
-	if(!AssertArgument(args, 2, 3)) return ("");
+	if(!AssertArgument(args, 2, 3)) return (L"");
 
 	if (args.size()==2){
 		return CanonicalPath(args[1]);
@@ -175,80 +174,77 @@ string KIS_cncpath::Function(const vector<string>& args)
 	}
 }
 //---------------------------------------------------------------------------
-string KIS_dirname::Function(const vector<string>& args)
+wstring KIS_dirname::Function(const vector<wstring>& args)
 {
-	if(!AssertArgument(args, 2, 2)) return ("");
+	if(!AssertArgument(args, 2, 2)) return (L"");
 
 	return PathToBaseDir(CanonicalPath(args[1]));
 }
 //---------------------------------------------------------------------------
-string KIS_filename::Function(const vector<string>& args)
+wstring KIS_filename::Function(const vector<wstring>& args)
 {
-	if(!AssertArgument(args, 2, 2)) return ("");
+	if(!AssertArgument(args, 2, 2)) return (L"");
 
 	return PathToFileName(CanonicalPath(args[1]));
 }
 //---------------------------------------------------------------------------
-string KIS_isdir::Function(const vector<string>& args)
+wstring KIS_isdir::Function(const vector<wstring>& args)
 {
-	if(!AssertArgument(args, 2, 2)) return ("");
+	if(!AssertArgument(args, 2, 2)) return (L"");
 
-	string dirname=CanonicalPath(Engine->GetDataPath(), args[1]);
-	struct stat buf;
+	wstring dirname=CanonicalPath(Engine->GetDataPath(), args[1]);
+	bool isdir=false, isfile=false;
 
-	if(stat(dirname.c_str(),&buf)) return("");
+	if(!PathStat(dirname, &isdir, &isfile)) return(L"");
 
-	if(S_ISDIR(buf.st_mode)) {
-		return("1");
+	if(isdir) {
+		return(L"1");
 	}else{
-		return("0");
+		return(L"0");
 	}
 }
 //---------------------------------------------------------------------------
-string KIS_isfile::Function(const vector<string>& args)
+wstring KIS_isfile::Function(const vector<wstring>& args)
 {
-	if(!AssertArgument(args, 2, 2)) return ("");
+	if(!AssertArgument(args, 2, 2)) return (L"");
 
-	string pathname=CanonicalPath(Engine->GetDataPath(), args[1]);
-	struct stat buf;
+	wstring pathname=CanonicalPath(Engine->GetDataPath(), args[1]);
+	bool isdir=false, isfile=false;
 
-	if(stat(pathname.c_str(),&buf)) return("");
+	if(!PathStat(pathname, &isdir, &isfile)) return(L"");
 
-	if(S_ISREG(buf.st_mode)) {
-		return("1");
+	if(isfile) {
+		return(L"1");
 	}else{
-		return("0");
+		return(L"0");
 	}
 }
 //---------------------------------------------------------------------------
-string KIS_isexist::Function(const vector<string>& args)
+wstring KIS_isexist::Function(const vector<wstring>& args)
 {
-	if(!AssertArgument(args, 2, 2)) return ("");
+	if(!AssertArgument(args, 2, 2)) return (L"");
 
-	string dirname=PathToBaseDir(CanonicalPath(Engine->GetDataPath(), args[1]));
-	string filename=PathToFileName(CanonicalPath(Engine->GetDataPath(), args[1]));
+	wstring dirname=PathToBaseDir(CanonicalPath(Engine->GetDataPath(), args[1]));
+	wstring filename=PathToFileName(CanonicalPath(Engine->GetDataPath(), args[1]));
 
-	unsigned int pos=ctow(dirname).rfind(FILE_SEPARATOR);
-	if(pos==string::npos) {
+	unsigned int pos=(dirname).rfind(FILE_SEPARATOR);
+	if(pos==wstring::npos) {
 		// フルパスなのにdirnameにFILE_SEPARATORがない場合、推定でルート
 		// FILE_SEPARATORを追加しカレントディレクトリとの誤認を防ぐ
 		dirname+=FILE_SEPARATOR;
 	}
 
-	DIR *dirhandle;
-	struct dirent *direntry;
-	if((dirhandle=opendir(dirname.c_str()))==NULL) return("");
+	vector<wstring> names;
+	if(!ListDirectory(dirname, names)) return(L"");
 
-	string str="0";
-	while((direntry=readdir(dirhandle))!=NULL) {
-		string entry=direntry->d_name;
-		if((entry!=".")&&(entry!="..")&&(entry==filename)) {
-			str="1";
+	wstring str=L"0";
+	for(unsigned int i=0;i<names.size();i++) {
+		const wstring &entry=names[i];
+		if((entry!=L".")&&(entry!=L"..")&&(entry==filename)) {
+			str=L"1";
 			break;
 		}
 	}
-
-	closedir(dirhandle);
 
 	return(str);
 }

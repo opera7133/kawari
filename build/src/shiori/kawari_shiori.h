@@ -52,6 +52,7 @@
 //                            インターフェース切り直し
 //  2002.12.30  Phase 8.1.0   Winter Comicket Version
 //                            複数インスタンスを許可(内部的に)
+//  2026.10.18  Phase 9.0.0   wchar_t化
 //
 //
 //---------------------------------------------------------------------------
@@ -61,6 +62,7 @@
 #include "config.h"
 //---------------------------------------------------------------------------
 #include <string>
+#include <vector>
 //---------------------------------------------------------------------------
 #include "libkawari/kawari_engine.h"
 #include "misc/phttp.h"
@@ -79,7 +81,7 @@ private:
 
 	// 識別用のゴースト名
 	// NOTIFYで送られてくる名前
-	std::string GhostName;
+	std::wstring GhostName;
 
 	// セキュリティレベル
 	class TSecurityLevel {
@@ -130,11 +132,11 @@ private:
 
 
 	// Senderを伝達経路情報と分離
-	void GetSenderPath(const std::string &senderstr,
-	 TSecurityLevel::TSenderPath &sender_path,std::string &sender_path_name);
+	void GetSenderPath(const std::wstring &senderstr,
+	 TSecurityLevel::TSenderPath &sender_path,std::wstring &sender_path_name);
 
 	// 指定したエントリの単語を全て呼び出す
-	std::string EnumExec(const std::string& key);
+	std::wstring EnumExec(const std::wstring& key);
 
 	// 辞書内のレスポンスを全て読み出す
 	int GetResponse(TPHMessage &response);
@@ -151,9 +153,9 @@ public:
 	// SHIORI/2.x API
 
 	// DLLロード時に呼ばれる
-	// const std::string& datapath : DLLのディレクトリパス
+	// const std::wstring& datapath : DLLのディレクトリパス
 	// 戻り値 bool : 成功でtrue
-	bool Load(const std::string& datapath);
+	bool Load(const std::wstring& datapath);
 
 	// DLLアンロード時に呼ばれる
 	// 戻り値 bool : 成功でtrue
@@ -162,7 +164,8 @@ public:
 	// 偽AIリクエスト
 	// TPHMessage &request : リクエストメッセージ
 	// TPHMessage &response : レスポンスメッセージ
-	void Request(TPHMessage &request, TPHMessage &response);
+	// TKawariCharset cs : リクエストの文字コード (レスポンスのCharsetヘッダの既定値)
+	void Request(TPHMessage &request, TPHMessage &response, TKawariCharset cs=KC_SJIS);
 
 	// SHIORI for POSIX 2.4
 
@@ -207,8 +210,9 @@ public:
 		return TKawariShioriAdapter::GetModuleVersion();
 	}
 	// 新規インスタンスの作成
+	// datapath : DLLのディレクトリパス
 	// 戻り値 : ハンドル
-	unsigned int CreateInstance(const std::string &datapath);
+	unsigned int CreateInstance(const std::wstring &datapath);
 	// インスタンスの削除
 	bool DisposeInstance(unsigned int handle);
 	// インスタンスへのリクエスト

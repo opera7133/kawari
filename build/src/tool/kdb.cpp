@@ -6,28 +6,30 @@
 //
 //  2001.05.24  Phase 0.10    コンソール版
 //  2001.08.12  Phase 6.2.1   幸水と統合
+//  2026.10.18  Phase 9.0.0   wchar_t化
 //
 //---------------------------------------------------------------------------
 #include "config.h"
 //---------------------------------------------------------------------------
 #include <cstdlib>
-#ifdef HAVE_SSTREAM_H
 #include <sstream>
-#else
-#include <strstream>
-#endif
 using namespace std;
 //---------------------------------------------------------------------------
 #include "tool/kdb.h"
+#include "misc/charset.h"
 //---------------------------------------------------------------------------
 // SakuraAPI/1.3 イベント送信
-void TKawariInterfaceSakuraAPI::SakuraEvent(const string& event,const string& param)
+void TKawariInterfaceSakuraAPI::SakuraEvent(const wstring& wevent,const wstring& wparam)
 {
+	// SakuraAPIはShift_JISのバイト列で受け渡す
+	string event=WtoSJIS(wevent);
+	string param=WtoSJIS(wparam);
+
 	const WPARAM SA_GETPROCESSID=138;
 	const WPARAM SA_GETSHAREDMEMORY=139;
 	const WPARAM SA_NOTIFYEVENT=256;
 
-	UINT WM_SAKURAAPI=RegisterWindowMessage("Sakura");
+	UINT WM_SAKURAAPI=RegisterWindowMessageW(L"Sakura");
 
 	DWORD processid=(DWORD)SendMessage(Target,WM_SAKURAAPI,SA_GETPROCESSID,0);
 	HANDLE hProcess=OpenProcess(PROCESS_VM_OPERATION|PROCESS_VM_WRITE,0,processid);
@@ -54,11 +56,11 @@ void TKawariInterfaceSakuraAPI::SakuraEvent(const string& event,const string& pa
 }
 //---------------------------------------------------------------------------
 // 認識可能な他ゴーストのHWnd一覧を返す
-void GetGhostList(map<HWND,string> &ghostlist)
+void GetGhostList(map<HWND,wstring> &ghostlist)
 {
 	// Win32APIが使用可能で、File Mapping Object から情報を取得する場合
 
-	HANDLE hFmo=OpenFileMapping(FILE_MAP_READ,FALSE,(LPCTSTR)"Sakura");
+	HANDLE hFmo=OpenFileMappingW(FILE_MAP_READ,FALSE,L"Sakura");
 	if(!hFmo) return;	// 時々FileMappingObjectが壊れている
 
 	char *fmobuff=(char*)MapViewOfFile(hFmo,FILE_MAP_READ,0,0,0);
@@ -71,14 +73,10 @@ void GetGhostList(map<HWND,string> &ghostlist)
 	 +(((unsigned int)fmobuff[1])<<8)
 	 +(((unsigned int)fmobuff[0]));
 
-#ifdef HAVE_SSTREAM_H
 	istringstream *ifs=new istringstream(string(&fmobuff[4], fmosize-4));
-#else
-	istrstream *ifs=new istrstream(&fmobuff[4],fmosize-4);
-#endif
 
 	map<string,HWND> idmap;
-	map<string,string> namemap;
+	map<string,wstring> namemap;
 
 	string buff;
 	while(ifs->peek()!=0) {
@@ -98,7 +96,7 @@ void GetGhostList(map<HWND,string> &ghostlist)
 		if(key=="hwnd") {
 			idmap[processid]=((HWND)atoi(value.c_str()));;
 		} else if(key=="name") {
-			namemap[processid]=value;
+			namemap[processid]=SJIStoW(value);
 		}
 	}
 

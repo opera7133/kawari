@@ -27,6 +27,7 @@
 //                            SAORI対応
 //  2004.08.28  Phase 8.2.1   DecodeEntryNameが中括弧検索に失敗する問題対処
 //  2005.06.28  Phase 8.2.3   DecodeEntryNameに代えてGetEntryRange導入
+//  2026.10.18  Phase 9.0.0   wchar_t化 (辞書ファイルはBOM/内容で文字コード判定、保存はUTF-8 BOMあり)
 //
 //---------------------------------------------------------------------------
 #include "config.h"
@@ -44,6 +45,7 @@ using namespace kawari::resource;
 //---------------------------------------------------------------------------
 #include <iostream>
 #include <fstream>
+#include <sstream>
 #include <cstdlib>
 using namespace std;
 //---------------------------------------------------------------------------
@@ -66,35 +68,35 @@ TKawariEngine::~TKawariEngine()
 	delete logger;
 }
 //---------------------------------------------------------------------------
-string TKawariEngine::EncodeEntryName(const string &orgsen){
+wstring TKawariEngine::EncodeEntryName(const wstring &orgsen){
 	return TKawariCompiler::EncodeEntryName(orgsen);
 }
 //---------------------------------------------------------------------------
 // 文字列をエントリ名とインデックスにデコードする
 #if 0
-int TKawariEngine::DecodeEntryName(const string &orgsen,string &entryname,int &st,int &end)
+int TKawariEngine::DecodeEntryName(const wstring &orgsen,wstring &entryname,int &st,int &end)
 {
 	entryname=orgsen;
 	st=0; end=-1;
 
-	string::size_type pos3=orgsen.size()-1;
-	string::size_type pos1=orgsen.rfind('[');
-	if((orgsen.size()==0)||(orgsen[pos3]!=']')||(pos1==string::npos))
+	wstring::size_type pos3=orgsen.size()-1;
+	wstring::size_type pos1=orgsen.rfind(L'[');
+	if((orgsen.size()==0)||(orgsen[pos3]!=L']')||(pos1==wstring::npos))
 		// インデックスが無かった
 		return 0;
 
-	string::size_type pos2=orgsen.find("..",pos1);
-	if(pos2!=string::npos) {
+	wstring::size_type pos2=orgsen.find(L"..",pos1);
+	if(pos2!=wstring::npos) {
 		// 範囲指定
-		string s_st=orgsen.substr(pos1+1,pos2-(pos1+1));
-		string s_end=orgsen.substr(pos2+2,pos3-(pos2+2));
+		wstring s_st=orgsen.substr(pos1+1,pos2-(pos1+1));
+		wstring s_end=orgsen.substr(pos2+2,pos3-(pos2+2));
 
-		if ((s_st.find_first_not_of("0123456789- ")==string::npos)&&
-			(s_end.find_first_not_of("0123456789- ")==string::npos)){
+		if ((s_st.find_first_not_of(L"0123456789- ")==wstring::npos)&&
+			(s_end.find_first_not_of(L"0123456789- ")==wstring::npos)){
 
 			entryname=orgsen.substr(0,pos1);
-			st=atoi(s_st.c_str());
-			end=atoi(s_end.c_str());
+			st=StringToInt(s_st);
+			end=StringToInt(s_end);
 			return 2;
 		}
 
@@ -102,40 +104,40 @@ int TKawariEngine::DecodeEntryName(const string &orgsen,string &entryname,int &s
 		return 0;
 	}
 
-	string s_idx=orgsen.substr(pos1+1,pos3-(pos1+1));
-	if (s_idx.find_first_not_of("0123456789- ")!=string::npos)
+	wstring s_idx=orgsen.substr(pos1+1,pos3-(pos1+1));
+	if (s_idx.find_first_not_of(L"0123456789- ")!=wstring::npos)
 		// おかしいですよカテジナさん
 		return 0;
 
 	// 単独要素指定
 	entryname=orgsen.substr(0, pos1);
-	st=end=atoi(s_idx.c_str());
+	st=end=StringToInt(s_idx);
 	return 1;
 }
 #endif
 //---------------------------------------------------------------------------
-TEntryRange TKawariEngine::GetEntryRange(const string &orgsen)
+TEntryRange TKawariEngine::GetEntryRange(const wstring &orgsen)
 {
-	string::size_type idx_last=orgsen.size()-1;
-	string::size_type idx_obrk=orgsen.rfind('[');
-	if((orgsen.size()==0)||(orgsen[idx_last]!=']')||(idx_obrk==string::npos)){
+	wstring::size_type idx_last=orgsen.size()-1;
+	wstring::size_type idx_obrk=orgsen.rfind(L'[');
+	if((orgsen.size()==0)||(orgsen[idx_last]!=L']')||(idx_obrk==wstring::npos)){
 		// インデックス無し
 		TEntry entry=CreateEntry(orgsen);
 		return TEntryRange(orgsen, entry);
 	}
 
-	string::size_type idx_range=orgsen.find("..",idx_obrk);
-	if(idx_range!=string::npos) {
+	wstring::size_type idx_range=orgsen.find(L"..",idx_obrk);
+	if(idx_range!=wstring::npos) {
 		// 領域指定
-		string s_st=StringTrim(orgsen.substr(idx_obrk+1,idx_range-(idx_obrk+1)));
-		string s_end=StringTrim(orgsen.substr(idx_range+2,idx_last-(idx_range+2)));
-		string entryname=orgsen.substr(0,idx_obrk);
+		wstring s_st=StringTrim(orgsen.substr(idx_obrk+1,idx_range-(idx_obrk+1)));
+		wstring s_end=StringTrim(orgsen.substr(idx_range+2,idx_last-(idx_range+2)));
+		wstring entryname=orgsen.substr(0,idx_obrk);
 		TEntry entry=CreateEntry(entryname);
 
 		// 数字のみを受け付ける
 		if(IsInteger(s_st)&&IsInteger(s_end)){
-			int st=atoi(s_st.c_str());
-			int end=atoi(s_end.c_str());
+			int st=StringToInt(s_st);
+			int end=StringToInt(s_end);
 			if(st<0) st+=entry.Size();
 			if(end<0) end+=entry.Size();
 			if((st>=0)&&(end>=0)&&(st<=end))
@@ -148,12 +150,12 @@ TEntryRange TKawariEngine::GetEntryRange(const string &orgsen)
 
 	}else{
 		// 単独要素指定
-		string s_idx=StringTrim(orgsen.substr(idx_obrk+1,idx_last-(idx_obrk+1)));
-		string entryname=orgsen.substr(0, idx_obrk);
+		wstring s_idx=StringTrim(orgsen.substr(idx_obrk+1,idx_last-(idx_obrk+1)));
+		wstring entryname=orgsen.substr(0, idx_obrk);
 		TEntry entry=CreateEntry(entryname);
 
 		if (IsInteger(s_idx)){
-			int idx=atoi(s_idx.c_str());
+			int idx=StringToInt(s_idx);
 			if(idx<0) idx+=entry.Size();
 			if(idx>=0)
 				return TEntryRange(entryname, entry,
@@ -166,20 +168,20 @@ TEntryRange TKawariEngine::GetEntryRange(const string &orgsen)
 }
 //---------------------------------------------------------------------------
 // IDから単語に変換
-string TKawariEngine::GetWordFromID(TWordID id) const
+wstring TKawariEngine::GetWordFromID(TWordID id) const
 {
-	if(!id) return("");
+	if(!id) return(L"");
 	TKVMCode_base *code=Dictionary->GetWordFromID(id);
-	if(!code) return("");
+	if(!code) return(L"");
 
 	return(code->DisCompile());
 }
 //---------------------------------------------------------------------------
 // 指定されたエントリ名から始まるエントリを全て空にする
 // メモリに空エントリと単語が残っても良い
-void TKawariEngine::ClearTree(const string& spacename)
+void TKawariEngine::ClearTree(const wstring& spacename)
 {
-	if(spacename!=".") {
+	if(spacename!=L".") {
 		TEntry space=CreateEntry(spacename);
 		space.ClearTree();
 	}else{
@@ -192,7 +194,7 @@ void TKawariEngine::ClearTree(const string& spacename)
 //---------------------------------------------------------------------------
 // エントリ集合演算を行い、結果を列挙する
 // 戻り値 : 単語の個数
-unsigned int TKawariEngine::CalcEntryExpression(const string &entryexpr, set<TWordID> &wordcol) const{
+unsigned int TKawariEngine::CalcEntryExpression(const wstring &entryexpr, set<TWordID> &wordcol) const{
 	TKVMSetCode_base *code=TKawariCompiler::CompileAsEntryExpression(entryexpr, (*logger));
 	if (!code) return 0;
 	code->Evaluate(*KawariVM, wordcol);
@@ -201,27 +203,27 @@ unsigned int TKawariEngine::CalcEntryExpression(const string &entryexpr, set<TWo
 }
 //---------------------------------------------------------------------------
 // 指定されたIDの単語(スクリプト)を実行する
-string TKawariEngine::Parse(TWordID id)
+wstring TKawariEngine::Parse(TWordID id)
 {
-	if(id==0) return("");
+	if(id==0) return(L"");
 
 	TKVMCode_base *code=Dictionary->GetWordFromID(id);
-	if(!code) return("");
+	if(!code) return(L"");
 
 	return(KawariVM->RunWithNewContext(code));
 }
 //---------------------------------------------------------------------------
 // 与えられたスクリプトを解釈・実行する
-string TKawariEngine::Parse(const string& script)
+wstring TKawariEngine::Parse(const wstring& script)
 {
 	TKVMCode_base *code=TKawariCompiler::Compile(script, GetLogger());
-	if(!code) return("");
+	if(!code) return(L"");
 
 	// デバッグ
 	if(logger->Check(kawari_log::LOG_DUMP))
 		code->Debug(logger->GetStream());
 
-	string retstr=KawariVM->RunWithNewContext(code);
+	wstring retstr=KawariVM->RunWithNewContext(code);
 	delete code;
 
 	return(retstr);
@@ -229,33 +231,44 @@ string TKawariEngine::Parse(const string& script)
 
 //---------------------------------------------------------------------------
 // 華和梨フォーマット辞書ファイルを読み込む
-bool TKawariEngine::LoadKawariDict(const string &filename)
+// 文字コードはBOM/内容から自動判定する (暗号化行はBOMがあればUTF-8、なければSJISとして復号)
+bool TKawariEngine::LoadKawariDict(const wstring &filename)
 {
 	// Debug Assertion避け
 	if(!filename.size()) return(false);
 
-	ifstream ifs;
-	ifs.open(filename.c_str(), ios::binary|ios::in);
+	string raw;
+	if(!ReadWholeFile(filename, raw)) return(false);
 
-	if(!ifs.is_open()) return(false);
+	bool bom=HasUTF8BOM(raw);
+	TKawariCharset cs=bom ? KC_UTF8 : DetectCharset(raw);
+	if(bom) raw.erase(0, 3);
 
+	wistringstream wis(MBtoW(raw, cs));
+	return LoadKawariDictStream(wis, filename, bom ? KC_UTF8 : KC_SJIS);
+}
+//---------------------------------------------------------------------------
+// 華和梨フォーマット辞書をwide文字ストリームから読み込む
+// cryptcs : 暗号化行を復号した後の文字コード
+bool TKawariEngine::LoadKawariDictStream(wistream &ifs, const wstring &filename, TKawariCharset cryptcs)
+{
 	// 辞書中の記述モードの管理
 	vector<TKawariCompiler::Mode> mode;
 	mode.push_back(TKawariCompiler::M_DICT);
 
-	TKawariCompiler compiler(ifs, (*logger), filename);
+	TKawariCompiler compiler(ifs, (*logger), filename, true, cryptcs);
 
 	while(true) {
 		if(mode.back()==TKawariCompiler::M_DICT){
 			// 一定義ずつ辞書読み込み
 			while(true){
-				vector<string> entrynames;
+				vector<wstring> entrynames;
 				vector<TKVMCode_base *> sentence_list;
 				if (!compiler.LoadEntryDefinition(entrynames, sentence_list))
 					break;
 
 				vector <TEntry> entrylist;
-				for(vector<string>::iterator it=entrynames.begin(); it!=entrynames.end(); it++) {
+				for(vector<wstring>::iterator it=entrynames.begin(); it!=entrynames.end(); it++) {
 					TEntry entry=Dictionary->CreateEntry(*it);
 					if(entry.IsValid())
 						entrylist.push_back(entry);
@@ -273,9 +286,9 @@ bool TKawariEngine::LoadKawariDict(const string &filename)
 			// KIS読み込み
 			TKVMCode_base *code=compiler.LoadInlineScript();
 
-			string outstr=KawariVM->RunWithNewContext(code);
+			wstring outstr=KawariVM->RunWithNewContext(code);
 			if (outstr.size())
-				logger->GetStream(kawari_log::LOG_INFO) << "KIS zone output:" << outstr << endl;
+				logger->GetStream(kawari_log::LOG_INFO) << L"KIS zone output:" << outstr << endl;
 			delete code;
 		}else{
 			// ??
@@ -303,58 +316,59 @@ bool TKawariEngine::LoadKawariDict(const string &filename)
 
 //---------------------------------------------------------------------------
 // 華和梨フォーマット辞書ファイルを書き込む
-bool TKawariEngine::SaveKawariDict(const string &filename,const vector<string>& entry,bool crypt) const
+// UTF-8 (BOMあり) で書き出す。暗号化する場合は、UTF-8バイト列を暗号化する。
+bool TKawariEngine::SaveKawariDict(const wstring &filename,const vector<wstring>& entry,bool crypt) const
 {
-	ofstream ofs;
-	ofs.open(filename.c_str());
+#ifdef KAWARI_MS
+	const char *eol="\r\n";
+#else
+	const char *eol="\n";
+#endif
+	string out("\xef\xbb\xbf");
 
-	if(!ofs.is_open()) return(false);
+	out+=string("#")+eol+"# Kawari saved file"+eol+"#"+eol;
 
-	ofs << "#" << endl << "# Kawari saved file" << endl << "#" << endl;
-
-	for(vector<string>::const_iterator it=entry.begin(); it!=entry.end(); it++) {
-		ofs << "# Entry " << (*it) << endl;
+	for(vector<wstring>::const_iterator it=entry.begin(); it!=entry.end(); it++) {
+		out+="# Entry "+WtoUTF8(*it)+eol;
 
 		vector<TWordID> wordcol;
 		TEntry entry=GetEntry(*it);
 		if (entry.IsValid())
 			entry.FindAll(wordcol);
 		if(wordcol.size()) {
-			string line;
-			line=(*it)+" : "+GetWordFromID(wordcol[0]);
+			wstring line;
+			line=(*it)+L" : "+GetWordFromID(wordcol[0]);
 
 			unsigned int wordcolmax=wordcol.size();
 			for(unsigned int j=1;j<wordcolmax;j++) {
-				line+=" , ";
+				line+=L" , ";
 				line+=GetWordFromID(wordcol[j]);
 			}
 
 			if(!crypt) {
-				ofs << line << endl;
+				out+=WtoUTF8(line)+eol;
 			} else {
-				ofs << EncryptString(line) << endl;
+				out+=EncryptString(WtoUTF8(line))+eol;
 			}
 		}
 	}
 
-	ofs.close();
-
-	return(true);
+	return WriteWholeFile(filename, out);
 }
 //---------------------------------------------------------------------------
 // SAORIモジュールの登録
-void TKawariEngine::RegisterSAORIModule(const string &aliasname, const string &path, const SAORILOADTYPE type){
+void TKawariEngine::RegisterSAORIModule(const wstring &aliasname, const wstring &path, const SAORILOADTYPE type){
 	SaoriPark->RegisterModule(aliasname, path, (saori::LOADTYPE)type);
 }
 //---------------------------------------------------------------------------
 // SAORIモジュール登録の削除
-void TKawariEngine::EraseSAORIModule(const string &aliasname){
+void TKawariEngine::EraseSAORIModule(const wstring &aliasname){
 	SaoriPark->EraseModule(aliasname);
 }
 //---------------------------------------------------------------------------
 // SAORIリクエストを行う
 bool TKawariEngine::RequestToSAORIModule(
-	const string &aliasname,
+	const wstring &aliasname,
 	const TPHMessage &request, TPHMessage &response)
 {
 	saori::TBind *bind=SaoriPark->GetModule(aliasname);
@@ -365,7 +379,7 @@ bool TKawariEngine::RequestToSAORIModule(
 }
 //---------------------------------------------------------------------------
 // 登録されたSAORIモジュールのリストを得る
-int TKawariEngine::ListSAORIModule(vector<string> &list)
+int TKawariEngine::ListSAORIModule(vector<wstring> &list)
 {
 	return SaoriPark->ListModule(list);
 }

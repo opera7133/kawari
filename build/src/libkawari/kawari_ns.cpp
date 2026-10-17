@@ -26,16 +26,16 @@ const unsigned int TEntry::NPos=UINT_MAX;
 // エントリを生成する
 // 既にエントリが存在する場合は、生成せずにIDを返す
 // 戻り値 : 生成したエントリのID
-TEntry TNameSpace::Create(const string& entry)
+TEntry TNameSpace::Create(const wstring& entry)
 {
 	// "."はルートを示す。
-	if(entry==".") return(TEntry(this,0));
+	if(entry==L".") return(TEntry(this,0));
 
-	vector<string> entryname_node;
+	vector<wstring> entryname_node;
 	SplitEntryName(entry,entryname_node);
 	if(entryname_node.size()==0) return(TEntry(this,0));
 
-	string entryname;
+	wstring entryname;
 	TEntryID parent=0,id;
 
 	for(unsigned int i=0, max=entryname_node.size();i<max;i++) {
@@ -48,7 +48,7 @@ TEntry TNameSpace::Create(const string& entry)
 			SubEntry.insert(pair<TEntryID,TEntryID>(parent,id));
 		}
 		parent=id;
-		entryname=entryname+".";
+		entryname=entryname+L".";
 	}
 	return(TEntry(this,id));
 }
@@ -81,17 +81,17 @@ unsigned int TNameSpace::FindAllEntry(vector<TEntry> &entrycol)
 }
 //---------------------------------------------------------------------------
 // エントリ名を「.」で分解する
-void TNameSpace::SplitEntryName(const string& entryname,vector<string> &entryname_node)
+void TNameSpace::SplitEntryName(const wstring& entryname,vector<wstring> &entryname_node)
 {
-	string::size_type pos=0;
-	string::size_type max=entryname.size();
+	wstring::size_type pos=0;
+	wstring::size_type max=entryname.size();
 	while(pos<max){
-		while((pos<max)&&(entryname[pos]=='.')) pos++;
+		while((pos<max)&&(entryname[pos]==L'.')) pos++;
 		if(pos>=max) break;
 
-		string::size_type pos1=pos;
+		wstring::size_type pos1=pos;
 
-		while((pos<max)&&(entryname[pos]!='.')) pos++;
+		while((pos<max)&&(entryname[pos]!=L'.')) pos++;
 
 		entryname_node.push_back(entryname.substr(pos1,pos-pos1));
 	}

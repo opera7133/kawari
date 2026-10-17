@@ -30,16 +30,16 @@ public:
 	// Initで名前その他の情報を設定してください
 	virtual bool Init(void)
 	{
-		Name_="urllist";
-		Format_="urllist SITE1 URL1 BannerURL1 ... SITEn URLn BannerURLn";
-		Returnval_="SITE1[1]URL1[1]BannerURL1[2]...SITEn[1]URLn[1]BannerURLn[2]";
-		Information_="return a recommend list for SHIORI/2.5 standard";
+		Name_=L"urllist";
+		Format_=L"urllist SITE1 URL1 BannerURL1 ... SITEn URLn BannerURLn";
+		Returnval_=L"SITE1[1]URL1[1]BannerURL1[2]...SITEn[1]URLn[1]BannerURLn[2]";
+		Information_=L"return a recommend list for SHIORI/2.5 standard";
 
 		return(true);
 	}
 
 	// インタープリタ
-	virtual string Function(const vector<string>& args);
+	virtual wstring Function(const vector<wstring>& args);
 };
 //---------------------------------------------------------------------------
 class KIS_chr : public TKisFunction_base {
@@ -48,16 +48,16 @@ public:
 	// Initで名前その他の情報を設定してください
 	virtual bool Init(void)
 	{
-		Name_="chr";
-		Format_="chr CharCode1";
-		Returnval_="a character";
-		Information_="return a character which character code is CharCode1";
+		Name_=L"chr";
+		Format_=L"chr CharCode1";
+		Returnval_=L"a character";
+		Information_=L"return a character which character code is CharCode1";
 
 		return(true);
 	}
 
 	// インタープリタ
-	virtual string Function(const vector<string>& args);
+	virtual wstring Function(const vector<wstring>& args);
 };
 //---------------------------------------------------------------------------
 #endif

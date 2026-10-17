@@ -38,16 +38,16 @@ using namespace kawari::resource;
 using namespace std;
 //---------------------------------------------------------------------------
 // 関数を登録するエントリのプレフィックス
-const string TKawariVM::SYSTEM_FUNCTION_PREFIX="System.Function.";
+const wstring TKawariVM::SYSTEM_FUNCTION_PREFIX=L"System.Function.";
 
 //---------------------------------------------------------------------------
 // インタプリタの状態
-TKawariVM::InterpState::InterpState (TKawariVM::InterpState::StateValue s, string str, bool ovr) : state(s), mes(str), override(ovr) {}
+TKawariVM::InterpState::InterpState (TKawariVM::InterpState::StateValue s, wstring str, bool ovr) : state(s), mes(str), override(ovr) {}
 //---------------------------------------------------------------------------
 // コンストラクタ
 TKawariVM::TKawariVM(TKawariEngine &eng, TNS_KawariDictionary &d, TKawariLogger &lgr)
 	 : engine(eng), dictionary(d),
-	   state(InterpState(TKawariVM::InterpState::NORMAL, "")), logger(lgr) {
+	   state(InterpState(TKawariVM::InterpState::NORMAL, L"")), logger(lgr) {
 	#define INLINE_SCRIPT_REGIST(T) \
 	{ \
 		TKisFunction_base *func=new T; \
@@ -80,10 +80,10 @@ TKawariVM::~TKawariVM(){
 //---------------------------------------------------------------------------
 // 新しいコンテキストを作成し、コードを実行する。
 // 実行が終了するとコンテキストは破棄。
-string TKawariVM::RunWithNewContext(class TKVMCode_base *code){
-	if (!code) return "";
+wstring TKawariVM::RunWithNewContext(class TKVMCode_base *code){
+	if (!code) return L"";
 	dictionary.CreateContext();
-	string retstr=code->Run(*this);
+	wstring retstr=code->Run(*this);
 	dictionary.DeleteContext();
 
 	// Return状態の解決
@@ -101,10 +101,10 @@ string TKawariVM::RunWithNewContext(class TKVMCode_base *code){
 // 現在のコンテキスト上でコードを実行する。
 // 実行が終了すると履歴参照スタックを実行前のポイントまで巻き戻す。
 // 現在のコンテキストがない場合はRunWithNewContext()を呼ぶ。
-string TKawariVM::RunWithCurrentContext(TKVMCode_base *code){
+wstring TKawariVM::RunWithCurrentContext(TKVMCode_base *code){
 	if (dictionary.GetContextStackDepth()){
 		unsigned int frame=dictionary.LinkFrame();
-		string retstr=code->Run(*this);
+		wstring retstr=code->Run(*this);
 		dictionary.UnlinkFrame(frame);
 		return retstr;
 	}else{
@@ -114,11 +114,11 @@ string TKawariVM::RunWithCurrentContext(TKVMCode_base *code){
 }
 //---------------------------------------------------------------------------
 // 関数実行
-string TKawariVM::FunctionCall(const vector<string>& args){
-	if (!args[0].size()) return ("");
+wstring TKawariVM::FunctionCall(const vector<wstring>& args){
+	if (!args[0].size()) return (L"");
 	// 先頭に'.'がある場合は強制ビルトインコマンド呼び出し
-	if (args[0][0]=='.') {
-		string comname=args[0].substr(1);
+	if (args[0][0]==L'.') {
+		wstring comname=args[0].substr(1);
 		if (FunctionTable.count(comname))
 			return (FunctionTable[comname]->Function(args));
 	}else{
@@ -127,7 +127,7 @@ string TKawariVM::FunctionCall(const vector<string>& args){
 		if (entry.IsValid()&&entry.Size()){
 			// 最初の単語を実体とする
 			TWordID id=entry.Index();
-			if (!id) return "";
+			if (!id) return L"";
 			TKVMCode_base *code=dictionary.GetWordFromID(id);
 
 			// コンテキスト作成
@@ -135,7 +135,7 @@ string TKawariVM::FunctionCall(const vector<string>& args){
 
 			// 引数格納
 			if (args.size()){
-				TEntry argentry=dictionary.CreateEntry("@arg");
+				TEntry argentry=dictionary.CreateEntry(L"@arg");
 				for(unsigned int i=0; i<args.size(); i++){
 					argentry.Push(
 						dictionary.CreateWord(
@@ -143,7 +143,7 @@ string TKawariVM::FunctionCall(const vector<string>& args){
 				}
 			}
 			// コード実行
-			string retstr=code->Run(*this);
+			wstring retstr=code->Run(*this);
 
 			// コンテキスト削除
 			dictionary.DeleteContext();
@@ -162,11 +162,11 @@ string TKawariVM::FunctionCall(const vector<string>& args){
 		}
 	}
 	logger.GetStream(kawari_log::LOG_ERROR) << RC.S(ERR_VM_UNDEFINED_FUNCTION1) << args[0] << RC.S(ERR_VM_UNDEFINED_FUNCTION2) << endl;
-	return "";
+	return L"";
 }
 //---------------------------------------------------------------------------
 // ビルトイン関数の情報を得る
-bool TKawariVM::GetFunctionInfo(const string &name, TKisFunctionInfo &info){
+bool TKawariVM::GetFunctionInfo(const wstring &name, TKisFunctionInfo &info){
 	if (FunctionTable.count(name)){
 		info=FunctionTable[name]->GetInformation();
 		return true;
@@ -176,9 +176,9 @@ bool TKawariVM::GetFunctionInfo(const string &name, TKisFunctionInfo &info){
 }
 //---------------------------------------------------------------------------
 // ビルトイン関数のリスト
-unsigned int TKawariVM::GetFunctionList(vector<string> &list) const{
+unsigned int TKawariVM::GetFunctionList(vector<wstring> &list) const{
 	for (vector<TKisFunction_base*>::const_iterator it=FunctionList.begin();it!=FunctionList.end();it++)
-		list.push_back(string((*it)->Name()));
+		list.push_back(wstring((*it)->Name()));
 	return FunctionList.size();
 }
 //---------------------------------------------------------------------------

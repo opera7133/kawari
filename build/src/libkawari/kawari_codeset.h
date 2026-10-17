@@ -21,7 +21,7 @@
 class TKVMSetCode_base : public TKVMCode_base {
 public:
 	// 実行
-	virtual std::string Run(class TKawariVM &vm);
+	virtual std::wstring Run(class TKawariVM &vm);
 	// 式評価
 	virtual void Evaluate(class TKawariVM &vm, std::set<TWordID> &wordcol)=0;
 	// デストラクタ
@@ -35,14 +35,14 @@ protected:
 	TKVMSetCode_base *lhs;
 	TKVMSetCode_base *rhs;
 	// 演算子文字列を返す
-	virtual std::string GetOperator(void)const=0;
+	virtual std::wstring GetOperator(void)const=0;
 public:
 	// 序列 同じクラスの場合のみ呼ばれる。
 	virtual bool Less(const TKVMCode_base& r_) const;
 	// 逆コンパイル
-	virtual std::string DisCompile(void) const;
+	virtual std::wstring DisCompile(void) const;
 	// デバッグ用ツリー表示
-	virtual std::ostream &Debug(std::ostream& os, unsigned int level=0) const;
+	virtual std::wostream &Debug(std::wostream& os, unsigned int level=0) const;
 	// コンストラクタ
 	TKVMSetBinaryCode_base(TKVMSetCode_base *l, TKVMSetCode_base *r) : lhs(l), rhs(r) {}
 	// デストラクタ
@@ -56,7 +56,7 @@ public:
 // 和
 class TKVMSetCodePLUS : public TKVMSetBinaryCode_base {
 protected:
-	virtual std::string GetOperator(void)const{ return "+"; }
+	virtual std::wstring GetOperator(void)const{ return L"+"; }
 public:
 	// 式評価
 	virtual void Evaluate(class TKawariVM &vm, std::set<TWordID> &wordcol);
@@ -67,7 +67,7 @@ public:
 // 差
 class TKVMSetCodeMINUS : public TKVMSetBinaryCode_base {
 protected:
-	virtual std::string GetOperator(void)const{ return "-"; }
+	virtual std::wstring GetOperator(void)const{ return L"-"; }
 public:
 	// 式評価
 	virtual void Evaluate(class TKawariVM &vm, std::set<TWordID> &wordcol);
@@ -78,7 +78,7 @@ public:
 // 積
 class TKVMSetCodeAND : public TKVMSetBinaryCode_base {
 protected:
-	virtual std::string GetOperator(void)const{ return "&"; }
+	virtual std::wstring GetOperator(void)const{ return L"&"; }
 public:
 	// 式評価
 	virtual void Evaluate(class TKawariVM &vm, std::set<TWordID> &wordcol);
@@ -95,11 +95,11 @@ public:
 	// 序列 同じクラスの場合のみ呼ばれる。
 	virtual bool Less(const TKVMCode_base& r_) const;
 	// 逆コンパイル
-	virtual std::string DisCompile(void) const{
+	virtual std::wstring DisCompile(void) const{
 		return code->DisCompile();
 	}
 	// デバッグ用ツリー表示
-	virtual std::ostream &Debug(std::ostream& os, unsigned int level=0) const{
+	virtual std::wostream &Debug(std::wostream& os, unsigned int level=0) const{
 		return code->Debug(os, level);
 	}
 	// もしcodeがTKVMCodeIDStringならば、それを返す。
@@ -118,13 +118,13 @@ class TKVMCodeEntryCall : public TKVMCode_base {
 	TKVMSetCode_base *code;
 public:
 	// 実行
-	virtual std::string Run(class TKawariVM &vm);
+	virtual std::wstring Run(class TKawariVM &vm);
 	// 序列 同じクラスの場合のみ呼ばれる。
 	virtual bool Less(const TKVMCode_base& r_) const;
 	// 逆コンパイル
-	virtual std::string DisCompile(void) const;
+	virtual std::wstring DisCompile(void) const;
 	// デバッグ用ツリー表示
-	virtual std::ostream &Debug(std::ostream& os, unsigned int level=0) const;
+	virtual std::wostream &Debug(std::wostream& os, unsigned int level=0) const;
 	// コンストラクタ
 	TKVMCodeEntryCall(TKVMSetCode_base *c) : code(c) {}
 	// デストラクタ
@@ -134,20 +134,20 @@ public:
 //---------------------------------------------------------------------------
 // 純粋仮想単語(特殊エントリ呼び出し) ( '${' Literal '}' )
 class TKVMCodePVW : public TKVMCode_base {
-	std::string entry;
+	std::wstring entry;
 public:
 	// 参照エントリ名を返す
-	virtual std::string Get(void) { return entry; }
+	virtual std::wstring Get(void) { return entry; }
 	// 実行
-	virtual std::string Run(class TKawariVM &vm);
+	virtual std::wstring Run(class TKawariVM &vm);
 	// 序列 同じクラスの場合のみ呼ばれる。
 	virtual bool Less(const TKVMCode_base& r_) const;
 	// 逆コンパイル
-	virtual std::string DisCompile(void) const;
+	virtual std::wstring DisCompile(void) const;
 	// デバッグ用ツリー表示
-	virtual std::ostream &Debug(std::ostream& os, unsigned int level=0) const;
+	virtual std::wostream &Debug(std::wostream& os, unsigned int level=0) const;
 	// コンストラクタ
-	TKVMCodePVW(const std::string &c) : entry(c) {}
+	TKVMCodePVW(const std::wstring &c) : entry(c) {}
 	// デストラクタ
 	virtual ~TKVMCodePVW() {}
 };
@@ -158,13 +158,13 @@ class TKVMCodeHistoryCall : public TKVMCode_base {
 	int index;
 public:
 	// 実行
-	virtual std::string Run(class TKawariVM &vm);
+	virtual std::wstring Run(class TKawariVM &vm);
 	// 序列 同じクラスの場合のみ呼ばれる。
 	virtual bool Less(const TKVMCode_base& r_) const;
 	// 逆コンパイル
-	virtual std::string DisCompile(void) const;
+	virtual std::wstring DisCompile(void) const;
 	// デバッグ用ツリー表示
-	virtual std::ostream &Debug(std::ostream& os, unsigned int level=0) const;
+	virtual std::wostream &Debug(std::wostream& os, unsigned int level=0) const;
 	// コンストラクタ
 	TKVMCodeHistoryCall(int i) : index(i) {}
 	// デストラクタ

@@ -18,7 +18,7 @@ using namespace saori;
 //---------------------------------------------------------------------------
 // モジュールの検索と生成
 // 戻り値: 生成に成功した場合、モジュール。失敗した場合、NULL。
-TModule *TUniqueModuleFactory::CreateModule(const string &path){
+TModule *TUniqueModuleFactory::CreateModule(const wstring &path){
 	TModule *mod=parent->CreateModule(path);
 	if (!mod) return NULL;
 

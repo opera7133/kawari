@@ -6,6 +6,7 @@
 //      Programed by Suikyo.
 //
 //  2002.06.16  Phase 8.0.0   i10nバージョン作成
+//  2026.10.18  Phase 9.0.0   wchar_t化 (S()はwstringを返す)
 //
 //--------------------------------------------------------------------------
 #ifndef KAWARI_RC_H__
@@ -88,19 +89,25 @@ enum ID {
 //--------------------------------------------------------------------------
 // I10N
 class TResourceManager{
-	std::map<std::string,std::string *> rcmap;
-	std::string *current;
+	// メッセージ表 (初回利用時にwstring化する)
+	std::vector<std::wstring> ascii;
+	std::vector<std::wstring> japanese;
+	bool initialized;
+	bool use_japanese;
+	void Initialize(void);
 public:
 	TResourceManager(void);
 	virtual ~TResourceManager(void) {}
-	virtual void SwitchTo(const std::string &charset);
-	const std::string &S(kawari::resource::ID id);
+	// charset名で言語を切り替える。Shift_JIS/UTF-8なら日本語、それ以外は英語
+	virtual void SwitchTo(const std::wstring &charset);
+	const std::wstring &S(kawari::resource::ID id);
 };
 //--------------------------------------------------------------------------
-inline const std::string &TResourceManager::S(kawari::resource::ID id)
+inline const std::wstring &TResourceManager::S(kawari::resource::ID id)
 {
+	if(!initialized) Initialize();
 	// there's no boundary check. be carefull.
-	return current[id];
+	return use_japanese ? japanese[id] : ascii[id];
 }
 //--------------------------------------------------------------------------
 extern TResourceManager ResourceManager;

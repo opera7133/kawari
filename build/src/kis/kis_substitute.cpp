@@ -11,30 +11,24 @@
 #include "config.h"
 //---------------------------------------------------------------------------
 #include "kis/kis_substitute.h"
-#include "misc/l10n.h"
 //---------------------------------------------------------------------------
 #include <ctype.h>
 #include <cstdlib>
 using namespace std;
 //---------------------------------------------------------------------------
-string KIS_toupper::Function(const vector<string>& args)
+wstring KIS_toupper::Function(const vector<wstring>& args)
 {
-	if(!AssertArgument(args, 2)) return ("");
+	if(!AssertArgument(args, 2)) return (L"");
 
-	string retstr;
+	wstring retstr;
 	for(unsigned int i=1;i<args.size();i++) {
-		if(i>1) retstr+=string(" ");
+		if(i>1) retstr+=wstring(L" ");
 
 		for(unsigned int j=0;j<args[i].size();j++) {
-			if(iskanji1st(args[i][j])) {
-				retstr+=args[i][j++];
-				retstr+=args[i][j];
+			if( L'a' <= args[i][j] && args[i][j] <= L'z') {
+				retstr+= (wchar_t)(args[i][j]-L'a'+L'A');
 			} else {
-				if( 'a' <= args[i][j] && args[i][j] <= 'z') {
-					retstr+= toupper(args[i][j]);
-				} else {
-					retstr+=args[i][j];
-				}
+				retstr+=args[i][j];
 			}
 		}
 	}
@@ -43,24 +37,19 @@ string KIS_toupper::Function(const vector<string>& args)
 	return(retstr);
 }
 //---------------------------------------------------------------------------
-string KIS_tolower::Function(const vector<string>& args)
+wstring KIS_tolower::Function(const vector<wstring>& args)
 {
-	if(!AssertArgument(args, 2)) return ("");
+	if(!AssertArgument(args, 2)) return (L"");
 
-	string retstr;
+	wstring retstr;
 	for(unsigned int i=1;i<args.size();i++) {
-		if(i>1) retstr+=string(" ");
+		if(i>1) retstr+=wstring(L" ");
 
 		for(unsigned int j=0;j<args[i].size();j++) {
-			if(iskanji1st(args[i][j])) {
-				retstr+=args[i][j++];
-				retstr+=args[i][j];
+			if( args[i][j] >= L'A'  && args[i][j] <= L'Z') {
+				retstr+= (wchar_t)(args[i][j]-L'A'+L'a');
 			} else {
-				if( args[i][j] >= 'A'  && args[i][j] <= 'Z') {
-					retstr+= tolower(args[i][j]);
-				} else {
-					retstr+=args[i][j];
-				}
+				retstr+=args[i][j];
 			}
 		}
 	}

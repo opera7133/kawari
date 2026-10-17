@@ -6,6 +6,7 @@
 //      Programed by Suikyo.
 //
 //  2002.09.05  Phase 8.1.0   導入
+//  2026.10.18  Phase 9.0.0   wchar_t化 (パスはwstring。Requestは生バイト列のまま)
 //
 //---------------------------------------------------------------------------
 #ifndef SAORI_MODULE_H
@@ -26,7 +27,7 @@ class IModuleFactory{
 public:
 	// モジュールの検索と生成
 	// 戻り値: 生成に成功した場合、モジュール。失敗した場合、NULL。
-	virtual class TModule *CreateModule(const std::string &path)=0;
+	virtual class TModule *CreateModule(const std::wstring &path)=0;
 
 	// モジュールの完全破棄
 	// ライブラリの場合はFreeLibraryすること。
@@ -50,7 +51,7 @@ public:
 
 	// モジュールの検索と生成
 	// 戻り値: 生成に成功した場合、モジュール。失敗した場合、NULL。
-	class saori::TModule *CreateModule(const std::string &path);
+	class saori::TModule *CreateModule(const std::wstring &path);
 
 	// モジュールの完全破棄
 	// ライブラリの場合はFreeLibraryすること。
@@ -88,13 +89,13 @@ public:
 		return factory;
 	}
 
-	TModule(saori::IModuleFactory &fac, const std::string &p, saori::SAORI_HANDLE hdl)
+	TModule(saori::IModuleFactory &fac, const std::wstring &p, saori::SAORI_HANDLE hdl)
 		 : factory(fac), path(p), handle(hdl) {}
 
 protected:
 
 	saori::IModuleFactory &factory;
-	std::string path;
+	std::wstring path;
 	saori::SAORI_HANDLE handle;
 };
 //---------------------------------------------------------------------------

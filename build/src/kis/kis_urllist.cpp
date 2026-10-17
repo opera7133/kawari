@@ -15,38 +15,42 @@
 //---------------------------------------------------------------------------
 #include "kis/kis_urllist.h"
 //---------------------------------------------------------------------------
+#include "misc/misc.h"
 #include <cstdlib>
 using namespace std;
 //---------------------------------------------------------------------------
-string KIS_urllist::Function(const vector<string>& args)
+wstring KIS_urllist::Function(const vector<wstring>& args)
 {
-	if(!AssertArgument(args, 4)) return ("");
-	if((args.size()%3)!=1) return("");
+	if(!AssertArgument(args, 4)) return (L"");
+	if((args.size()%3)!=1) return(L"");
 
-	string retstr;
+	wstring retstr;
 	for(unsigned int i=1;i<args.size();i+=3) {
-		if(args[i]!="-") retstr=retstr+args[i]+"\x1"+args[i+1]+"\x1"+args[i+2]+"\x2";
-		 else retstr+="-\x2";
+		if(args[i]!=L"-") retstr=retstr+args[i]+L"\x1"+args[i+1]+L"\x1"+args[i+2]+L"\x2";
+		 else retstr+=L"-\x2";
 	}
 
 	return(retstr);
 }
 //---------------------------------------------------------------------------
-string KIS_chr::Function(const vector<string>& args)
+wstring KIS_chr::Function(const vector<wstring>& args)
 {
-	if(!AssertArgument(args, 2, 2)) return ("");
+	if(!AssertArgument(args, 2, 2)) return (L"");
 
-	char buff[3]={'\0','\0','\0'};
+	unsigned int code=(unsigned int)StringToInt(args[1]);
 
-	unsigned int code=(unsigned int)atoi(args[1].c_str());
-
-	if(code<=255) {
+	// 旧版はバイト列として出力していたため、0x80以上はSJISコードとして解釈する
+	if(code<0x80) {
+		return(wstring(1, (wchar_t)code));
+	} else if(code<=255) {
+		char buff[1];
 		buff[0]=(char)(code&0xff);
-		return(string(buff,1));
+		return(SJIStoW(string(buff,1)));
 	} else {
+		char buff[2];
 		buff[0]=(char)((code>>8)&0xff);
 		buff[1]=(char)(code&0xff);
-		return(string(buff,2));
+		return(SJIStoW(string(buff,2)));
 	}
 }
 //---------------------------------------------------------------------------

@@ -5,6 +5,7 @@
 //      Programed by NAKAUE.T (Meister)
 //
 //  2001.08.12  Phase 6.2.1   FirstVersion
+//  2026.10.18  Phase 9.0.0   wchar_t化
 //
 //---------------------------------------------------------------------------
 #ifndef KOSUI_BASE_H
@@ -22,10 +23,10 @@ public:
 	virtual ~TKawariInterface_base() {}
 
 	// 情報を得る
-	virtual string GetInformation(void)=0;
+	virtual wstring GetInformation(void)=0;
 
 	// 与えられたスクリプトを解釈・実行する
-	virtual string Parse(const string& script)=0;
+	virtual wstring Parse(const wstring& script)=0;
 };
 //---------------------------------------------------------------------------
 #endif

@@ -3,6 +3,8 @@
 // "華和梨" for あれ以外の何か以外の何か
 // コンパイラ依存
 //
+//  2026.10.18  Phase 9.0.0   UNICODE/WINVER定義を追加 (wchar_t化)
+//
 //      Programed by NAKAUE.T (Meister)
 //
 // そのうちautoconfに対応させたりするのだろうか?
@@ -36,6 +38,23 @@
 #	define KAWARI_POSIX
 #endif
 
+//---------------------------------------------------------------------------
+#ifdef KAWARI_WIN32
+	// Win32 APIはすべてW版を使う。windows.hを読む前に定義しておく
+	// (Windows 2000 以降を対象とする)
+#	ifndef UNICODE
+#		define UNICODE
+#	endif
+#	ifndef _UNICODE
+#		define _UNICODE
+#	endif
+#	ifndef WINVER
+#		define WINVER 0x0500
+#	endif
+#	ifndef _WIN32_WINNT
+#		define _WIN32_WINNT 0x0500
+#	endif
+#endif
 //---------------------------------------------------------------------------
 #ifdef _MSC_VER
 

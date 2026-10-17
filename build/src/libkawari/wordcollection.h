@@ -195,7 +195,7 @@ void TWordCollection<T,Compare>::Reserve(unsigned int n)
 //---------------------------------------------------------------------------
 class TStringP_Less {
 public:
-	bool operator ()(const std::string *l,const std::string *r) const
+	bool operator ()(const std::wstring *l,const std::wstring *r) const
 	{
 		return((*l)<(*r));
 	}

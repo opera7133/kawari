@@ -12,24 +12,18 @@
 //---------------------------------------------------------------------------
 #include "kis/kis_escape.h"
 //---------------------------------------------------------------------------
-#include "misc/l10n.h"
 //---------------------------------------------------------------------------
-string KIS_escape::Function(const vector<string>& args)
+wstring KIS_escape::Function(const vector<wstring>& args)
 {
-	if(!AssertArgument(args, 2)) return ("");
+	if(!AssertArgument(args, 2)) return (L"");
 
-	string retstr;
+	wstring retstr;
 	for(unsigned int i=1;i<args.size();i++) {
-		if(i>1) retstr+=string(" ");
+		if(i>1) retstr+=wstring(L" ");
 
 		for(unsigned int j=0;j<args[i].size();j++) {
-			if(iskanji1st(args[i][j])) {
-				retstr+=args[i][j++];
-				retstr+=args[i][j];
-			} else {
-				if((args[i][j]=='\\')||(args[i][j]=='%')) retstr+='\\';
-				retstr+=args[i][j];
-			}
+			if((args[i][j]==L'\\')||(args[i][j]==L'%')) retstr+=L'\\';
+			retstr+=args[i][j];
 		}
 	}
 

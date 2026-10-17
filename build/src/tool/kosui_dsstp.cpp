@@ -5,6 +5,7 @@
 //      Programed by Suikyo.
 //
 //  2002.05.04  Phase 8.0.0   FirstVersion
+//  2026.10.18  Phase 9.0.0   wchar_t化
 //
 //---------------------------------------------------------------------------
 #include "config.h"
@@ -14,6 +15,7 @@
 #include "tool/kosui_base.h"
 #include "tool/kosui_dsstp.h"
 #include "misc/phttp.h"
+#include "misc/charset.h"
 //---------------------------------------------------------------------------
 #include <string>
 #include <cstdio>
@@ -45,7 +47,7 @@ namespace{
 	bool isResponseValid=false;
 
 	// 戻り値受け渡し場所
-	string response;
+	string response;	// 受信した生バイト列
 
 	// ミューテックスオブジェクト
 	HANDLE mutex;
@@ -79,7 +81,7 @@ static LRESULT CALLBACK MainWndProc(
 			return FALSE;
 		}
 	default:
-		return DefWindowProc(hwnd, message, wParam, lParam);
+		return DefWindowProcW(hwnd, message, wParam, lParam);
 	}
 	return 0L;
 }
@@ -98,13 +100,13 @@ static void MsgLoopThread(void *){
 //---------------------------------------------------------------------------
 // コンストラクタ
 // hwnd : DAのウィンドウハンドル
-TKosuiDSSTPInterface::TKosuiDSSTPInterface (HWND hwnd, const string& evt)
+TKosuiDSSTPInterface::TKosuiDSSTPInterface (HWND hwnd, const wstring& evt)
 	: event(evt), dahwnd(hwnd), dumhwnd(0) {
-	WNDCLASS wndclass;
-	memset(&wndclass, 0, sizeof(WNDCLASS));
+	WNDCLASSW wndclass;
+	memset(&wndclass, 0, sizeof(WNDCLASSW));
 
-	char *szClassName="KOSUI dummy window";
-	char *szAppName="KOSUI";
+	const wchar_t *szClassName=L"KOSUI dummy window";
+	const wchar_t *szAppName=L"KOSUI";
 
 	// 現在のインスタンスを得る
 	HINSTANCE hInstance=(HINSTANCE)::GetModuleHandle(NULL);
@@ -113,15 +115,15 @@ TKosuiDSSTPInterface::TKosuiDSSTPInterface (HWND hwnd, const string& evt)
 	wndclass.lpfnWndProc = MainWndProc;
 	wndclass.hInstance = hInstance;
 	wndclass.lpszClassName = szClassName;
-	RegisterClass(&wndclass);
-	dumhwnd = CreateWindow(
+	RegisterClassW(&wndclass);
+	dumhwnd = CreateWindowW(
 			szClassName, szAppName,
 			WS_POPUP,
 			CW_USEDEFAULT,CW_USEDEFAULT,CW_USEDEFAULT,CW_USEDEFAULT,
 			NULL,NULL, hInstance, NULL);
 
 	// Mutex Objectを作成
-	mutex=::CreateMutex(NULL, FALSE, NULL);
+	mutex=::CreateMutexW(NULL, FALSE, NULL);
 
 	// メッセージループスレッドの開始
 	_beginthread(&MsgLoopThread, 0, NULL);
@@ -136,26 +138,28 @@ TKosuiDSSTPInterface::~TKosuiDSSTPInterface(){
 }
 //---------------------------------------------------------------------------
 // 情報を得る
-string TKosuiDSSTPInterface::GetInformation(void){
-	return "Can not get Information.(Direct SSTP mode)";
+wstring TKosuiDSSTPInterface::GetInformation(void){
+	return L"Can not get Information.(Direct SSTP mode)";
 }
 //---------------------------------------------------------------------------
 // 与えられたソースを解釈・実行する
-string TKosuiDSSTPInterface::Parse(const string& script){
+wstring TKosuiDSSTPInterface::Parse(const wstring& script){
 	// 橋本孔明さんの 簡易SSTPクライアント を参考
 	TPHMessage request;
 
 	char szHWnd[100];
 	sprintf(szHWnd, "%d", (unsigned int)dumhwnd);
 
-	request.SetStartline("NOTIFY SSTP/1.0");
-	request["Charset"]="Shift_JIS";
-	request["Sender"]="KOSUI";
-	request["Event"]=event;
-	request["HWnd"]=szHWnd;
-	request["Reference0"]=script;
+	// 送信するCharsetに従ってバイト列化する
+	const TKawariCharset sendcs=KC_SJIS;
+	request.SetStartline(L"NOTIFY SSTP/1.0");
+	request[L"Charset"]=CharsetName(sendcs);
+	request[L"Sender"]=L"KOSUI";
+	request[L"Event"]=event;
+	request[L"HWnd"]=AtoW(szHWnd);
+	request[L"Reference0"]=script;
 
-	string reqmes=request.Serialize();
+	string reqmes=request.Serialize(sendcs);
 
 	COPYDATASTRUCT cds;
 	cds.dwData = DIRECT_SSTP_PORT;
@@ -167,13 +171,16 @@ string TKosuiDSSTPInterface::Parse(const string& script){
 		dahwnd, WM_COPYDATA, (WPARAM)dumhwnd,
 		(LPARAM)&cds, SMTO_ABORTIFHUNG, 1000, &dwret);
 
-	string respmes="";
+	string respmes;
 
 	if((::WaitForSingleObject(mutex, 1000)!=WAIT_TIMEOUT)&&isResponseValid){
 		respmes=response;
 		isResponseValid=false;
 		::ReleaseMutex(mutex);
 	}
-	return respmes;
+	// 応答のCharsetに従う (無ければShift_JIS)
+	TKawariCharset rcs=TPHMessage::ScanCharset(respmes);
+	if ((rcs!=KC_SJIS)&&(rcs!=KC_UTF8)) rcs=KC_SJIS;
+	return MBtoW(respmes, rcs);
 }
 //---------------------------------------------------------------------------

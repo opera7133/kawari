@@ -10,7 +10,11 @@
  * raw response bytes are appended to <out file>. Responses are separated by
  * "\n=====\n". unload() is called at the end.
  *
- * No character code conversion is done. Build with the same bitness as the
+ * If the environment variable HARNESS_LOADU is set, loadu() is called with the
+ * path converted to UTF-8 instead of load(). In that mode the UTF-16 environment
+ * variable HARNESS_DIR_W, if set, is used as the folder instead of <ghost dir>.
+ *
+ * No character code conversion is done for requests. Build with the same bitness as the
  * DLL (the DLL is 32bit), for example:
  *   gcc -O1 -Wall -o shiori_harness.exe shiori_harness.c
  *
@@ -84,16 +88,55 @@ int main(int argc, char **argv)
 	}
 
 	/* load() takes ownership of the buffer and frees it with GlobalFree. */
-	dirlen = strlen(argv[2]);
-	len = (long)dirlen;
-	if (dirlen == 0 || (argv[2][dirlen - 1] != '\\' && argv[2][dirlen - 1] != '/')) len++;
-	g = GlobalAlloc(GMEM_FIXED, len);
-	memcpy(g, argv[2], dirlen);
-	if ((size_t)len > dirlen) ((char *)g)[dirlen] = '\\';
-	if (!load(g, len)) {
-		fprintf(stderr, "load() returned FALSE for %s\n", argv[2]);
-		fclose(out);
-		return 4;
+	{
+		const char *dir = argv[2];
+		int need_sep = 1;
+		int useu = (getenv("HARNESS_LOADU") != NULL);
+		const char *last;
+		dirlen = strlen(dir);
+		/* judge the last *character*, not the last byte: a folder name ending with
+		   a kanji whose 2nd byte is 0x5C (0x95 0x5C) does not end with a separator */
+		if (dirlen > 0) {
+			last = CharPrevA(dir, dir + dirlen);
+			if (last == dir + dirlen - 1 && (*last == '\\' || *last == '/')) need_sep = 0;
+		}
+		if (useu) {
+			/* ACP -> UTF-16 -> UTF-8, then call loadu() */
+			WCHAR wbuf[MAX_PATH * 2 + 2];
+			char ubuf[MAX_PATH * 6 + 8];
+			int wn = MultiByteToWideChar(CP_ACP, 0, dir, (int)dirlen, wbuf, MAX_PATH * 2);
+			int un;
+			/* HARNESS_DIR_W (UTF-16 environment variable) overrides the folder, for names outside the ANSI code page */
+			{
+				DWORD ew = GetEnvironmentVariableW(L"HARNESS_DIR_W", wbuf, MAX_PATH * 2);
+				if (ew > 0 && ew < MAX_PATH * 2) {
+					wn = (int)ew;
+					need_sep = (wbuf[wn - 1] != L'\\' && wbuf[wn - 1] != L'/');
+				}
+			}
+			LOADF loadu = (LOADF)GetProcAddress(h, "loadu");
+			if (!loadu) { fprintf(stderr, "loadu is not exported\n"); fclose(out); return 3; }
+			if (need_sep) wbuf[wn] = L'\\', wn++;
+			un = WideCharToMultiByte(CP_UTF8, 0, wbuf, wn, ubuf, sizeof(ubuf), NULL, NULL);
+			len = un;
+			g = GlobalAlloc(GMEM_FIXED, len);
+			memcpy(g, ubuf, len);
+			if (!loadu(g, len)) {
+				fprintf(stderr, "loadu() returned FALSE for %s\n", dir);
+				fclose(out);
+				return 4;
+			}
+		} else {
+			len = (long)dirlen + (need_sep ? 1 : 0);
+			g = GlobalAlloc(GMEM_FIXED, len);
+			memcpy(g, dir, dirlen);
+			if (need_sep) ((char *)g)[dirlen] = '\\';
+			if (!load(g, len)) {
+				fprintf(stderr, "load() returned FALSE for %s\n", dir);
+				fclose(out);
+				return 4;
+			}
+		}
 	}
 
 	for (i = 4; i < argc; i++) {

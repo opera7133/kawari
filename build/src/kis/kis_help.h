@@ -29,16 +29,16 @@ public:
 	// Initで名前その他の情報を設定してください
 	virtual bool Init(void)
 	{
-		Name_="help";
-		Format_="help Command1";
-		Returnval_="help message";
-		Information_="print online help of KIS command (for Kosui use)";
+		Name_=L"help";
+		Format_=L"help Command1";
+		Returnval_=L"help message";
+		Information_=L"print online help of KIS command (for Kosui use)";
 
 		return(true);
 	}
 
 	// インタープリタ
-	virtual string Function(const vector<string>& args);
+	virtual wstring Function(const vector<wstring>& args);
 };
 //---------------------------------------------------------------------------
 class KIS_ver : public TKisFunction_base {
@@ -47,16 +47,16 @@ public:
 	// Initで名前その他の情報を設定してください
 	virtual bool Init(void)
 	{
-		Name_="ver";
-		Format_="ver";
-		Returnval_="version info";
-		Information_="return KAWARI version info formatted by \"basename.subname/verNo.\"";
+		Name_=L"ver";
+		Format_=L"ver";
+		Returnval_=L"version info";
+		Information_=L"return KAWARI version info formatted by \"basename.subname/verNo.\"";
 
 		return(true);
 	}
 
 	// インタープリタ
-	virtual string Function(const vector<string>& args);
+	virtual wstring Function(const vector<wstring>& args);
 };
 //---------------------------------------------------------------------------
 #endif

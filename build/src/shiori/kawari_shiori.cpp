@@ -65,6 +65,7 @@
 //  2002.04.19                SHIORI/3.0対応
 //  2002.12.30  Phase 8.1.0   Winter Comicket Version
 //                            複数インスタンスを許可(内部的に)
+//  2026.10.18  Phase 9.0.0   wchar_t化 (Charsetヘッダ対応)
 //
 //---------------------------------------------------------------------------
 #include "config.h"
@@ -73,6 +74,7 @@
 //#include <iostream>
 #include <fstream>
 #include <cstdlib>
+#include <cwchar>
 #include <ctime>
 #include <cctype>
 using namespace std;
@@ -80,72 +82,92 @@ using namespace std;
 #include "shiori/kawari_shiori.h"
 #include "libkawari/kawari_log.h"
 #include "misc/misc.h"
+#include "misc/charset.h"
 using namespace kawari_log;
+//---------------------------------------------------------------------------
+// 狭い文字列リテラルのマクロ(KAWARI_NAMEなど)をワイドにする
+#define KW_WIDE2(x)	L##x
+#define KW_WIDE(x)	KW_WIDE2(x)
+//---------------------------------------------------------------------------
+// レスポンスのCharsetヘッダを確定する
+// 辞書側がSystem.Response.Charsetで有効な値を指定していればそれを優先、
+// 無い/不明ならリクエストの文字コード(cs)を使う。
+// 戻り値 : レスポンスのエンコードに使う文字コード
+static TKawariCharset FixResponseCharset(TPHMessage &response, TKawariCharset cs)
+{
+	if (response.count(L"Charset")){
+		TKawariCharset rcs=CharsetFromName(response[L"Charset"]);
+		if ((rcs==KC_SJIS)||(rcs==KC_UTF8)) return rcs;
+		response.erase(L"Charset");
+	}
+	response.Add(L"Charset", CharsetName(cs));
+	return cs;
+}
 //---------------------------------------------------------------------------
 // SHIORI/2.x API
 //---------------------------------------------------------------------------
 // DLLロード時に呼ばれる
-bool TKawariShioriAdapter::Load(const string& datapath)
+bool TKawariShioriAdapter::Load(const wstring& datapath)
 {
 	// このタイミングで乱数初期化
 	SRandom((unsigned int)time(NULL));
 
 	Engine.SetDataPath(datapath);
 
-	Engine.CreateEntry("System.DataPath").Push(Engine.CreateStrWord(datapath));
-	Engine.WriteProtect("System.DataPath");
+	Engine.CreateEntry(L"System.DataPath").Push(Engine.CreateStrWord(datapath));
+	Engine.WriteProtect(L"System.DataPath");
 
 	// 初期実行スクリプト
-	Engine.LoadKawariDict(datapath+"kawarirc.kis");
+	Engine.LoadKawariDict(datapath+L"kawarirc.kis");
 
 	// セキュリティレベル設定
-	string slv=Engine.IndexParse("System.SecurityLevel");
+	wstring slv=Engine.IndexParse(L"System.SecurityLevel");
 	if (slv.size()&&IsInteger(slv)){
-		unsigned int lv=atoi(slv.c_str());
+		unsigned int lv=(unsigned int)StringToInt(slv);
 		SecurityLevel.Set(lv);
 	}else{
-		Engine.CreateEntry("System.SecurityLevel").Push(Engine.CreateStrWord(IntToString(SecurityLevel.Get())));
+		Engine.CreateEntry(L"System.SecurityLevel").Push(Engine.CreateStrWord(IntToString(SecurityLevel.Get())));
 	}
-	Engine.WriteProtect("System.SecurityLevel");
+	Engine.WriteProtect(L"System.SecurityLevel");
 
 	// 初期化終了
 	initialized=true;
 
-	Engine.GetLogger().GetStream(LOG_INFO) << "[SHIORI/SAORI Adapter] Load finished." << endl;
+	Engine.GetLogger().GetStream(LOG_INFO) << L"[SHIORI/SAORI Adapter] Load finished." << endl;
 	return(true);
 }
 //---------------------------------------------------------------------------
 // DLLアンロード時に呼ばれる
 bool TKawariShioriAdapter::Unload(void)
 {
-	string aistr=EnumExec("System.Callback.OnUnload");
+	wstring aistr=EnumExec(L"System.Callback.OnUnload");
 
-	Engine.GetLogger().GetStream(LOG_INFO) << "[SHIORI/SAORI Adapter] Unload." << endl;
+	Engine.GetLogger().GetStream(LOG_INFO) << L"[SHIORI/SAORI Adapter] Unload." << endl;
 
 	return(true);
 }
 //---------------------------------------------------------------------------
 // 偽AIリクエスト
-void TKawariShioriAdapter::Request(TPHMessage &request, TPHMessage &response)
+void TKawariShioriAdapter::Request(TPHMessage &request, TPHMessage &response, TKawariCharset cs)
 {
-	const string &reqline=request.GetStartline();
+	const wstring &reqline=request.GetStartline();
 	TKawariLogger &Logger=Engine.GetLogger();
 
 	// リクエストコマンドの抽出
 	bool saori=false;
-	string::size_type pos=reqline.find(" SHIORI/");
-	if(pos==string::npos) {
-		pos=reqline.find(" SAORI/");
+	wstring::size_type pos=reqline.find(L" SHIORI/");
+	if(pos==wstring::npos) {
+		pos=reqline.find(L" SAORI/");
 		saori=true;
 	}
-	string type=reqline.substr(0,pos);
+	wstring type=reqline.substr(0,pos);
 
 	if (!initialized){
 		// 未初期化エラー
 		if(!saori) {
-			response.SetStartline("SHIORI/"SHIORIVER" 500 Internal Server Error");
+			response.SetStartline(L"SHIORI/" KW_WIDE(SHIORIVER) L" 500 Internal Server Error");
 		} else {
-			response.SetStartline("SAORI/"SAORIVER" 500 Internal Server Error");
+			response.SetStartline(L"SAORI/" KW_WIDE(SAORIVER) L" 500 Internal Server Error");
 		}
 		return;
 		// KIU_TODO: エラーログを吐きましょう
@@ -153,14 +175,14 @@ void TKawariShioriAdapter::Request(TPHMessage &request, TPHMessage &response)
 
 	// ログ取りのチェック
 	unsigned int evtchk;
-	if(type=="GET"){
+	if(type==L"GET"){
 		// GET SHIORI/3.0
-		if(request["ID"].find("On")==0){
+		if(request[L"ID"].find(L"On")==0){
 			// イベント
-			if((request["ID"]=="OnSecondChange")||(request["ID"]=="OnMinuteChange"))
+			if((request[L"ID"]==L"OnSecondChange")||(request[L"ID"]==L"OnMinuteChange"))
 				// 時刻イベント
 				evtchk=LOG_TIMEEVENTS;
-			else if(request["ID"].find("OnMouse")==0)
+			else if(request[L"ID"].find(L"OnMouse")==0)
 				// マウスイベント
 				evtchk=LOG_MOUSEEVENTS;
 			else
@@ -170,19 +192,19 @@ void TKawariShioriAdapter::Request(TPHMessage &request, TPHMessage &response)
 			// リソース
 			evtchk=LOG_RSCEVENTS;
 		}
-	}else if(type=="NOTIFY"){
+	}else if(type==L"NOTIFY"){
 		// NOTIFY SHIORI/3.0
 		evtchk=LOG_BASEEVENTS;
-	}else if((type=="GET String")&&(request.count("ID"))){
+	}else if((type==L"GET String")&&(request.count(L"ID"))){
 		// GET String SHIORI/2.0
 		// リソース
 		evtchk=LOG_RSCEVENTS;
-	}else if(request.count("Event")) {
+	}else if(request.count(L"Event")) {
 		// イベント
-		if((request["Event"]=="OnSecondChange")||(request["Event"]=="OnMinuteChange")){
+		if((request[L"Event"]==L"OnSecondChange")||(request[L"Event"]==L"OnMinuteChange")){
 			// 時刻イベント
 			evtchk=LOG_TIMEEVENTS;
-		}else if (request["Event"]=="OnMouseMove"){
+		}else if (request[L"Event"]==L"OnMouseMove"){
 			// マウスイベント
 			evtchk=LOG_MOUSEEVENTS;
 		}else{
@@ -194,113 +216,110 @@ void TKawariShioriAdapter::Request(TPHMessage &request, TPHMessage &response)
 	bool logmode=Logger.Check(evtchk);
 
 	if(logmode) {
-		Logger.GetStream() << "[SHIORI/SAORI Adapter] Query sequence begin." << endl;
-		Logger.GetStream() << "---------------------- REQUEST" << endl;
+		Logger.GetStream() << L"[SHIORI/SAORI Adapter] Query sequence begin." << endl;
+		Logger.GetStream() << L"---------------------- REQUEST" << endl;
 		request.Dump(Logger.GetStream());
 	}
 
 	unsigned int statuscode=400;
 
 	// 伝達経路を確認
-	string sender_path_name;
+	wstring sender_path_name;
 	TSecurityLevel::TSenderPath sender_path;
-	GetSenderPath(request["SecurityLevel"],sender_path,sender_path_name);
+	GetSenderPath(request[L"SecurityLevel"],sender_path,sender_path_name);
 
 	if(SecurityLevel.Check(sender_path)) {
 
 		// リクエストヘッダを辞書に格納
-		Engine.ClearTree("System.Request");
-		Engine.CreateEntry("System.Request").Push(Engine.CreateStrWord(type));
-		for(TMMap<string,string>::const_iterator it=request.begin();it!=request.end();it++) {
-			Engine.CreateEntry("System.Request."+Engine.EncodeEntryName(it->first)).Push(Engine.CreateStrWord(it->second));
+		Engine.ClearTree(L"System.Request");
+		Engine.CreateEntry(L"System.Request").Push(Engine.CreateStrWord(type));
+		for(TMMap<wstring,wstring>::const_iterator it=request.begin();it!=request.end();it++) {
+			Engine.CreateEntry(L"System.Request."+Engine.EncodeEntryName(it->first)).Push(Engine.CreateStrWord(it->second));
 		}
 
 		// 辞書内のレスポンスエントリを消去
-		Engine.ClearTree("System.Response");
+		Engine.ClearTree(L"System.Response");
 
 		// SHIORI/3.0
-		if(type=="GET"){
-			const string &reqid=request["ID"];
-			string aistr;
+		if(type==L"GET"){
+			const wstring &reqid=request[L"ID"];
+			wstring aistr;
 
 			// デフォルトKOSUIインターフェースはオーバーライド不可能
-			if (reqid=="ShioriEcho"){
-				if (Engine.IndexParse("System.Debugger")=="on"){
-					Engine.ClearEntry("System.Request.Reference0");
+			if (reqid==L"ShioriEcho"){
+				if (Engine.IndexParse(L"System.Debugger")==L"on"){
+					Engine.ClearEntry(L"System.Request.Reference0");
 
-					aistr=Engine.Parse(request["Reference0"])+"\\e";
+					aistr=Engine.Parse(request[L"Reference0"])+L"\\e";
 				}
 			}else{
-				aistr=EnumExec("System.Callback.OnGET");
+				aistr=EnumExec(L"System.Callback.OnGET");
 
 				GetResponse(response);
-				response.erase("Value");
+				response.erase(L"Value");
 
 				// version/craftman/craftmanw/shioriid/nameは、
 				// ユーザがオーバーライド可能
 				if (!aistr.size()){
-					if (reqid=="version")
-						aistr=KAWARI_MAJOR"."KAWARI_MINOR"."KAWARI_SUBMINOR;
-					else if ((reqid=="craftman")||(reqid=="craftmanw"))
-						aistr=KAWARI_AUTHOR;
-					else if ((reqid=="shioriid")||(reqid=="name"))
-						aistr=KAWARI_NAME;
+					if (reqid==L"version")
+						aistr=KW_WIDE(KAWARI_MAJOR) L"." KW_WIDE(KAWARI_MINOR) L"." KW_WIDE(KAWARI_SUBMINOR);
+					else if ((reqid==L"craftman")||(reqid==L"craftmanw"))
+						aistr=KW_WIDE(KAWARI_AUTHOR);
+					else if ((reqid==L"shioriid")||(reqid==L"name"))
+						aistr=KW_WIDE(KAWARI_NAME);
 				}
 			}
 
 			if (aistr.size()){
-				response["Value"]=aistr;
+				response[L"Value"]=aistr;
 				statuscode=200;
 			}else{
 				statuscode=204;
 			}
-			response["Sender"]=GhostName;
-			response["Charset"]="Shift_JIS";
+			response[L"Sender"]=GhostName;
 
-		}else if(type=="NOTIFY"){
-			const string &reqid=request["ID"];
-			if (reqid=="ownerghostname"){
-				GhostName=request["Reference0"];
+		}else if(type==L"NOTIFY"){
+			const wstring &reqid=request[L"ID"];
+			if (reqid==L"ownerghostname"){
+				GhostName=request[L"Reference0"];
 			}
-			string aistr=EnumExec("System.Callback.OnNOTIFY");
+			wstring aistr=EnumExec(L"System.Callback.OnNOTIFY");
 
 			GetResponse(response);
-			response.erase("Value");
-			response["Sender"]=GhostName;
-			response["Charset"]="Shift_JIS";
+			response.erase(L"Value");
+			response[L"Sender"]=GhostName;
 
 			statuscode=204;
 		}else
 			// 以降 SHIORI/2.6
-			if(type=="GET Sentence") {
+			if(type==L"GET Sentence") {
 			// 単純発話とかイベントとか色々
 
-			string aistr;
-			if(request.count("Sentence")) {
+			wstring aistr;
+			if(request.count(L"Sentence")) {
 				// コミュニケートの応答
-				aistr=EnumExec("System.Callback.OnGetSentence");
+				aistr=EnumExec(L"System.Callback.OnGetSentence");
 			} else {
 				// KOSUIインターフェース
-				if (request["Event"]=="ShioriEcho"){
-					if (Engine.IndexParse("System.Debugger")=="on"){
-						Engine.ClearEntry("System.Request.Reference0");
-						aistr=Engine.Parse(request["Reference0"])+"\\e";
+				if (request[L"Event"]==L"ShioriEcho"){
+					if (Engine.IndexParse(L"System.Debugger")==L"on"){
+						Engine.ClearEntry(L"System.Request.Reference0");
+						aistr=Engine.Parse(request[L"Reference0"])+L"\\e";
 					}
 				}else{
 					// イベント処理/単純発話
-					aistr=EnumExec("System.Callback.OnEvent");
+					aistr=EnumExec(L"System.Callback.OnEvent");
 				}
 			}
 
-			// 
+			//
 			GetResponse(response);
-			response.erase("Sentence");
-			response.erase("Age");
-			response["Sender"]=GhostName;
-			response["Charset"]="Shift_JIS";
+			response.erase(L"Sentence");
+			response.erase(L"Age");
+			response[L"Sender"]=GhostName;
 
 			if(aistr.size()){
-				response["Sentence"]=aistr;
+				response[L"Sentence"]=aistr;
 				statuscode=200;
 			}else{
 				statuscode=204;
@@ -308,14 +327,14 @@ void TKawariShioriAdapter::Request(TPHMessage &request, TPHMessage &response)
 
 			// ゴースト間コミュニケートの処理
 			// 無言電話もできます
-			string targetghost=response["To"];
-			response.erase("To");
-			string reqsender=request["Sender"];
+			wstring targetghost=response[L"To"];
+			response.erase(L"To");
+			wstring reqsender=request[L"Sender"];
 			if((!targetghost.size())&&
-			   ((!request.count("Age"))||(!reqsender.size())||
-				(reqsender=="User")||(reqsender=="Nobody"))){
+			   ((!request.count(L"Age"))||(!reqsender.size())||
+				(reqsender==L"User")||(reqsender==L"Nobody"))){
 				// コミュニケート終了
-			}else if(targetghost=="stop"){
+			}else if(targetghost==L"stop"){
 				// コミュニケート終了
 			}else {
 				int age=0;
@@ -324,60 +343,60 @@ void TKawariShioriAdapter::Request(TPHMessage &request, TPHMessage &response)
 				}else{
 					// Ageのインクリメント
 					targetghost=reqsender;
-					if(request.count("Age"))
-						age=atoi(request["Age"].c_str())+1;
+					if(request.count(L"Age"))
+						age=StringToInt(request[L"Age"])+1;
 				}
-				response["To"]=targetghost;
-				response["Age"]=IntToString(age);
+				response[L"To"]=targetghost;
+				response[L"Age"]=IntToString(age);
 			}
-		} else if(type=="GET Status") {
-			string aistr=Engine.IndexParse("System.Callback.OnGetStatus");
+		} else if(type==L"GET Status") {
+			wstring aistr=Engine.IndexParse(L"System.Callback.OnGetStatus");
 			if(aistr.size()>0) {
-				response["Status"]=aistr;
+				response[L"Status"]=aistr;
 			} else {
-				response["Status"]=
-				 IntToString(Engine.WordCollectionSize())+","
-				 +IntToString(Engine.EntryCollectionSize())+","
-				 +"100,"
-				 +KAWARI_MAJOR KAWARI_MINOR KAWARI_SUBMINOR ","	// 華和梨のバージョン番号
-				 +"100,"
-				 +"100";
+				response[L"Status"]=
+				 IntToString(Engine.WordCollectionSize())+L","
+				 +IntToString(Engine.EntryCollectionSize())+L","
+				 +L"100,"
+				 +KW_WIDE(KAWARI_MAJOR) KW_WIDE(KAWARI_MINOR) KW_WIDE(KAWARI_SUBMINOR) L","	// 華和梨のバージョン番号
+				 +L"100,"
+				 +L"100";
 			}
 			statuscode=200;
-		} else if((type=="GET String")&&(request.count("ID"))) {
+		} else if((type==L"GET String")&&(request.count(L"ID"))) {
 			// SHIORI/2.5
-			string aistr=Engine.IndexParse("System.Callback.OnResource");
-			response.erase("String");
+			wstring aistr=Engine.IndexParse(L"System.Callback.OnResource");
+			response.erase(L"String");
 			if (aistr.size()){
 				statuscode=200;
-				response["String"]=aistr;
+				response[L"String"]=aistr;
 			}else{
 				statuscode=204;
 			}
-		} else if(type=="NOTIFY OwnerGhostName") {
+		} else if(type==L"NOTIFY OwnerGhostName") {
 			// ゴースト名の通知
-			GhostName=request["Ghost"];
+			GhostName=request[L"Ghost"];
 			statuscode=200;
-			EnumExec("System.Callback.OnRequest");
-		} else if(type=="GET Version") {
+			EnumExec(L"System.Callback.OnRequest");
+		} else if(type==L"GET Version") {
 			// 初期化前のGET Versionだけはshiori_interface.cppで既に処理している
 			if(!saori) {
-				response["ID"]=KAWARI_NAME;
-				response["Craftman"]=KAWARI_AUTHOR;
-				response["Version"]=KAWARI_MAJOR"."KAWARI_MINOR"."KAWARI_SUBMINOR;
+				response[L"ID"]=KW_WIDE(KAWARI_NAME);
+				response[L"Craftman"]=KW_WIDE(KAWARI_AUTHOR);
+				response[L"Version"]=KW_WIDE(KAWARI_MAJOR) L"." KW_WIDE(KAWARI_MINOR) L"." KW_WIDE(KAWARI_SUBMINOR);
 			} else {
 				// 仕様書通りだと"200 OK"も付けられない事になるが、はて？
 //				return("SAORI/1.0");
 			}
 			statuscode=200;
-		} else if(saori&&(type=="EXECUTE")) {
+		} else if(saori&&(type==L"EXECUTE")) {
 			// SAORI実行
-			EnumExec("System.Callback.OnSaoriExecute");
+			EnumExec(L"System.Callback.OnSaoriExecute");
 			statuscode=GetResponse(response);
 			if(statuscode==0) statuscode=400;
 		} else {
 			// その他全てのリクエスト
-			EnumExec("System.Callback.OnRequest");
+			EnumExec(L"System.Callback.OnRequest");
 			statuscode=GetResponse(response);
 			if(statuscode==0) statuscode=400;
 		}
@@ -385,73 +404,76 @@ void TKawariShioriAdapter::Request(TPHMessage &request, TPHMessage &response)
 		// 実行許可なし
 	}
 
-	string statusheader;
+	wstring statusheader;
 	switch(statuscode) {
 	case 200:
-		statusheader="200 OK";
+		statusheader=L"200 OK";
 		break;
 	case 204:
-		statusheader="204 No Content";
+		statusheader=L"204 No Content";
 		break;
 	case 311:
-		statusheader="311 Not Enough";
+		statusheader=L"311 Not Enough";
 		break;
 	case 312:
-		statusheader="312 Advice";
+		statusheader=L"312 Advice";
 		break;
 	case 400:
-		statusheader="400 Bad Request";
+		statusheader=L"400 Bad Request";
 		break;
 	default:
-		statusheader="500 Internal Server Error";
+		statusheader=L"500 Internal Server Error";
 		break;
 	}
 
 	if(!saori)
-		response.SetStartline("SHIORI/"SHIORIVER" "+statusheader);
+		response.SetStartline(L"SHIORI/" KW_WIDE(SHIORIVER) L" "+statusheader);
 	else
-		response.SetStartline("SAORI/"SAORIVER" "+statusheader);
+		response.SetStartline(L"SAORI/" KW_WIDE(SAORIVER) L" "+statusheader);
+
+	// Charsetヘッダの確定 (辞書側の指定を優先)
+	FixResponseCharset(response, cs);
 
 	if (logmode){
-		Logger.GetStream() << "--------------------- RESPONSE" << endl;
+		Logger.GetStream() << L"--------------------- RESPONSE" << endl;
 		response.Dump(Logger.GetStream());
-		Logger.GetStream() << "[SHIORI/SAORI Adapter] Query sequence end." << endl;
+		Logger.GetStream() << L"[SHIORI/SAORI Adapter] Query sequence end." << endl;
 	}
 }
 //---------------------------------------------------------------------------
 // 以下はAPI以外
 //---------------------------------------------------------------------------
 // Senderを伝達経路情報と分離
-void TKawariShioriAdapter::GetSenderPath(const string &senderstr,
- TKawariShioriAdapter::TSecurityLevel::TSenderPath &sender_path,string &sender_path_name)
+void TKawariShioriAdapter::GetSenderPath(const wstring &senderstr,
+ TKawariShioriAdapter::TSecurityLevel::TSenderPath &sender_path,wstring &sender_path_name)
 {
-	string sender=StringTrim(senderstr);
+	wstring sender=StringTrim(senderstr);
 
-	if((sender=="local")||(sender=="Local")) {
+	if((sender==L"local")||(sender==L"Local")) {
 		sender_path=TSecurityLevel::tsidLocal;
-		sender_path_name="local";
-	} else if((sender=="external")||(sender=="External")) {
+		sender_path_name=L"local";
+	} else if((sender==L"external")||(sender==L"External")) {
 		sender_path=TSecurityLevel::tsidExternal;
-		sender_path_name="external";
-	} else if(sender=="") {
+		sender_path_name=L"external";
+	} else if(sender==L"") {
 		// 往々にしてSecurityLevelは渡ってこない
 		sender_path=TSecurityLevel::tsidLocal;
-		sender_path_name="local";
+		sender_path_name=L"local";
 	}else{
 		sender_path=TSecurityLevel::tsidUnknown;
-		sender_path_name="unknown";
+		sender_path_name=L"unknown";
 	}
 
 	return;
 }
 //---------------------------------------------------------------------------
 // 指定したエントリの単語を全て呼び出す
-string TKawariShioriAdapter::EnumExec(const string& key)
+wstring TKawariShioriAdapter::EnumExec(const wstring& key)
 {
 	TEntry entry=Engine.GetEntry(key);
 	unsigned int size=entry.Size();
 
-	string aistr;
+	wstring aistr;
 	for(unsigned int i=0;i<size;i++) aistr+=Engine.IndexParse(entry,i);
 
 	return(aistr);
@@ -460,7 +482,7 @@ string TKawariShioriAdapter::EnumExec(const string& key)
 // 辞書内のレスポンスを全て読み出す
 int TKawariShioriAdapter::GetResponse(TPHMessage &response)
 {
-	const char *resentryname="System.Response";
+	const wchar_t *resentryname=L"System.Response";
 	TEntry resentry=Engine.GetEntry(resentryname);
 
 	if (!resentry.IsValid()) return 0;
@@ -470,14 +492,14 @@ int TKawariShioriAdapter::GetResponse(TPHMessage &response)
 
 	for(unsigned int i=0;i<entrycol.size();i++) {
 		if(entrycol[i]!=resentry) {
-			string key=entrycol[i].GetName();
-			key=key.substr(strlen(resentryname)+1);
-			string str=Engine.IndexParse(entrycol[i]);
+			wstring key=entrycol[i].GetName();
+			key=key.substr(wcslen(resentryname)+1);
+			wstring str=Engine.IndexParse(entrycol[i]);
 			if(str.size()) response[key]=str;
 		}
 	}
 
-	return((int)atoi(Engine.IndexParse(resentry).c_str()));
+	return StringToInt(Engine.IndexParse(resentry));
 }
 //---------------------------------------------------------------------------
 TKawariShioriFactory *TKawariShioriFactory::instance=NULL;
@@ -493,7 +515,7 @@ TKawariShioriFactory::~TKawariShioriFactory(){
 }
 //---------------------------------------------------------------------------
 // 新規インスタンスの作成
-unsigned int TKawariShioriFactory::CreateInstance(const string &datapath){
+unsigned int TKawariShioriFactory::CreateInstance(const wstring &datapath){
 	TKawariShioriAdapter *instance=new TKawariShioriAdapter();
 	if (!instance->Load(datapath)){
 		delete instance;
@@ -527,16 +549,23 @@ bool TKawariShioriFactory::DisposeInstance(unsigned int h){
 }
 //---------------------------------------------------------------------------
 // リクエスト
+// リクエストのCharsetヘッダ(無い/不明ならShift_JIS)でデコードし、
+// 同じ文字コード(辞書側がSystem.Response.Charsetを指定していればそれ)でエンコードして返す
 string TKawariShioriFactory::RequestInstance(unsigned int h, const string &reqstr){
 	if ((h==0)||(h>list.size())) return ("");
 	TKawariShioriAdapter *instance=list[(int)h-1];
 	if (!instance) return ("");
 
+	TKawariCharset cs=TPHMessage::ScanCharset(reqstr);
+	if ((cs!=KC_SJIS)&&(cs!=KC_UTF8)) cs=KC_SJIS;
+
 	TPHMessage mreq, mres;
-	mreq.Deserialize(reqstr);
-	instance->Request(mreq, mres);
-	return mres.Serialize();
+	mreq.Deserialize(reqstr, cs);
+	instance->Request(mreq, mres, cs);
+	TKawariCharset rcs=FixResponseCharset(mres, cs);
+	return mres.Serialize(rcs);
 }
+//---------------------------------------------------------------------------
 //---------------------------------------------------------------------------
 // 以下のエントリは特別扱いされる(Phase7.9.0にて全面的に変更)
 //

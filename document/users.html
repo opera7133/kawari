@@ -309,6 +309,18 @@ ToQOho6fTn5OnU6JznjOg46XToaOnA6DjpdOho6cDn65N0=<BR>
 </P>
 
 <P>
+  Phase 9.0.0から、辞書ファイルの文字コードはUTF-8とShift_JIS(CP932)の両方に対応しました。
+  辞書ファイルの先頭にUTF-8のBOMがあるか、ファイル全体がUTF-8として正当ならUTF-8、
+  そうでなければShift_JISとして読み込まれます(従来のShift_JIS辞書はそのまま使えます)。
+  kawari_encode2は、入力がUTF-8(BOMあり、またはUTF-8として正当で非ASCII文字を含む)なら、
+  暗号化ファイルの先頭にもBOMを付けます。
+  暗号化辞書の読み込み時は、ファイルにBOMがあれば復号結果をUTF-8、なければShift_JISとして扱います。
+  kawari_decode2は、入力にBOMがあれば出力にもBOMを付けます。
+  なお、savecryptコマンドはUTF-8(BOMあり)で保存するため、
+  その辞書はPhase 8.2.9以前の華和梨では正しく読めません。
+</P>
+
+<P>
   暗号化したファイルを元に戻したい場合は、
   kawari_decode2.exeを使います。
 </P>

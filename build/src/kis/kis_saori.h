@@ -34,16 +34,16 @@ public:
 	// Initで名前その他の情報を設定してください
 	virtual bool Init(void)
 	{
-		Name_="saoriregist";
-		Format_="saoriregist dllname aliasname [ loadoption ]";
-		Returnval_="(NULL)";
-		Information_="register saorimodule";
+		Name_=L"saoriregist";
+		Format_=L"saoriregist dllname aliasname [ loadoption ]";
+		Returnval_=L"(NULL)";
+		Information_=L"register saorimodule";
 
 		return(true);
 	}
 
 	// インタープリタ
-	virtual string Function(const vector<string>& args);
+	virtual wstring Function(const vector<wstring>& args);
 };
 //---------------------------------------------------------------------------
 class KIS_saorierase : public TKisFunction_base {
@@ -52,16 +52,16 @@ public:
 	// Initで名前その他の情報を設定してください
 	virtual bool Init(void)
 	{
-		Name_="saorierase";
-		Format_="saorierase aliasname";
-		Returnval_="(NULL)";
-		Information_="unregister saorimodule";
+		Name_=L"saorierase";
+		Format_=L"saorierase aliasname";
+		Returnval_=L"(NULL)";
+		Information_=L"unregister saorimodule";
 
 		return(true);
 	}
 
 	// インタープリタ
-	virtual string Function(const vector<string>& args);
+	virtual wstring Function(const vector<wstring>& args);
 };
 //---------------------------------------------------------------------------
 class KIS_saorilist : public TKisFunction_base {
@@ -69,16 +69,16 @@ public:
 	// Initで名前その他の情報を設定してください
 	virtual bool Init(void)
 	{
-		Name_="saorilist";
-		Format_="saorilist stem";
-		Returnval_="list of registered aliases";
-		Information_="returns a list of registered aliases, ether loaded or not";
+		Name_=L"saorilist";
+		Format_=L"saorilist stem";
+		Returnval_=L"list of registered aliases";
+		Information_=L"returns a list of registered aliases, ether loaded or not";
 
 		return(true);
 	}
 
 	// インタープリタ
-	virtual string Function(const vector<string>& args);
+	virtual wstring Function(const vector<wstring>& args);
 };
 //---------------------------------------------------------------------------
 class KIS_callsaori : public TKisFunction_base {
@@ -87,20 +87,20 @@ public:
 	// Initで名前その他の情報を設定してください
 	virtual bool Init(void)
 	{
-		Name_="callsaori";
-		Format_="callsaori saorimodulename [param0] ...";
-		Returnval_="(dll specific)";
-		Information_="invoke request to SAORI/1.0 module";
+		Name_=L"callsaori";
+		Format_=L"callsaori saorimodulename [param0] ...";
+		Returnval_=L"(dll specific)";
+		Information_=L"invoke request to SAORI/1.0 module";
 
 		return(true);
 	}
 
 	// インタープリタ
-	virtual string Function(const vector<string>& args);
+	virtual wstring Function(const vector<wstring>& args);
 
 protected:
 	virtual bool CallSaori(
-		const string& saoriname, const vector<string>& args,
+		const wstring& saoriname, const vector<wstring>& args,
 		TPHMessage &response);
 };
 //---------------------------------------------------------------------------
@@ -110,16 +110,16 @@ public:
 	// Initで名前その他の情報を設定してください
 	virtual bool Init(void)
 	{
-		Name_="callsaorix";
-		Format_="callsaorix stem saorimodulename [param0] ...";
-		Returnval_="(dll specific)";
-		Information_="invoke request to SAORI/1.0 module, and store values to stem";
+		Name_=L"callsaorix";
+		Format_=L"callsaorix stem saorimodulename [param0] ...";
+		Returnval_=L"(dll specific)";
+		Information_=L"invoke request to SAORI/1.0 module, and store values to stem";
 
 		return(true);
 	}
 
 	// インタープリタ
-	virtual string Function(const vector<string>& args);
+	virtual wstring Function(const vector<wstring>& args);
 };
 //---------------------------------------------------------------------------
 #endif

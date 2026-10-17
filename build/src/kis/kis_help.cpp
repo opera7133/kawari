@@ -25,41 +25,41 @@
 #include <vector>
 using namespace std;
 //---------------------------------------------------------------------------
-string KIS_help::Function(const vector<string>& args)
+wstring KIS_help::Function(const vector<wstring>& args)
 {
 	if(args.size()>=2) {
 		TKisFunctionInfo info;
 		if (Engine->GetFunctionInfo(args[1], info)){
 			GetLogger().GetStream() << info.name << endl
-			 << "syntax  : " << info.format << endl
-			 << "return  : " << info.returnval << endl
-			 << "comment : " << info.information << endl;
+			 << L"syntax  : " << info.format << endl
+			 << L"return  : " << info.returnval << endl
+			 << L"comment : " << info.information << endl;
 		} else {
-			GetLogger().GetStream() << "Command \"" << args[1] << "\" is NOT exist." << endl;
+			GetLogger().GetStream() << L"Command \"" << args[1] << L"\" is NOT exist." << endl;
 		}
 	} else {
-		GetLogger().GetStream() << "Command list :" << endl;
-		vector<string> list;
+		GetLogger().GetStream() << L"Command list :" << endl;
+		vector<wstring> list;
 		Engine->GetFunctionList(list);
 
-		vector<string>::const_iterator it;
+		vector<wstring>::const_iterator it;
 		for(it=list.begin();it!=list.end();it++) {
 			GetLogger().GetStream() << (*it) << endl;
 		}
 	}
 
-	return("");
+	return(L"");
 }
 //---------------------------------------------------------------------------
-string KIS_ver::Function(const vector<string>& args)
+wstring KIS_ver::Function(const vector<wstring>& args)
 {
-	if ((args.size()>=2)&&(args[1]=="license")){
-		GetLogger().GetStream() << KAWARI_CORE_LICENSE;
-		return ("");
-	}else if((args.size()>=2)&&(args[1]=="author")) {
-		return(KAWARI_AUTHOR);
+	if ((args.size()>=2)&&(args[1]==L"license")){
+		GetLogger().GetStream() << L"" KAWARI_CORE_LICENSE;
+		return (L"");
+	}else if((args.size()>=2)&&(args[1]==L"author")) {
+		return(L"" KAWARI_AUTHOR);
 	}else{
-		return(KAWARI_NAME "/" KAWARI_MAJOR "." KAWARI_MINOR "." KAWARI_SUBMINOR);
+		return(L"" KAWARI_NAME L"/" KAWARI_MAJOR L"." KAWARI_MINOR L"." KAWARI_SUBMINOR);
 	}
 }
 //---------------------------------------------------------------------------

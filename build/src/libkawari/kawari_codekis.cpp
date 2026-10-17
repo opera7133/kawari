@@ -19,14 +19,14 @@ using namespace std;
 // KIS IF文
 
 // 実行
-string TKVMKISCodeIF::Run(TKawariVM &vm){
+wstring TKVMKISCodeIF::Run(TKawariVM &vm){
 	const unsigned int cmax=condlist.size();
 	bool finished=false;
-	string retstr;
+	wstring retstr;
 	unsigned int i=0;
 	unsigned int frame=vm.Dictionary().LinkFrame();
 	for (; i<cmax; i++){
-		string cond=condlist[i]->Run(vm);
+		wstring cond=condlist[i]->Run(vm);
 		vm.Dictionary().UnlinkFrame(frame);
 		if (IsTrue(cond)){
 			vm.Dictionary().PushToHistory(cond);
@@ -44,36 +44,36 @@ string TKVMKISCodeIF::Run(TKawariVM &vm){
 	return retstr;
 }
 // 逆コンパイル
-string TKVMKISCodeIF::DisCompile(void) const{
+wstring TKVMKISCodeIF::DisCompile(void) const{
 	const unsigned int cmax=condlist.size();
 	const unsigned int max=list.size();
-	string retstr;
+	wstring retstr;
 	unsigned int i=0;
 	for (; i<cmax; i++){
-		retstr+="if "+condlist[i]->DisCompile()+" "+list[i]->DisCompile();
-		if ((i+1)<max) retstr+=" else ";
+		retstr+=L"if "+condlist[i]->DisCompile()+L" "+list[i]->DisCompile();
+		if ((i+1)<max) retstr+=L" else ";
 	}
 	if (i<max)
 		retstr+=list[i]->DisCompile();
 	return retstr;
 }
 // デバッグ用ツリー表示
-ostream &TKVMKISCodeIF::Debug(ostream& os, unsigned int level) const{
+wostream &TKVMKISCodeIF::Debug(wostream& os, unsigned int level) const{
 	const unsigned int cmax=condlist.size();
 	const unsigned int max=list.size();
 	unsigned int i=0;
-	DebugIndent(os, level) << "(" << endl;
+	DebugIndent(os, level) << L"(" << endl;
 	for (; i<cmax; i++){
-		DebugIndent(os, level) << "IF(" << endl;
+		DebugIndent(os, level) << L"IF(" << endl;
 		condlist[i]->Debug(os, level+1);
-		DebugIndent(os, level) << ")THEN(" << endl;
+		DebugIndent(os, level) << L")THEN(" << endl;
 		list[i]->Debug(os, level+1);
 		if (i<max)
-			DebugIndent(os, level) << "ELSE" << endl;
+			DebugIndent(os, level) << L"ELSE" << endl;
 	}
 	if (i<max){
 		list[i]->Debug(os, level+1);
-		DebugIndent(os, level) << ")" << endl;
+		DebugIndent(os, level) << L")" << endl;
 	}
 	return os;
 }

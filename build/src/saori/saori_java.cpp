@@ -6,6 +6,7 @@
 //      Programed by Suikyo.
 //
 //  2003.02.25  Phase 8.1.0   作成
+//  2026.10.18  Phase 9.0.0   wchar_t化 (Javaとはパスを従来どおりSJISで受け渡す)
 //
 //---------------------------------------------------------------------------
 #include "config.h"
@@ -44,14 +45,14 @@ namespace{
 		jsize nVMs;
 		if (JNI_OK!=JNI_GetCreatedJavaVMs(vm, (jsize)1, &nVMs)){
 		    cout << "[SAORI Java] can not find Java VM" << endl;
-			lgr.GetStream(LOG_ERROR) << "[SAORI Java] JNI_GetCreatedJavaVMs failed." << endl;
+			lgr.GetStream(LOG_ERROR) << L"[SAORI Java] JNI_GetCreatedJavaVMs failed." << endl;
 			return JNI_ERR;
 		}
 	    cout << "[SAORI Java] " << (int)nVMs << "Java VM(s) found." << endl;
 		if (JNI_OK!=(*vm)->GetEnv((void **)env, JNI_VERSION_1_2)){
 		    cout << "[SAORI Java] current thread is not attached to VM." << endl;
 			if (JNI_OK!=(*vm)->AttachCurrentThread((void **)env, NULL)){
-				lgr.GetStream(LOG_ERROR) << "[SAORI Java] AttachCurrentThread failed" << endl;
+				lgr.GetStream(LOG_ERROR) << L"[SAORI Java] AttachCurrentThread failed" << endl;
 				return JNI_ERR;
 			}
 		}
@@ -76,7 +77,7 @@ TModuleFactoryJava::TModuleFactoryJava(TKawariLogger &lgr) : IModuleFactory(lgr)
 	jstring val=(jstring)env->CallStaticObjectMethod(
 		cls_System, mid_getProperty, jpropKey);
 	if ((val==NULL)||(0==env->GetStringUTFLength(val))){
-		GetLogger().GetStream(LOG_ERROR) << "[SAORI Java] No factory class is specified." << endl;
+		GetLogger().GetStream(LOG_ERROR) << L"[SAORI Java] No factory class is specified." << endl;
 		return;
 	}
 	const char *clazznamestr=env->GetStringUTFChars(val, NULL);
@@ -84,7 +85,7 @@ TModuleFactoryJava::TModuleFactoryJava(TKawariLogger &lgr) : IModuleFactory(lgr)
 	// FindClass(clazzname);
 	jclass lref_cls=env->FindClass(clazznamestr);
 	if (lref_cls==NULL){
-		GetLogger().GetStream(LOG_ERROR) << "[SAORI Java] Can not find factory class \"" << clazznamestr << "\"" << endl;
+		GetLogger().GetStream(LOG_ERROR) << L"[SAORI Java] Can not find factory class \"" << UTF8toW(clazznamestr) << L"\"" << endl;
 		env->ReleaseStringUTFChars(val, clazznamestr);
 		return;
 	}
@@ -97,7 +98,7 @@ TModuleFactoryJava::TModuleFactoryJava(TKawariLogger &lgr) : IModuleFactory(lgr)
 		cls_SaoriFactory, "createModule", "(Ljava/lang/String;)Ljava/lang/Object;");
 
 	if ((mid_init==NULL)||(mid_createModule==NULL)){
-		GetLogger().GetStream(LOG_ERROR) << "[SAORI Java] factory class has illegal structure." << endl;
+		GetLogger().GetStream(LOG_ERROR) << L"[SAORI Java] factory class has illegal structure." << endl;
 		env->DeleteGlobalRef(cls_SaoriFactory);
 		cls_SaoriFactory=NULL;
 		return;
@@ -106,7 +107,7 @@ TModuleFactoryJava::TModuleFactoryJava(TKawariLogger &lgr) : IModuleFactory(lgr)
 	// clazz.newInstance();
 	jobject lref_obj=env->NewObject(cls_SaoriFactory, mid_init);
 	if (lref_obj==NULL){
-		GetLogger().GetStream(LOG_ERROR) << "[SAORI Java] Can not create factory object." << endl;
+		GetLogger().GetStream(LOG_ERROR) << L"[SAORI Java] Can not create factory object." << endl;
 		env->DeleteGlobalRef(cls_SaoriFactory);
 		cls_SaoriFactory=NULL;
 		return;
@@ -123,22 +124,22 @@ TModuleFactoryJava::~TModuleFactoryJava(){
 	if (cls_SaoriFactory) env->DeleteGlobalRef(cls_SaoriFactory);
 }
 //---------------------------------------------------------------------------
-TModule *TModuleFactoryJava::CreateModule(const string &path){
+TModule *TModuleFactoryJava::CreateModule(const wstring &path){
 	if (obj_SaoriFactory==NULL){
-		GetLogger().GetStream(LOG_INFO) << "[SAORI Java] Factory not found." << endl;
+		GetLogger().GetStream(LOG_INFO) << L"[SAORI Java] Factory not found." << endl;
 		return NULL;
 	}
-	GetLogger().GetStream(LOG_INFO) << "[SAORI Java] CreateModule(" << path << ")" << endl;
+	GetLogger().GetStream(LOG_INFO) << L"[SAORI Java] CreateModule(" << path << L")" << endl;
 
 	JavaVM *vm; JNIEnv *env;
 	if (JNI_OK!=setup(GetLogger(), &vm, &env)) return NULL;
 
-	string fn=CanonicalPath(string(path));
-	jstring jfn=env->NewStringUTF(fn.c_str());
+	wstring fn=CanonicalPath(path);
+	jstring jfn=env->NewStringUTF(WtoUTF8(fn).c_str());
 	jobject jmodule=env->CallObjectMethod(
 		obj_SaoriFactory, mid_createModule, jfn);
 	if (jmodule==NULL){
-		GetLogger().GetStream(LOG_ERROR) << "[SAORI Java] Create module failed." << endl;
+		GetLogger().GetStream(LOG_ERROR) << L"[SAORI Java] Create module failed." << endl;
 		return NULL;
 	}
 	jobject gref_jmodule=env->NewGlobalRef(jmodule);
@@ -146,7 +147,7 @@ TModule *TModuleFactoryJava::CreateModule(const string &path){
 	if (ret->Initialize()){
 		return ret;
 	}else{
-		GetLogger().GetStream(LOG_ERROR) << "[SAORI Java] Initialize module failed." << endl;
+		GetLogger().GetStream(LOG_ERROR) << L"[SAORI Java] Initialize module failed." << endl;
 		ret->Unload();
 		DeleteModule(ret);
 		return NULL;
@@ -157,7 +158,7 @@ TModule *TModuleFactoryJava::CreateModule(const string &path){
 void TModuleFactoryJava::DeleteModule(TModule *module){
 	// finalizeはしない
 	if (module){
-		GetLogger().GetStream(LOG_INFO) << "[SAORI Java] Dispose module." << endl;
+		GetLogger().GetStream(LOG_INFO) << L"[SAORI Java] Dispose module." << endl;
 		delete module;
 	}
 }
@@ -185,7 +186,7 @@ bool TModuleJava::Initialize(void){
 	mid_request=env->GetMethodID(cls_saori, "request", "([B)[B");
 
 	if (mid_request==NULL){
-		GetFactory().GetLogger().GetStream(LOG_ERROR) << "[SAORI Java] importing 'request' from ("+path+") failed." << endl;
+		GetFactory().GetLogger().GetStream(LOG_ERROR) << L"[SAORI Java] importing 'request' from ("+path+L") failed." << endl;
 		return false;
 	}
 	return true;
@@ -200,16 +201,16 @@ bool TModuleJava::Load(void){
 
 	jobject obj_saori=(jobject)handle;
 
-	string basepath;
-	unsigned int pos=path.find_last_of(FILE_SEPARATOR);
-	if (pos==string::npos){
+	wstring basepath;
+	wstring::size_type pos=path.find_last_of(FILE_SEPARATOR);
+	if (pos==wstring::npos){
 		basepath=path+FILE_SEPARATOR;
 	}else{
 		basepath=path.substr(0, pos+1);
 	}
 
-	GetFactory().GetLogger().GetStream(LOG_INFO) << "[SAORI Java] load(" << basepath << ")." << endl;
-	return (env->CallBooleanMethod(obj_saori, mid_load, string2jba(env, basepath))==JNI_TRUE);
+	GetFactory().GetLogger().GetStream(LOG_INFO) << L"[SAORI Java] load(" << basepath << L")." << endl;
+	return (env->CallBooleanMethod(obj_saori, mid_load, string2jba(env, WtoSJIS(basepath)))==JNI_TRUE);
 }
 //---------------------------------------------------------------------------
 // SAORI/1.0 Unload
@@ -221,7 +222,7 @@ bool TModuleJava::Unload(void){
 
 	jobject obj_saori=(jobject)handle;
 
-	GetFactory().GetLogger().GetStream(LOG_INFO) << "[SAORI Java] unload()" << endl;
+	GetFactory().GetLogger().GetStream(LOG_INFO) << L"[SAORI Java] unload()" << endl;
 	return (env->CallBooleanMethod(obj_saori, mid_unload)==JNI_TRUE);
 }
 //---------------------------------------------------------------------------

@@ -22,60 +22,59 @@ using namespace kawari_log;
 #include <map>
 using namespace std;
 //---------------------------------------------------------------------------
-string KIS_saoriregist::Function(const vector<string>& args)
+wstring KIS_saoriregist::Function(const vector<wstring>& args)
 {
-	if(!AssertArgument(args, 3, 4)) return ("");
+	if(!AssertArgument(args, 3, 4)) return (L"");
 
 	TKawariEngine::SAORILOADTYPE loadopt=TKawariEngine::LOADONCALL;
 	if (args.size()>=4){
-		if (args[3]=="preload")
+		if (args[3]==L"preload")
 			loadopt=TKawariEngine::PRELOAD;
-		else if (args[3]=="noresident")
+		else if (args[3]==L"noresident")
 			loadopt=TKawariEngine::NORESIDENT;
 	}
 	Engine->RegisterSAORIModule(args[2], CanonicalPath(Engine->GetDataPath(), args[1]), loadopt);
 
-	return ("");
+	return (L"");
 }
 //---------------------------------------------------------------------------
-string KIS_saorierase::Function(const vector<string>& args)
+wstring KIS_saorierase::Function(const vector<wstring>& args)
 {
-	if(!AssertArgument(args, 2, 2)) return ("");
+	if(!AssertArgument(args, 2, 2)) return (L"");
 	Engine->EraseSAORIModule(args[1]);
-	return ("");
+	return (L"");
 }
 //---------------------------------------------------------------------------
-string KIS_saorilist::Function(const vector<string>& args)
+wstring KIS_saorilist::Function(const vector<wstring>& args)
 {
-	if(!AssertArgument(args, 2, 2)) return ("");
+	if(!AssertArgument(args, 2, 2)) return (L"");
 
-	const string stem=args[1];
-	if (stem.size()==0) return ("");
+	const wstring stem=args[1];
+	if (stem.size()==0) return (L"");
 
-	vector<string> list;
+	vector<wstring> list;
 	if (Engine->ListSAORIModule(list)){
-		for (vector<string>::iterator it=list.begin(); it!=list.end(); it++){
+		for (vector<wstring>::iterator it=list.begin(); it!=list.end(); it++){
 			Engine->Push(stem, (*it));
 		}
 	}
-	return ("");
+	return (L"");
 }
 //---------------------------------------------------------------------------
 bool KIS_callsaori::CallSaori(
-	const string& saoriname, const vector<string>& args, TPHMessage &response)
+	const wstring& saoriname, const vector<wstring>& args, TPHMessage &response)
 {
 	// リクエスト生成
 	TPHMessage request;
-	request.SetStartline("EXECUTE SAORI/1.0");
-	request["Sender"]="kawari";
-	request["Charset"]="Shift_JIS";
-	string slevel=Engine->IndexParse("system.Sender.Path");
+	request.SetStartline(L"EXECUTE SAORI/1.0");
+	request[L"Sender"]=L"kawari";
+	wstring slevel=Engine->IndexParse(L"system.Sender.Path");
 	// shiori.dllから動かした場合、Sender.Pathは必ず設定される。
 	// そうでないのは幸水。だからLocalで良い。
-	request["SecurityLevel"]=(slevel.size())?
-		((slevel=="local")? string("Local") : slevel): string("Local");
+	request[L"SecurityLevel"]=(slevel.size())?
+		((slevel==L"local")? wstring(L"Local") : slevel): wstring(L"Local");
 	for (unsigned int i=0; i<args.size(); i++)
-		request["Argument"+IntToString(i)]=args[i];
+		request[L"Argument"+IntToString(i)]=args[i];
 
 	// リクエスト
 	if ((!Engine->RequestToSAORIModule(saoriname, request, response))
@@ -86,45 +85,45 @@ bool KIS_callsaori::CallSaori(
 	}
 
 	// ステータスラインの分解
-	const string &statusline=response.GetStartline();
-	unsigned int pos=statusline.find(' ');
-	if (pos==string::npos) return false;
-	unsigned int npos=statusline.find(' ', pos+1);
-	string statuscode=statusline.substr(pos+1, npos-pos-1);
+	const wstring &statusline=response.GetStartline();
+	unsigned int pos=statusline.find(L' ');
+	if (pos==wstring::npos) return false;
+	unsigned int npos=statusline.find(L' ', pos+1);
+	wstring statuscode=statusline.substr(pos+1, npos-pos-1);
 
-	if (!(statuscode[0]=='2')) return false;
+	if (!(statuscode[0]==L'2')) return false;
 	return true;
 }
 //---------------------------------------------------------------------------
-string KIS_callsaori::Function(const vector<string>& args)
+wstring KIS_callsaori::Function(const vector<wstring>& args)
 {
-	if(!AssertArgument(args, 2)) return ("");
+	if(!AssertArgument(args, 2)) return (L"");
 
-	const string saoriname=args[1];
-	vector<string> saori_args;
+	const wstring saoriname=args[1];
+	vector<wstring> saori_args;
 	for (unsigned int i=2; i<args.size(); i++)
 		saori_args.push_back(args[i]);
 
 	TPHMessage response;
 
 	if (CallSaori(saoriname, saori_args, response)){
-		if (response.count("Result"))
-			return response["Result"];
+		if (response.count(L"Result"))
+			return response[L"Result"];
 		else
-			return ("");
+			return (L"");
 	}else{
-		return ("");
+		return (L"");
 	}
 }
 
 //---------------------------------------------------------------------------
-string KIS_callsaorix::Function(const vector<string>& args)
+wstring KIS_callsaorix::Function(const vector<wstring>& args)
 {
-	if(!AssertArgument(args, 3)) return ("");
+	if(!AssertArgument(args, 3)) return (L"");
 
-	const string saoriname=args[1];
-	const string stem=args[2];
-	vector<string> saori_args;
+	const wstring saoriname=args[1];
+	const wstring stem=args[2];
+	vector<wstring> saori_args;
 	for (unsigned int i=3; i<args.size(); i++)
 		saori_args.push_back(args[i]);
 
@@ -132,25 +131,25 @@ string KIS_callsaorix::Function(const vector<string>& args)
 
 	if (CallSaori(saoriname, saori_args, response)){
 		if (stem.size()){
-			string stemp=stem+'.';
+			wstring stemp=stem+L'.';
 			int value_max=0;
 			for (TPHMessage::iterator it=response.begin(); it!=response.end(); it++){
-				const string key=it->first;
-				if (key.find("Value")==0){
-					int num=atoi(key.c_str()+5)+1;
+				const wstring key=it->first;
+				if (key.find(L"Value")==0){
+					int num=StringToInt(key.substr(5))+1;
 					if (num>value_max) value_max=num;
 				}
 				Engine->PushStrAfterClear(stemp+key, it->second);
 			}
-			Engine->PushStrAfterClear(stemp+"size", IntToString(value_max));
+			Engine->PushStrAfterClear(stemp+L"size", IntToString(value_max));
 			Engine->PushStrAfterClear(stem, response.GetStartline());
 		}
-		if (response.count("Result"))
-			return response["Result"];
+		if (response.count(L"Result"))
+			return response[L"Result"];
 		else
-			return ("");
+			return (L"");
 	}else{
-		return ("");
+		return (L"");
 	}
 }
 //---------------------------------------------------------------------------

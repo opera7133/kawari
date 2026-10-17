@@ -31,20 +31,20 @@ public:
     // Initで名前その他の情報を設定してください
 	virtual bool Init(void)
 	{
-		Name_="rand";
-		Format_="rand MAX";
-		Returnval_="(NULL)";
-		Information_="return a random number (0 to MAX-1)";
+		Name_=L"rand";
+		Format_=L"rand MAX";
+		Returnval_=L"(NULL)";
+		Information_=L"return a random number (0 to MAX-1)";
 
 		return(true);
 	}
 
 	// インタープリタ
-    virtual string Function(const vector<string>& args){
+    virtual wstring Function(const vector<wstring>& args){
         if (args.size()>=2) 
-            return (IntToString(Random(atoi(args[1].c_str()))));
+            return (IntToString(Random(StringToInt(args[1]))));
         else
-            return ("");
+            return (L"");
     }
 
 };
@@ -54,19 +54,19 @@ public:
     // Initで名前その他の情報を設定してください
 	virtual bool Init(void)
 	{
-		Name_="srand";
-		Format_="srand SEED";
-		Returnval_="(NULL)";
-		Information_="give a seed to random number generator";
+		Name_=L"srand";
+		Format_=L"srand SEED";
+		Returnval_=L"(NULL)";
+		Information_=L"give a seed to random number generator";
 
 		return(true);
 	}
 
 	// インタープリタ
-    virtual string Function(const vector<string>& args){
+    virtual wstring Function(const vector<wstring>& args){
 		if (args.size()>=2) 
-			SRandom(atoi(args[1].c_str()));
-		return ("");
+			SRandom(StringToInt(args[1]));
+		return (L"");
     }
 
 };

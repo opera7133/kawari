@@ -28,7 +28,7 @@ class TModuleFactoryPython : public IModuleFactory{
 public:
 	// モジュールの検索と生成
 	// 戻り値: 生成に成功した場合、インスタンス。失敗した場合、NULL。
-	virtual TModule *CreateModule(const std::string &path);
+	virtual TModule *CreateModule(const std::wstring &path);
 
 	// モジュールの完全破棄
 	virtual void DeleteModule(TModule *module);
@@ -52,7 +52,7 @@ public:
 	virtual std::string Request(const std::string &reqstr);
 
 protected:
-	TModulePython(TModuleFactoryPython &fac, const std::string &p, SAORI_HANDLE handle)
+	TModulePython(TModuleFactoryPython &fac, const std::wstring &p, SAORI_HANDLE handle)
 		 : TModule(fac, p, handle) {}
 
 	friend class TModuleFactoryPython;

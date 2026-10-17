@@ -27,16 +27,16 @@ public:
 	// Initで名前その他の情報を設定してください
 	virtual bool Init(void)
 	{
-		Name_="matchall";
-		Format_="matchall Str1 Key1 [Key2 ...]";
-		Returnval_="bool";
-		Information_="return true if all Keywords found in Str1";
+		Name_=L"matchall";
+		Format_=L"matchall Str1 Key1 [Key2 ...]";
+		Returnval_=L"bool";
+		Information_=L"return true if all Keywords found in Str1";
 
 		return(true);
 	}
 
 	// インタープリタ
-	virtual string Function(const vector<string>& args);
+	virtual wstring Function(const vector<wstring>& args);
 };
 //---------------------------------------------------------------------------
 class KIS_communicate : public TKisFunction_base {
@@ -45,16 +45,16 @@ public:
 	// Initで名前その他の情報を設定してください
 	virtual bool Init(void)
 	{
-		Name_="communicate";
-		Format_="comunicate Index1 [Entry1]";
-		Returnval_="sentence";
-		Information_="execute all functions in Index1, and call one matched entry";
+		Name_=L"communicate";
+		Format_=L"comunicate Index1 [Entry1]";
+		Returnval_=L"sentence";
+		Information_=L"execute all functions in Index1, and call one matched entry";
 
 		return(true);
 	}
 
 	// インタープリタ
-	virtual string Function(const vector<string>& args);
+	virtual wstring Function(const vector<wstring>& args);
 };
 //---------------------------------------------------------------------------
 #endif

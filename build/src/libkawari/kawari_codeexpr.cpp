@@ -7,6 +7,7 @@
 //
 //  2002.06.22  Phase 8.0.0   作成
 //  2005.06.21  Phase 8.2.3   gcc3.xのwarning対応 (suikyo)
+//  2026.10.18  Phase 9.0.0   wchar_t化
 //
 //--------------------------------------------------------------------------
 #include "config.h"
@@ -16,7 +17,6 @@
 #include "libkawari/kawari_vm.h"
 #include "libkawari/kawari_log.h"
 #include "libkawari/kawari_rc.h"
-#include "misc/l10n.h"
 #include "misc/misc.h"
 using namespace kawari::resource;
 //--------------------------------------------------------------------------
@@ -39,7 +39,7 @@ bool TValue::CanInteger(void){
 	if ((state==vINTEGER)||(state==vBOOL)) return true;
 	if (IsInteger(str)){
 		state=vINTEGER;
-		i=atoi(str.c_str());
+		i=StringToInt(str);
 		return true;
 	}else{
 		return false;
@@ -57,7 +57,7 @@ TValue::TValue(const int orgi):i(orgi), state(vINTEGER){
 //=========================================================================
 // 式
 // 実行
-string TKVMCodeExpression::Run(TKawariVM &vm){
+wstring TKVMCodeExpression::Run(TKawariVM &vm){
 	return vm.RunWithCurrentContext(code);
 }
 // 序列 同じクラスの場合のみ呼ばれる。
@@ -68,16 +68,16 @@ bool TKVMCodeExpression::Less(const TKVMCode_base& r_) const{
 	return (false);
 }
 // デバッグ用ツリー表示
-ostream &TKVMCodeExpression::Debug(ostream& os, unsigned int level) const{
-	DebugIndent(os, level) << "Expression(" << endl;
+wostream &TKVMCodeExpression::Debug(wostream& os, unsigned int level) const{
+	DebugIndent(os, level) << L"Expression(" << endl;
 	code->Debug(os, level+1);
-	return DebugIndent(os, level) << ")" << endl;
+	return DebugIndent(os, level) << L")" << endl;
 }
 
 //=========================================================================
 // class TKVMExprCode_base;
 // 演算式中間コードの基底クラス
-string TKVMExprCode_base::Run(TKawariVM &vm){
+wstring TKVMExprCode_base::Run(TKawariVM &vm){
 	return Evaluate(vm).AsString();
 }
 
@@ -94,12 +94,12 @@ bool TKVMExprBinaryCode_base::Less(const TKVMCode_base& r_) const{
 	return (false);
 }
 // 逆コンパイル
-string TKVMExprBinaryCode_base::DisCompile(void) const{
-	if (!(lhs&&rhs)) return "";
+wstring TKVMExprBinaryCode_base::DisCompile(void) const{
+	if (!(lhs&&rhs)) return L"";
 	return lhs->DisCompile()+GetOperator()+rhs->DisCompile();
 }
 // デバッグ用ツリー表示
-ostream &TKVMExprBinaryCode_base::Debug(ostream& os, unsigned int level) const{
+wostream &TKVMExprBinaryCode_base::Debug(wostream& os, unsigned int level) const{
 	if (lhs) lhs->Debug(os, level+1);
 	DebugIndent(os, level) << GetOperator() << endl;
 	if (rhs) rhs->Debug(os, level+1);
@@ -117,12 +117,12 @@ bool TKVMExprUnaryCode_base::Less(const TKVMCode_base& r_) const{
 	return (false);
 }
 // 逆コンパイル
-string TKVMExprUnaryCode_base::DisCompile(void) const{
-	if (!code) return "";
+wstring TKVMExprUnaryCode_base::DisCompile(void) const{
+	if (!code) return L"";
 	return GetOperator()+code->DisCompile();
 }
 // デバッグ用ツリー表示
-ostream &TKVMExprUnaryCode_base::Debug(ostream& os, unsigned int level) const{
+wostream &TKVMExprUnaryCode_base::Debug(wostream& os, unsigned int level) const{
 	if (!code) return os;
 	DebugIndent(os, level) << GetOperator() << endl;
 	return code->Debug(os, level+1);
@@ -210,7 +210,7 @@ TValue TKVMExprCodeMATCH::Evaluate(TKawariVM &vm){
 	if (l.IsError()) return l;
 	TValue r=rhs->Evaluate(vm);
 	if (r.IsError()) return r;
-	return TValue(ctow(l.AsString()).find(ctow(r.AsString()))!=string::npos);
+	return TValue(l.AsString().find(r.AsString())!=wstring::npos);
 }
 
 //--------------------------------------------------------------------------
@@ -222,7 +222,7 @@ TValue TKVMExprCodeNMATCH::Evaluate(TKawariVM &vm){
 	if (l.IsError()) return l;
 	TValue r=rhs->Evaluate(vm);
 	if (r.IsError()) return r;
-	return TValue(ctow(l.AsString()).find(ctow(r.AsString()))==string::npos);
+	return TValue(l.AsString().find(r.AsString())==wstring::npos);
 }
 
 //--------------------------------------------------------------------------
@@ -338,7 +338,7 @@ TValue TKVMExprCodePOW::Evaluate(TKawariVM &vm){
 // ExprWord
 TValue TKVMExprCodeWord::Evaluate(TKawariVM &vm){
 	if (!code) return TValue::Error();
-	string retstr=code->Run(vm);
+	wstring retstr=code->Run(vm);
 	if (vm.IsOnException())
 		return TValue::Error();
 	else

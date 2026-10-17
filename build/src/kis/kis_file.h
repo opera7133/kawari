@@ -43,21 +43,21 @@ public:
 	// Initで名前その他の情報を設定してください
 	virtual bool Init(void)
 	{
-		Name_="save";
-		Format_="save File1 Entry1 [Entry2...]";
-		Returnval_="(NULL)";
-		Information_="save entries to File1";
+		Name_=L"save";
+		Format_=L"save File1 Entry1 [Entry2...]";
+		Returnval_=L"(NULL)";
+		Information_=L"save entries to File1";
 
 		return(true);
 	}
 
 	// インタープリタ
-    virtual string Function(const vector<string>& args){
+    virtual wstring Function(const vector<wstring>& args){
         Run(args, false);
-        return "";
+        return L"";
     }
 protected:
-    virtual void Run(const vector<string>& args, bool crypt);
+    virtual void Run(const vector<wstring>& args, bool crypt);
 };
 //---------------------------------------------------------------------------
 class KIS_savecrypt : public KIS_save {
@@ -66,19 +66,19 @@ public:
 	// Initで名前その他の情報を設定してください
 	virtual bool Init(void)
 	{
-		Name_="savecrypt";
-		Format_="savecrypt File1 Entry1 [Entry2...]";
-		Returnval_="(NULL)";
-		Information_="save entries to File1 by encrypt expression";
+		Name_=L"savecrypt";
+		Format_=L"savecrypt File1 Entry1 [Entry2...]";
+		Returnval_=L"(NULL)";
+		Information_=L"save entries to File1 by encrypt expression";
 
 		return(true);
 	}
 
 	// インタープリタ
-	virtual string Function(const vector<string>& args)
+	virtual wstring Function(const vector<wstring>& args)
 	{
 		Run(args, true);
-		return "";
+		return L"";
 	}
 };
 //---------------------------------------------------------------------------
@@ -88,16 +88,16 @@ public:
 	// Initで名前その他の情報を設定してください
 	virtual bool Init(void)
 	{
-		Name_="load";
-		Format_="load File1";
-		Returnval_="(NULL)";
-		Information_="load dictionary file";
+		Name_=L"load";
+		Format_=L"load File1";
+		Returnval_=L"(NULL)";
+		Information_=L"load dictionary file";
 
 		return(true);
 	}
 
 	// インタープリタ
-	virtual string Function(const vector<string>& args);
+	virtual wstring Function(const vector<wstring>& args);
 
 };
 //---------------------------------------------------------------------------
@@ -107,37 +107,37 @@ public:
 	// Initで名前その他の情報を設定してください
 	virtual bool Init(void)
 	{
-		Name_="textload";
-		Format_="textload Entry1 File1";
-		Returnval_="(NULL)";
-		Information_="load textfile to Entry1";
+		Name_=L"textload";
+		Format_=L"textload Entry1 File1";
+		Returnval_=L"(NULL)";
+		Information_=L"load textfile to Entry1";
 
 		return(true);
 	}
 
 	// インタープリタ
-	virtual string Function(const vector<string>& args);
+	virtual wstring Function(const vector<wstring>& args);
 };
 //---------------------------------------------------------------------------
 class KIS_textsave : public TKisFunction_base {
 public:
 
 	// インタープリタの実体
-	string Function_(const vector<string>& args,bool flag);
+	wstring Function_(const vector<wstring>& args,bool flag);
 
 	// Initで名前その他の情報を設定してください
 	virtual bool Init(void)
 	{
-		Name_="textsave";
-		Format_="textsave File1 Entry1 [Entry2...]";
-		Returnval_="(NULL)";
-		Information_="save textfile by Entries";
+		Name_=L"textsave";
+		Format_=L"textsave File1 Entry1 [Entry2...]";
+		Returnval_=L"(NULL)";
+		Information_=L"save textfile by Entries";
 
 		return(true);
 	}
 
 	// インタープリタ
-	virtual string Function(const vector<string>& args)
+	virtual wstring Function(const vector<wstring>& args)
 	{
 		return(Function_(args,true));
 	}
@@ -149,16 +149,16 @@ public:
 	// Initで名前その他の情報を設定してください
 	virtual bool Init(void)
 	{
-		Name_="textappend";
-		Format_="textappend File1 Entry1 [Entry2...]";
-		Returnval_="(NULL)";
-		Information_="append textfile by Entries";
+		Name_=L"textappend";
+		Format_=L"textappend File1 Entry1 [Entry2...]";
+		Returnval_=L"(NULL)";
+		Information_=L"append textfile by Entries";
 
 		return(true);
 	}
 
 	// インタープリタ
-	virtual string Function(const vector<string>& args)
+	virtual wstring Function(const vector<wstring>& args)
 	{
 		return(Function_(args,false));
 	}
@@ -170,16 +170,16 @@ public:
 	// Initで名前その他の情報を設定してください
 	virtual bool Init(void)
 	{
-		Name_="readdir";
-		Format_="readdir Entry1 Dir1";
-		Returnval_="(NULL)";
-		Information_="read directory entries and set to Entry1";
+		Name_=L"readdir";
+		Format_=L"readdir Entry1 Dir1";
+		Returnval_=L"(NULL)";
+		Information_=L"read directory entries and set to Entry1";
 
 		return(true);
 	}
 
 	// インタープリタ
-	virtual string Function(const vector<string>& args);
+	virtual wstring Function(const vector<wstring>& args);
 };
 //---------------------------------------------------------------------------
 class KIS_cncpath : public TKisFunction_base {
@@ -188,16 +188,16 @@ public:
 	// Initで名前その他の情報を設定してください
 	virtual bool Init(void)
 	{
-		Name_="cncpath";
-		Format_="cncpath path [ expath ]";
-		Returnval_="path expression in canonical form";
-		Information_="create canonical path expression";
+		Name_=L"cncpath";
+		Format_=L"cncpath path [ expath ]";
+		Returnval_=L"path expression in canonical form";
+		Information_=L"create canonical path expression";
 
 		return(true);
 	}
 
 	// インタープリタ
-	virtual string Function(const vector<string>& args);
+	virtual wstring Function(const vector<wstring>& args);
 };
 //---------------------------------------------------------------------------
 class KIS_dirname : public TKisFunction_base {
@@ -206,16 +206,16 @@ public:
 	// Initで名前その他の情報を設定してください
 	virtual bool Init(void)
 	{
-		Name_="dirname";
-		Format_="dirname path";
-		Returnval_="base directory";
-		Information_="get directory part of path";
+		Name_=L"dirname";
+		Format_=L"dirname path";
+		Returnval_=L"base directory";
+		Information_=L"get directory part of path";
 
 		return(true);
 	}
 
 	// インタープリタ
-	virtual string Function(const vector<string>& args);
+	virtual wstring Function(const vector<wstring>& args);
 };
 //---------------------------------------------------------------------------
 class KIS_filename : public TKisFunction_base {
@@ -224,16 +224,16 @@ public:
 	// Initで名前その他の情報を設定してください
 	virtual bool Init(void)
 	{
-		Name_="filename";
-		Format_="filename path";
-		Returnval_="filename";
-		Information_="get filename part of path";
+		Name_=L"filename";
+		Format_=L"filename path";
+		Returnval_=L"filename";
+		Information_=L"get filename part of path";
 
 		return(true);
 	}
 
 	// インタープリタ
-	virtual string Function(const vector<string>& args);
+	virtual wstring Function(const vector<wstring>& args);
 };
 //---------------------------------------------------------------------------
 class KIS_isdir : public TKisFunction_base {
@@ -242,16 +242,16 @@ public:
 	// Initで名前その他の情報を設定してください
 	virtual bool Init(void)
 	{
-		Name_="isdir";
-		Format_="isdir path";
-		Returnval_="true or false";
-		Information_="answer if path is directory or not";
+		Name_=L"isdir";
+		Format_=L"isdir path";
+		Returnval_=L"true or false";
+		Information_=L"answer if path is directory or not";
 
 		return(true);
 	}
 
 	// インタープリタ
-	virtual string Function(const vector<string>& args);
+	virtual wstring Function(const vector<wstring>& args);
 };
 //---------------------------------------------------------------------------
 class KIS_isfile : public TKisFunction_base {
@@ -260,16 +260,16 @@ public:
 	// Initで名前その他の情報を設定してください
 	virtual bool Init(void)
 	{
-		Name_="isfile";
-		Format_="isfile path";
-		Returnval_="true or false";
-		Information_="answer if path is file or not";
+		Name_=L"isfile";
+		Format_=L"isfile path";
+		Returnval_=L"true or false";
+		Information_=L"answer if path is file or not";
 
 		return(true);
 	}
 
 	// インタープリタ
-	virtual string Function(const vector<string>& args);
+	virtual wstring Function(const vector<wstring>& args);
 };
 //---------------------------------------------------------------------------
 class KIS_isexist : public TKisFunction_base {
@@ -278,16 +278,16 @@ public:
 	// Initで名前その他の情報を設定してください
 	virtual bool Init(void)
 	{
-		Name_="isexist";
-		Format_="isexist path";
-		Returnval_="true or false";
-		Information_="answer if path is exist or not";
+		Name_=L"isexist";
+		Format_=L"isexist path";
+		Returnval_=L"true or false";
+		Information_=L"answer if path is exist or not";
 
 		return(true);
 	}
 
 	// インタープリタ
-	virtual string Function(const vector<string>& args);
+	virtual wstring Function(const vector<wstring>& args);
 };
 //---------------------------------------------------------------------------
 #endif	// KIS_FILE_H

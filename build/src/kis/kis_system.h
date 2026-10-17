@@ -38,39 +38,41 @@ public:
 	// Initで名前その他の情報を設定してください
 	virtual bool Init(void)
 	{
-		Name_="securitylevel";
-		Format_="securitylevel level";
-		Returnval_="(NULL)";
-		Information_="Set security level. This function works only once.";
+		Name_=L"securitylevel";
+		Format_=L"securitylevel level";
+		Returnval_=L"(NULL)";
+		Information_=L"Set security level. This function works only once.";
 
 		return(true);
 	}
 
 	// インタープリタ
-	virtual string Function(const vector<string>& args);
+	virtual wstring Function(const vector<wstring>& args);
 
 	KIS_securitylevel(void): initialized(false) {}
 };
 //---------------------------------------------------------------------------
 class KIS_logfile : public TKisFunction_base {
 private:
-	std::ofstream *filestream;
+	FILE *filestream;
+	TWideOStream *widestream;	// filestreamへUTF-8で書き出すワイドストリーム
+	void CloseStream(void);
 public:
-	KIS_logfile(void) : filestream(NULL) {}
+	KIS_logfile(void) : filestream(NULL), widestream(NULL) {}
 
 	// Initで名前その他の情報を設定してください
 	virtual bool Init(void)
 	{
-		Name_="logfile";
-		Format_="logfile [ path ]";
-		Returnval_="(NULL)";
-		Information_="specify logfile, or stop logging to file";
+		Name_=L"logfile";
+		Format_=L"logfile [ path ]";
+		Returnval_=L"(NULL)";
+		Information_=L"specify logfile, or stop logging to file";
 
 		return(true);
 	}
 
 	// インタープリタ
-	virtual string Function(const vector<string>& args);
+	virtual wstring Function(const vector<wstring>& args);
 
 	// デストラクタ
 	virtual ~KIS_logfile();
@@ -82,16 +84,16 @@ public:
 	// Initで名前その他の情報を設定してください
 	virtual bool Init(void)
 	{
-		Name_="loglevel";
-		Format_="loglevel [ level ]";
-		Returnval_="(NULL)";
-		Information_="set loglevel, or get current loglevel";
+		Name_=L"loglevel";
+		Format_=L"loglevel [ level ]";
+		Returnval_=L"(NULL)";
+		Information_=L"set loglevel, or get current loglevel";
 
 		return(true);
 	}
 
 	// インタープリタ
-	virtual string Function(const vector<string>& args);
+	virtual wstring Function(const vector<wstring>& args);
 };
 //---------------------------------------------------------------------------
 class KIS_debugger : public TKisFunction_base {
@@ -100,16 +102,16 @@ public:
 	// Initで名前その他の情報を設定してください
 	virtual bool Init(void)
 	{
-		Name_="debugger";
-		Format_="debugger [ on | off ]";
-		Returnval_="(NULL)";
-		Information_="turn on/off debugger mode.";
+		Name_=L"debugger";
+		Format_=L"debugger [ on | off ]";
+		Returnval_=L"(NULL)";
+		Information_=L"turn on/off debugger mode.";
 
 		return(true);
 	}
 
 	// インタープリタ
-	virtual string Function(const vector<string>& args);
+	virtual wstring Function(const vector<wstring>& args);
 };
 //---------------------------------------------------------------------------
 class KIS_rccharset : public TKisFunction_base {
@@ -118,16 +120,16 @@ public:
 	// Initで名前その他の情報を設定してください
 	virtual bool Init(void)
 	{
-		Name_="rccharset";
-		Format_="rccharset charsetname";
-		Returnval_="(NULL)";
-		Information_="Set character set of system messages.";
+		Name_=L"rccharset";
+		Format_=L"rccharset charsetname";
+		Returnval_=L"(NULL)";
+		Information_=L"Set character set of system messages.";
 
 		return(true);
 	}
 
 	// インタープリタ
-	virtual string Function(const vector<string>& args);
+	virtual wstring Function(const vector<wstring>& args);
 };
 //---------------------------------------------------------------------------
 class KIS_getenv : public TKisFunction_base {
@@ -136,16 +138,16 @@ public:
 	// Initで名前その他の情報を設定してください
 	virtual bool Init(void)
 	{
-		Name_="getenv";
-		Format_="getenv EnvValName";
-		Returnval_="value of an environment variable";
-		Information_="answer a value of an environment variable";
+		Name_=L"getenv";
+		Format_=L"getenv EnvValName";
+		Returnval_=L"value of an environment variable";
+		Information_=L"answer a value of an environment variable";
 
 		return(true);
 	}
 
 	// インタープリタ
-	virtual string Function(const vector<string>& args);
+	virtual wstring Function(const vector<wstring>& args);
 };
 //---------------------------------------------------------------------------
 #endif // KIS_SYSTEM_H

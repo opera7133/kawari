@@ -7,8 +7,8 @@ using namespace std;
 
 int main(void)
 {
-	HANDLE ph=CreateNamedPipe(
-	 "\\\\.\\pipe\\kawarilog",
+	HANDLE ph=CreateNamedPipeW(
+	 L"\\\\.\\pipe\\kawarilog",
 	 PIPE_ACCESS_DUPLEX,
 	 0,
 	 1,

@@ -1,5 +1,40 @@
 ChangeLog
 
+2026/10/18 Phase 9.0.0 beta1 (Core 4.0.0)
+ * changed the internal strings to wchar_t (UTF-16 on Windows, UTF-32 on
+   POSIX). Characters outside the BMP (e.g. emoji) count as 2 characters
+   on Windows
+ * fixed the file/folder name problem with Shift_JIS characters whose second
+   byte is 0x5C etc. and with IBM/NEC extension characters (isdir, isexist,
+   readdir...)
+ * changed string comparison ("compare", "<" ">" in expression, the order of
+   entry enumeration) to Unicode code point order instead of Shift_JIS byte
+   order (no change for ASCII)
+ * dictionary files: auto-detect UTF-8 (BOM, or valid UTF-8 as a whole) and
+   Shift_JIS (CP932). Encrypted lines (!KAWA0000/!KAWA0001) are read as UTF-8
+   when the file has a BOM, otherwise as Shift_JIS
+ * "save"/"savecrypt" now write UTF-8 with BOM (a dictionary saved by
+   "savecrypt" cannot be read correctly by 8.2.9 or earlier)
+ * "textload" detects UTF-8/Shift_JIS automatically. "textsave"/"textappend"
+   write UTF-8 without BOM ("textappend" appends UTF-8 even to a Shift_JIS file)
+ * kawari_encode/kawari_encode2 add a BOM to the output when the input is
+   UTF-8. kawari_decode2 adds a BOM when the input has a BOM
+ * SHIORI: interpret the request by its Charset header and answer in the same
+   charset (Shift_JIS when absent or unknown). Every response has a Charset
+   header; System.Response.Charset (Shift_JIS/UTF-8) can select it
+ * SHIORI: export "loadu" (load with a UTF-8 path)
+ * SAORI: start with UTF-8, follow the Charset of the GET Version response
+   (Shift_JIS when absent), interpret responses by their Charset, and call
+   "loadu" of the SAORI DLL if it is exported
+ * "rccharset" accepts UTF-8 as well as Shift_JIS (Japanese messages)
+ * "logfile" writes UTF-8 without BOM. kosui console I/O uses the ANSI code
+   page (UTF-8 on POSIX)
+ * "chr", "toupper/tolower" and "escape" keep their behavior (ASCII only /
+   Shift_JIS code interpretation)
+ * Win32 API: W versions (UNICODE), WINVER=0x0500 (Windows 2000)
+ * non-Windows builds use iconv for charset conversion (-liconv on
+   FreeBSD/darwin)
+
 2026/10/17 Phase 8.2.9
  * add the Win32 version information resource to the mingw binaries
  * speed up: small-object allocator (mingw only, FASTALLOC option in gcc.mak)

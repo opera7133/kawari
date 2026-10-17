@@ -17,6 +17,7 @@
   */
 //
 //  2003.02.25                作成 <suikyo@yk.rim.or.jp>
+//  2026.10.18                loadu追加
 //
 //---------------------------------------------------------------------------
 #ifndef SHIORI_H__
@@ -59,6 +60,16 @@
   * @return		成功のとき、TRUE。失敗のとき、FALSE。
   */
 SHIORI_EXPORT BOOL SHIORI_CALL load(const MEMORY_HANDLE h,long len);
+//---------------------------------------------------------------------------
+/**
+  * @brief		load()のUTF-8版 (華和梨拡張。SSPが対応)
+  *
+  * @param h	(I) DLLファイルが存在するディレクトリパスを表すUTF-8文字列への
+  *				ポインタ。メモリ領域は栞サーバが解放すること。
+  * @param len	(I) hが示す文字列のbyte長
+  * @return		成功のとき、TRUE。失敗のとき、FALSE。
+  */
+SHIORI_EXPORT BOOL SHIORI_CALL loadu(const MEMORY_HANDLE h,long len);
 //---------------------------------------------------------------------------
 /**
   * @brief		モジュール切り離し直前に呼ばれる

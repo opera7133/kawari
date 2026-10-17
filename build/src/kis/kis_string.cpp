@@ -22,7 +22,6 @@
 #include "kis/kis_string.h"
 #include "libkawari/kawari_engine.h"
 #include "misc/misc.h"
-#include "misc/l10n.h"
 //---------------------------------------------------------------------------
 using namespace std;
 //---------------------------------------------------------------------------
@@ -47,27 +46,27 @@ static int normalizeIndex(int idx, int len){
 //          省略された場合、末尾まで
 //          最後の文字を越える場合は最後の文字まで
 //          負の値は失敗("")
-string KIS_substr::Function(const vector<string>& args){
-	if(!AssertArgument(args, 3)) return ("");
+wstring KIS_substr::Function(const vector<wstring>& args){
+	if(!AssertArgument(args, 3)) return (L"");
 
-	const wstring target=ctow(args[1]);
-	int st=normalizeIndex(atoi(args[2].c_str()), target.length());
-	int len=(args.size()>=4)?atoi(args[3].c_str()):target.length();
-	if((st<0)||(len<0)) return ("");
+	const wstring target=(args[1]);
+	int st=normalizeIndex(StringToInt(args[2]), target.length());
+	int len=(args.size()>=4)?StringToInt(args[3]):target.length();
+	if((st<0)||(len<0)) return (L"");
 	if((len+st)>static_cast<int>(target.length())) len=target.length()-st;
-	return wtoc(target.substr(st, len));
+	return (target.substr(st, len));
 }
 //---------------------------------------------------------------------------
 // length target
 // targetの文字列長を返す。
-string KIS_length::Function(const vector<string>& args){
-	if(!AssertArgument(args, 2)) return ("");
+wstring KIS_length::Function(const vector<wstring>& args){
+	if(!AssertArgument(args, 2)) return (L"");
 
-	return IntToString(ctow(args[1]).length());
+	return IntToString((args[1]).length());
 }
 //---------------------------------------------------------------------------
-// target: target string
-// pattern: pattern string
+// target: target wstring
+// pattern: pattern wstring
 // idx: start index
 // f: true if search forward.
 // returns -1 if failed.
@@ -85,7 +84,7 @@ static int _match(const wstring &target, const wstring &pattern, int idx, bool f
 	}
 	unsigned int pos=(f)?
 		target.find(pattern, idx):target.rfind(pattern, idx);
-	if (pos!=string::npos){
+	if (pos!=wstring::npos){
 		return static_cast<int>(pos);
 	}else{
 		return -1;
@@ -96,10 +95,10 @@ static int _match(const wstring &target, const wstring &pattern, int idx, bool f
 // indexから末尾に向かって探す。
 // 負のindexは末尾から数える。省略すると先頭の文字。
 // indexが範囲を超えた場合、失敗("-1")
-string KIS_match::Function(const vector<string>& args){
-	if(!AssertArgument(args, 3)) return ("");
-	return IntToString(_match(ctow(args[1]), ctow(args[2]),
-							  (args.size()>3) ? atoi(args[3].c_str()):0,
+wstring KIS_match::Function(const vector<wstring>& args){
+	if(!AssertArgument(args, 3)) return (L"");
+	return IntToString(_match((args[1]), (args[2]),
+							  (args.size()>3) ? StringToInt(args[3]):0,
 							  true));
 }
 //---------------------------------------------------------------------------
@@ -107,10 +106,10 @@ string KIS_match::Function(const vector<string>& args){
 // indexから先頭に向かって探す。
 // 負のindexは末尾から数える。省略すると最後の文字。
 // 範囲を超えた場合、失敗("-1")
-string KIS_rmatch::Function(const vector<string>& args){
-	if(!AssertArgument(args, 3)) return ("");
-	return IntToString(_match(ctow(args[1]), ctow(args[2]),
-							  (args.size()>3) ? atoi(args[3].c_str()):-1,
+wstring KIS_rmatch::Function(const vector<wstring>& args){
+	if(!AssertArgument(args, 3)) return (L"");
+	return IntToString(_match((args[1]), (args[2]),
+							  (args.size()>3) ? StringToInt(args[3]):-1,
 							  false));
 }
 //---------------------------------------------------------------------------
@@ -118,38 +117,38 @@ string KIS_rmatch::Function(const vector<string>& args){
 // indexにpatternが存在すれば"1". 存在しなければ"".
 // 負のindexは末尾から数える。省略すると先頭の文字。
 // 範囲を超えた場合、失敗("")
-string KIS_match_at::Function(const vector<string>& args){
-	if(!AssertArgument(args, 3)) return ("");
+wstring KIS_match_at::Function(const vector<wstring>& args){
+	if(!AssertArgument(args, 3)) return (L"");
 
-	const wstring target=ctow(args[1]);
-	const wstring pattern=ctow(args[2]);
+	const wstring target=(args[1]);
+	const wstring pattern=(args[2]);
 	if(!pattern.length()){
-		int idx=(args.size()>3)?atoi(args[3].c_str()):0;
+		int idx=(args.size()>3)?StringToInt(args[3]):0;
 		if(idx<0) idx+=target.length();
-		if((0<=idx)&&(idx<=static_cast<int>(target.length()))) return ("1");
-		else return ("");
+		if((0<=idx)&&(idx<=static_cast<int>(target.length()))) return (L"1");
+		else return (L"");
 	}
 	int idx=(args.size()>3)?
-		normalizeIndex(atoi(args[3].c_str()),target.length()):0;
-	if(idx<0) return ("");
-	if((!target.length())&&(!pattern.length())&&(!idx)) return ("1");
+		normalizeIndex(StringToInt(args[3]),target.length()):0;
+	if(idx<0) return (L"");
+	if((!target.length())&&(!pattern.length())&&(!idx)) return (L"1");
 	if(StringCompare<wchar_t>(target, pattern, idx, pattern.size())==0)
-		return ("1");
+		return (L"1");
 	else
-		return ("");
+		return (L"");
 }
 //---------------------------------------------------------------------------
 // char_at target index
 // 文字列のindexの値を返す。範囲を超えた場合、失敗("")
-string KIS_char_at::Function(const vector<string>& args){
-	if(!AssertArgument(args, 3)) return ("");
+wstring KIS_char_at::Function(const vector<wstring>& args){
+	if(!AssertArgument(args, 3)) return (L"");
 
-	wstring target=ctow(args[1]);
-	int idx=normalizeIndex(atoi(args[2].c_str()), target.length());
-	if(idx<0) return ("");
+	wstring target=(args[1]);
+	int idx=normalizeIndex(StringToInt(args[2]), target.length());
+	if(idx<0) return (L"");
 	wstring retstr;
 	retstr+=target[idx];
-	return wtoc(retstr);
+	return (retstr);
 }
 //---------------------------------------------------------------------------
 // sub target pattern subst [index]
@@ -157,27 +156,27 @@ string KIS_char_at::Function(const vector<string>& args){
 // index省略時は先頭の文字。indexが範囲を超えた場合、置換は起きない。
 // patternが""の時、indexが指す文字の左側にsubstを挿入。
 // その場合、indexはtarget文字列長まで許される。
-string KIS_sub::Function(const vector<string>& args){
-	if(!AssertArgument(args, 4)) return ("");
+wstring KIS_sub::Function(const vector<wstring>& args){
+	if(!AssertArgument(args, 4)) return (L"");
 
-	wstring target=ctow(args[1]);
-	wstring pattern=ctow(args[2]);
-	wstring subst=ctow(args[3]);
+	wstring target=(args[1]);
+	wstring pattern=(args[2]);
+	wstring subst=(args[3]);
 	if(!pattern.length()){
-		int idx=(args.size()>4)? atoi(args[4].c_str()):0;
+		int idx=(args.size()>4)? StringToInt(args[4]):0;
 		if(idx<0) idx+=target.length();
 		if(idx<0) return (args[1]);
 		if(idx<static_cast<int>(target.length()))
-			return wtoc(target.replace(idx, 0, subst));
+			return (target.replace(idx, 0, subst));
 		else if (idx==static_cast<int>(target.length()))
-			return wtoc(target+subst);
+			return (target+subst);
 		else
 			return (args[1]);
 	}
 	int pos=_match(target, pattern,
-				   ((args.size()>4) ? atoi(args[4].c_str()):0), true);
+				   ((args.size()>4) ? StringToInt(args[4]):0), true);
 	if(pos<0) return (args[1]);
-	return wtoc(target.replace(pos, pattern.length(), subst));
+	return (target.replace(pos, pattern.length(), subst));
 }
 //---------------------------------------------------------------------------
 // rsub target pattern subst [index]
@@ -185,71 +184,71 @@ string KIS_sub::Function(const vector<string>& args){
 // index省略時は末尾の文字。indexが範囲を超えた場合、置換は起きない。
 // patternが""の時、indexが指す文字の右側にsubstを挿入
 // その場合、indexは-target文字列長-1まで許される。
-string KIS_rsub::Function(const vector<string>& args){
-	if(!AssertArgument(args, 4)) return ("");
+wstring KIS_rsub::Function(const vector<wstring>& args){
+	if(!AssertArgument(args, 4)) return (L"");
 
-	wstring target=ctow(args[1]);
-	wstring pattern=ctow(args[2]);
-	wstring subst=ctow(args[3]);
+	wstring target=(args[1]);
+	wstring pattern=(args[2]);
+	wstring subst=(args[3]);
 	int pos=_match(target, pattern,
-				   ((args.size()>4) ? atoi(args[4].c_str()):-1), false);
+				   ((args.size()>4) ? StringToInt(args[4]):-1), false);
 	if(pos<0) return (args[1]);
-	return wtoc(target.replace(pos, pattern.length(), subst));
+	return (target.replace(pos, pattern.length(), subst));
 }
 //---------------------------------------------------------------------------
 // gsub target pattern subst [index]
 // index以降のtarget中に見つかった全てのpatternをsubstで置換。
 // index省略時は最初の文字。indexが範囲を超えた場合、置換は起きない。
-string KIS_gsub::Function(const vector<string>& args){
-	if(!AssertArgument(args, 4)) return ("");
+wstring KIS_gsub::Function(const vector<wstring>& args){
+	if(!AssertArgument(args, 4)) return (L"");
 
-	wstring target=ctow(args[1]);
-	wstring pattern=ctow(args[2]);
-	wstring subst=ctow(args[3]);
+	wstring target=(args[1]);
+	wstring pattern=(args[2]);
+	wstring subst=(args[3]);
 	int tmp=(args.size()>4)?
-		normalizeIndex(atoi(args[4].c_str()), target.length()):0;
+		normalizeIndex(StringToInt(args[4]), target.length()):0;
 	if(tmp<0) return (args[1]);
 	unsigned int pos=tmp;
 	if(!target.length()) return args[1];
 	if((!pattern.length())&&(!subst.length())) return args[1];
 	// int stride=max(subst.length(), 1);
-	// int stride=max(subst.length(), static_cast<string::size_type>(1));
+	// int stride=max(subst.length(), static_cast<wstring::size_type>(1));
 	int stride=subst.length();
 	if(!pattern.length()) stride++;
 
 	while (pos<target.length()){
 		pos=target.find(pattern, pos);
-		if(pos==string::npos) break;
+		if(pos==wstring::npos) break;
 		target=target.replace(pos, pattern.length(), subst);
 		pos+=stride;
 	}
 	if(!pattern.length())
 		target+=subst;
-	return wtoc(target);
+	return (target);
 }
 //---------------------------------------------------------------------------
 // reverse target
-string KIS_reverse::Function(const vector<string>& args){
-	if(!AssertArgument(args, 2)) return ("");
+wstring KIS_reverse::Function(const vector<wstring>& args){
+	if(!AssertArgument(args, 2)) return (L"");
 
-	wstring target=ctow(args[1]);
+	wstring target=(args[1]);
 	reverse(target.begin(), target.end());
-	return wtoc(target);
+	return (target);
 }
 //---------------------------------------------------------------------------
 // tr target chars substchars
-string KIS_tr::Function(const vector<string>& args){
-	if(!AssertArgument(args, 4)) return ("");
+wstring KIS_tr::Function(const vector<wstring>& args){
+	if(!AssertArgument(args, 4)) return (L"");
 
-	wstring target=ctow(args[1]);
-	wstring search=ctow(args[2]);
-	wstring replace=ctow(args[3]);
+	wstring target=(args[1]);
+	wstring search=(args[2]);
+	wstring replace=(args[3]);
 
 	unsigned int pos=0;
 	unsigned int replen=replace.length();
 	while (pos<target.length()){
 		pos=target.find_first_of(search, pos);
-		if (pos==string::npos) return wtoc(target);
+		if (pos==wstring::npos) return (target);
 		unsigned int index=search.find(target[pos]);
 		if (index<replen) {
 			target[pos]=replace[index];
@@ -258,18 +257,18 @@ string KIS_tr::Function(const vector<string>& args){
 			target.erase(pos, 1);
 		}
 	}
-	return wtoc(target);
+	return (target);
 }
 //---------------------------------------------------------------------------
 // compare string1 string2
-string KIS_compare::Function(const vector<string>& args){
-	if(!AssertArgument(args, 3)) return ("");
+wstring KIS_compare::Function(const vector<wstring>& args){
+	if(!AssertArgument(args, 3)) return (L"");
 
-	wstring str1=ctow(args[1]);
-	wstring str2=ctow(args[2]);
+	wstring str1=(args[1]);
+	wstring str2=(args[2]);
 
-	if (str1>str2) return ("1");
-	if (str1==str2) return ("0");
-	return ("-1");
+	if (str1>str2) return (L"1");
+	if (str1==str2) return (L"0");
+	return (L"-1");
 }
 //---------------------------------------------------------------------------

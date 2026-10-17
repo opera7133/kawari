@@ -20,7 +20,7 @@
 
 <UL>
  <LI>C++, STLを使用。</LI>
- <LI>SJISにのみ対応。必要な場面でwstringに変換して処理。割といいかげん。</LI>
+ <LI>Phase 9.0.0から内部文字列はすべてwchar_t(WindowsはUTF-16、POSIXはUTF-32)。入出力の境界で文字コード(UTF-8 / Shift_JIS)を変換する。非WindowsではiconvをSJIS等の変換に使う。</LI>
  <LI>さおり部分でPython, Javaへの対応を試みた形跡あり。</LI>
  <LI>一つのプロセス内に複数の華和梨エンジンを生成可能。</LI>
 </UL>

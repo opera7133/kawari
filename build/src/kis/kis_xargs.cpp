@@ -18,12 +18,12 @@ using namespace kawari_log;
 //---------------------------------------------------------------------------
 #include "libkawari/kawari_engine.h"
 //---------------------------------------------------------------------------
-string KIS_xargs::Function(const vector<string>& args)
+wstring KIS_xargs::Function(const vector<wstring>& args)
 {
-	if(!AssertArgument(args, 3)) return ("");
+	if(!AssertArgument(args, 3)) return (L"");
 
 #if 0
-	string entryname;
+	wstring entryname;
 	int st,end;
 
 	TKawariEngine::DecodeEntryName(args[1],entryname,st,end);
@@ -35,14 +35,14 @@ string KIS_xargs::Function(const vector<string>& args)
 		if(end<0) end=size+end;
 		if((st<0)||(end<0)||(st>end)) {
 			// ¥¨¥é¡¼
-			GetLogger().GetStream(kawari_log::LOG_ERROR) << args[0] << " : Invalid index" << endl;
-			return("");
+			GetLogger().GetStream(kawari_log::LOG_ERROR) << args[0] << L" : Invalid index" << endl;
+			return(L"");
 		}
 	}else{
 		st=end=0;
 	}
 
-	vector<string> args2;
+	vector<wstring> args2;
 	for(unsigned int i=2;i<args.size();i++) {
 		args2.push_back(args[i]);
 	}
@@ -54,10 +54,10 @@ string KIS_xargs::Function(const vector<string>& args)
 	if(range.Start==TKawariEngine::NPos){
 		GetLogger().GetStream(LOG_ERROR) << args[0]
 			<< RC.S(ERR_KIS_DICT_INVALID_INDEX) << endl;
-		return("");
+		return(L"");
 	}
 
-	vector<string> args2;
+	vector<wstring> args2;
 	for(unsigned int i=2;i<args.size();i++)
 		args2.push_back(args[i]);
 

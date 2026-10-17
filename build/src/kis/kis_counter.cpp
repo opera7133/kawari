@@ -22,14 +22,14 @@ using namespace kawari_log;
 #include <cstdlib>
 using namespace std;
 //---------------------------------------------------------------------------
-string KIS_inc::Function_(const vector<string>& args,bool flag_dec)
+wstring KIS_inc::Function_(const vector<wstring>& args,bool flag_dec)
 {
-	if(!AssertArgument(args, 2, 4)) return("");
+	if(!AssertArgument(args, 2, 4)) return(L"");
 
-	int diff=(args.size()<3)? 1: atoi(args[2].c_str());
+	int diff=(args.size()<3)? 1: StringToInt(args[2]);
 	if(flag_dec) diff=-diff;
 #if 0
-	string entryname;
+	wstring entryname;
 	int st,end;
 	unsigned int size;
 
@@ -45,26 +45,26 @@ string KIS_inc::Function_(const vector<string>& args,bool flag_dec)
 		if(st<0) {
 			// エラー
 			GetLogger().GetStream(kawari_log::LOG_ERROR) << args[0] << RC.S(ERR_KIS_DICT_INVALID_INDEX) << endl;
-			return("");
+			return(L"");
 		}
 		break;
 	case 2:		// 範囲指定
 		// エラー
 		GetLogger().GetStream(kawari_log::LOG_ERROR) << args[0] << RC.S(ERR_KIS_DICT_INVALID_INDEX) << endl;
-		return("");
+		return(L"");
 	}
 
-	int counter=atoi(Engine->IndexParse(entryname,st).c_str())+diff;
+	int counter=StringToInt(Engine->IndexParse(entryname,st))+diff;
 
 	if(args.size()>=4) {
-		int limit=atoi(args[3].c_str());
+		int limit=StringToInt(args[3]);
 		if((counter>limit)&&!flag) counter=limit;
 		if((counter<limit)&&flag)  counter=limit;
 	}
 
 	TEntry entry=Engine->CreateEntry(entryname);
 	TWordID id=Engine->CreateStrWord(IntToString(counter));
-	TWordID nullstr=Engine->CreateStrWord("");
+	TWordID nullstr=Engine->CreateStrWord(L"");
 
 	entry.Replace2(st,id,nullstr);
 #else
@@ -72,12 +72,12 @@ string KIS_inc::Function_(const vector<string>& args,bool flag_dec)
 	if(range.Start==TKawariEngine::NPos){
 		GetLogger().GetStream(LOG_ERROR) << args[0]
 			<< RC.S(ERR_KIS_DICT_INVALID_INDEX) << endl;
-		return("");
+		return(L"");
 	}
 
 	int limit=(args.size()>=4)?
-		atoi(args[3].c_str()):((flag_dec)? INT_MIN: INT_MAX);
-	TWordID nullstr=Engine->CreateStrWord("");
+		StringToInt(args[3]):((flag_dec)? INT_MIN: INT_MAX);
+	TWordID nullstr=Engine->CreateStrWord(L"");
 
 	if(!range.Range)
 		range.Start=range.End=0;
@@ -85,14 +85,14 @@ string KIS_inc::Function_(const vector<string>& args,bool flag_dec)
 	//MEMO: 範囲指定した場合、その全てをinc/decするように仕様追加。
 	for(unsigned int i=range.Start;i<=range.End;i++){
 		// atoi()は""に対して0を返すことが保証されている。
-		int counter=atoi(Engine->IndexParse(range.Entry,i).c_str())+diff;
+		int counter=StringToInt(Engine->IndexParse(range.Entry,i))+diff;
 		if(((!flag_dec)&&(counter>limit))
 		   ||(flag_dec&&(counter<limit))) counter=limit;
 		TWordID wid=Engine->CreateStrWord(IntToString(counter));
 		range.Entry.Replace2(i,wid,nullstr);
 	}
 #endif
-	return("");
+	return(L"");
 }
 //---------------------------------------------------------------------------
 

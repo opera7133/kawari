@@ -19,7 +19,9 @@ KISSRC =   kis/kis_echo.cpp \
            kis/kis_system.cpp
 
 CRYPTSRC = libkawari/kawari_crypt.cpp \
-           misc/base64.cpp
+           misc/base64.cpp \
+           misc/charset.cpp \
+           misc/wfile.cpp
 
 CORESRC =  libkawari/kawari_engine.cpp \
            libkawari/kawari_ns.cpp \
@@ -35,7 +37,6 @@ CORESRC =  libkawari/kawari_engine.cpp \
            libkawari/kawari_rc.cpp \
            misc/misc.cpp \
            misc/mt19937ar.cpp \
-           misc/l10n.cpp \
            misc/phttp.cpp \
            saori/saori.cpp \
            saori/saori_module.cpp \

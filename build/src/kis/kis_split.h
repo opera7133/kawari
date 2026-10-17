@@ -30,16 +30,16 @@ public:
 
 	// Initで名前その他の情報を設定してください
 	virtual bool Init(void){
-		Name_="split";
-		Format_="split Entry1 string delimiter";
-		Returnval_="(NULL)";
-		Information_="split a string by delimiter";
+		Name_=L"split";
+		Format_=L"split Entry1 string delimiter";
+		Returnval_=L"(NULL)";
+		Information_=L"split a string by delimiter";
 
 		return(true);
 	}
 
 	// インタープリタ
-	virtual string Function(const vector<string>& args);
+	virtual wstring Function(const vector<wstring>& args);
 };
 //---------------------------------------------------------------------------
 class KIS_join : public TKisFunction_base {
@@ -47,16 +47,16 @@ public:
 
 	// Initで名前その他の情報を設定してください
 	virtual bool Init(void){
-		Name_="join";
-		Format_="join Entry1 delimiter";
-		Returnval_="(NULL)";
-		Information_="join all strings in Entry1 by delimiter";
+		Name_=L"join";
+		Format_=L"join Entry1 delimiter";
+		Returnval_=L"(NULL)";
+		Information_=L"join all strings in Entry1 by delimiter";
 
 		return(true);
 	}
 
 	// インタープリタ
-	virtual string Function(const vector<string>& args);
+	virtual wstring Function(const vector<wstring>& args);
 };
 //---------------------------------------------------------------------------
 #endif // KIS_SPLIT_H__

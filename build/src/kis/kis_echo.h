@@ -30,16 +30,16 @@ public:
 	// Initで名前その他の情報を設定してください
 	virtual bool Init(void)
 	{
-		Name_="echo";
-		Format_="echo Word1 ...";
-		Returnval_="Word1 ...";
-		Information_="return all arguments";
+		Name_=L"echo";
+		Format_=L"echo Word1 ...";
+		Returnval_=L"Word1 ...";
+		Information_=L"return all arguments";
 
 		return(true);
 	}
 
 	// インタープリタ
-	virtual string Function(const vector<string>& args);
+	virtual wstring Function(const vector<wstring>& args);
 };
 //---------------------------------------------------------------------------
 class KIS_logprint : public TKisFunction_base {
@@ -48,16 +48,16 @@ public:
 	// Initで名前その他の情報を設定してください
 	virtual bool Init(void)
 	{
-		Name_="logprint";
-		Format_="logprint Word1 ...";
-		Returnval_="(NULL)";
-		Information_="output all arguments to logging stream";
+		Name_=L"logprint";
+		Format_=L"logprint Word1 ...";
+		Returnval_=L"(NULL)";
+		Information_=L"output all arguments to logging stream";
 
 		return(true);
 	}
 
 	// インタープリタ
-	virtual string Function(const vector<string>& args);
+	virtual wstring Function(const vector<wstring>& args);
 };
 //---------------------------------------------------------------------------
 #endif

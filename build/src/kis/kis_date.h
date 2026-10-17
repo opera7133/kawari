@@ -29,16 +29,16 @@ public:
 	// Initで名前その他の情報を設定してください
 	virtual bool Init(void)
 	{
-		Name_="date";
-		Format_="date Word1";
-		Returnval_="date information";
-		Information_="return a date info string formated by Word1(%y,%m,%d,%H,%M,%S,%w)";
+		Name_=L"date";
+		Format_=L"date Word1";
+		Returnval_=L"date information";
+		Information_=L"return a date info string formated by Word1(%y,%m,%d,%H,%M,%S,%w)";
 
 		return(true);
 	}
 
 	// インタープリタ
-	virtual string Function(const vector<string>& args);
+	virtual wstring Function(const vector<wstring>& args);
 };
 //---------------------------------------------------------------------------
 class KIS_mktime : public TKisFunction_base {
@@ -47,16 +47,16 @@ public:
 	// Initで名前その他の情報を設定してください
 	virtual bool Init(void)
 	{
-		Name_="mktime";
-		Format_="mktime year month day hour min sec";
-		Returnval_="date information";
-		Information_="return progress seconds from 1970/1/1 0:00:00(UTC)";
+		Name_=L"mktime";
+		Format_=L"mktime year month day hour min sec";
+		Returnval_=L"date information";
+		Information_=L"return progress seconds from 1970/1/1 0:00:00(UTC)";
 
 		return(true);
 	}
 
 	// インタープリタ
-	virtual string Function(const vector<string>& args);
+	virtual wstring Function(const vector<wstring>& args);
 };
 //---------------------------------------------------------------------------
 #endif

@@ -54,7 +54,7 @@ public:
 class TNameSpace {
 protected:
 	// エントリコレクション
-	TWordCollection<string,less<string> > EntryCollection;
+	TWordCollection<wstring,less<wstring> > EntryCollection;
 	// 辞書
 	TDictionary Dictionary;
 	// 逆引き辞書
@@ -91,13 +91,13 @@ public:
 	// エントリID取得
 	// "."はルートを示す。
 	// 戻り値 : 1オリジン、見つからなければ0を返す
-	class TEntry Get(const string& entry);
+	class TEntry Get(const wstring& entry);
 
 	// エントリを生成する
 	// 既にエントリが存在する場合は、生成せずにIDを返す
 	// "."はルートを示す。
 	// 戻り値 : 生成したエントリのID
-	class TEntry Create(const string& entry);
+	class TEntry Create(const wstring& entry);
 
 
 	// [ エントリ操作 ]
@@ -113,7 +113,7 @@ public:
 	unsigned int FindAllEntry(vector<class TEntry> &entrycol);
 
 	// エントリ名を「.」で分解する
-	static void SplitEntryName(const string& entryname,vector<string> &entryname_node);
+	static void SplitEntryName(const wstring& entryname,vector<wstring> &entryname_node);
 	// 指定された単語を含むエントリが存在するか調べる
 	// 戻り値 : 存在すればtrue
 	bool ContainsWord(TWordID id) const;
@@ -161,7 +161,7 @@ public:
 	// 空のエントリだった場合、警告をログに残す。
 	// 急場しのぎ的。
 	// 戻り値 : 空の場合true
-	bool AssertIfEmpty(const string& name);
+	bool AssertIfEmpty(const wstring& name);
 
 
 	// [ 情報系API ]
@@ -179,7 +179,7 @@ public:
 
 	// エントリ名を得る
 	// 戻り値 : エントリ名文字列
-	string GetName(void) const;
+	wstring GetName(void) const;
 
 	// IDを得る
 	TEntryID GetID(void) const { return entry; }
@@ -291,9 +291,9 @@ inline unsigned int TNameSpace::Size(void) const
 // エントリID取得
 // "."はルートを示す。
 // 戻り値 : 1オリジン、見つからなければ0を返す
-inline TEntry TNameSpace::Get(const string& entry)
+inline TEntry TNameSpace::Get(const wstring& entry)
 {
-	return((entry==".")?TEntry(this,0):TEntry(this, EntryCollection.Find(entry)));
+	return((entry==L".")?TEntry(this,0):TEntry(this, EntryCollection.Find(entry)));
 }
 //--------------------------------------------------------------------------
 // 指定された単語を含むエントリが存在するか調べる
@@ -314,10 +314,10 @@ inline TEntry TEntry::GetParent(void) const
 //---------------------------------------------------------------------------
 // エントリIDからエントリ名に変換
 // 戻り値 : エントリ名文字列
-inline string TEntry::GetName(void) const
+inline wstring TEntry::GetName(void) const
 {
-	string const*entryname=ns->EntryCollection.Find(entry);
-	if (!entryname) return("");
+	wstring const*entryname=ns->EntryCollection.Find(entry);
+	if (!entryname) return(L"");
 	else return (*entryname);
 }
 //--------------------------------------------------------------------------
@@ -352,7 +352,7 @@ inline void TEntry::WriteProtect(void)
 // 空のエントリだった場合、警告をログに残す。
 // 急場しのぎ的。
 // 戻り値 : 空の場合true
-inline bool TEntry::AssertIfEmpty(const string& name)
+inline bool TEntry::AssertIfEmpty(const wstring& name)
 {
 	if(((!IsValid())||(!Size()))&&ns->gc->GetLogger().Check(kawari_log::LOG_DECL)){
 		ns->gc->GetLogger().GetStream() << RC.S(kawari::resource::WARN_NS_READ_EMPTY_ENTRY1) << name << RC.S(kawari::resource::WARN_NS_READ_EMPTY_ENTRY2) << endl;

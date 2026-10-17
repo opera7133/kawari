@@ -6,6 +6,7 @@
 //      Programed by Suikyo
 //
 //  2002.04.18  Phase 8.0.0   書き直し
+//  2026.10.18  Phase 9.0.0   wchar_t化 (std::wistreamを読む)
 //
 //--------------------------------------------------------------------------
 #ifndef LEXER_H__
@@ -14,6 +15,7 @@
 #include "config.h"
 //--------------------------------------------------------------------------
 #include "libkawari/kawari_log.h"
+#include "misc/charset.h"
 //--------------------------------------------------------------------------
 #include <iostream>
 #include <string>
@@ -37,14 +39,14 @@ public:
 		T_EOF,
 		T_DUMMY
 	} type;
-	std::string str;
-	Token (Type t, const std::string &s) : type(t), str(s) {}
-	Token (void) : type(T_DUMMY), str("") {}
+	std::wstring str;
+	Token (Type t, const std::wstring &s) : type(t), str(s) {}
+	Token (void) : type(T_DUMMY), str(L"") {}
 	Token &set (Type t) { type=t; return *this; }
-	Token &set (const std::string &s) { str=s; return *this; }
-	Token &set (Type t, const std::string &s)
+	Token &set (const std::wstring &s) { str=s; return *this; }
+	Token &set (Type t, const std::wstring &s)
 		{ type=t; str=s; return *this; }
-	Token &set (Type t, const char &ch)
+	Token &set (Type t, const wchar_t &ch)
 		{ type=t; str+=ch; return *this; }
 };
 
@@ -54,9 +56,10 @@ public:
 class TKawariLexer{
 public:
 	// コンストラクタ
-	TKawariLexer (std::istream &input, TKawariLogger &lgr,
-				  std::string filename="<unknown>",
-				  bool preprocess=true, int lineno=0);
+	TKawariLexer (std::wistream &input, TKawariLogger &lgr,
+				  std::wstring filename=L"<unknown>",
+				  bool preprocess=true, int lineno=0,
+				  TKawariCharset cryptcharset=KC_SJIS);
 
 	// Lexerのモード
 	enum Mode {
@@ -82,33 +85,33 @@ public:
 	// 次のリテラルトークンを返す
 	// 次がベアリテラルでなかったら、""が返る。予め分かっている場合にだけ使うこと。
 	// mode : Lexerのモード指定(LITERAL_MODE, ID_MODE)
-	std::string getLiteral(Mode mode=LITERAL_MODE);
+	std::wstring getLiteral(Mode mode=LITERAL_MODE);
 
 	// !!! check type, before use this !!!
 	// 次のクォートリテラルトークン(非デコード)を返す
 	// 次がクォートリテラルでなかったら""が返る。
-	std::string getQuotedLiteral(void);
+	std::wstring getQuotedLiteral(void);
 
 	// !!! check type before use this !!!
 	// [0-9]+
 	// 整数文字列
-	std::string getDecimalLiteral(void);
+	std::wstring getDecimalLiteral(void);
 
 	// 1文字スキップ
 	int skip(void);
 
 	// ある文字の手前までスキップ (文法エラーからの復旧用)
 	// noret : 改行を許さない場合true
-	bool simpleSkipTo(char ch, bool noret=true);
+	bool simpleSkipTo(wchar_t ch, bool noret=true);
 
 	// ファイル名を返す
-	const std::string &getFileName(void) const;
+	const std::wstring &getFileName(void) const;
 
 	// 現在の行番号を返す
 	int getLineNo(void) const;
 
 	// 現在行の残りを全て返す
-	std::string getRestOfLine(void);
+	std::wstring getRestOfLine(void);
 
 	// モードスイッチのリセット
 	inline void ResetModeSwitch(void);
@@ -132,26 +135,26 @@ public:
 
 	// サービスメソッド
 	// クォート文字列をデコード
-	static std::string DecodeQuotedString(const std::string &orgsen);
+	static std::wstring DecodeQuotedString(const std::wstring &orgsen);
 
 	// サービスメソッド
 	// 文字列をエントリ名で使用可能な文字列にエンコードする
-	static std::string EncodeEntryName(const std::string &orgsen);
+	static std::wstring EncodeEntryName(const std::wstring &orgsen);
 
 	~TKawariLexer ();
 
 	// コンパイルエラー
-	void error(const std::string &message);
+	void error(const std::wstring &message);
 
 	// コンパイルエラー
-	void warning(const std::string &message);
+	void warning(const std::wstring &message);
 
 private:
 	// 文字からトークンタイプを得る
-	Token::Type checkType(Mode m, char ch) const;
+	Token::Type checkType(Mode m, wchar_t ch) const;
 
 	class TKawariPreProcessor *pp;
-	std::string fn;
+	std::wstring fn;
 
 	TKawariLogger &logger;
 };
@@ -160,19 +163,20 @@ private:
 //
 class TKawariPreProcessor {
 public:
-	TKawariPreProcessor(std::istream &input, int lineno=0, bool preprocess=true)
-		: is(input), pp(preprocess), mc(false), isMS(false), ln(lineno), pos(0) {}
-	bool peek(char &ch);
-	bool getch(char &ch);
+	TKawariPreProcessor(std::wistream &input, int lineno=0, bool preprocess=true,
+						TKawariCharset cryptcharset=KC_SJIS)
+		: is(input), pp(preprocess), mc(false), isMS(false), ln(lineno), pos(0), cryptcs(cryptcharset) {}
+	bool peek(wchar_t &ch);
+	bool getch(wchar_t &ch);
 	bool eof(void);
-	std::string getline(void);
+	std::wstring getline(void);
 	bool unget(void);
 	int getLineNo(void){ return ln; }
 
 	int getColumn(void){ return pos; }
 
 	// バッファの一部を切り出す
-	std::string substring(int index, int length);
+	std::wstring substring(int index, int length);
 
 	virtual ~TKawariPreProcessor() {}
 
@@ -185,7 +189,7 @@ public:
 private:
 	bool processNextLine(void);
 	// 入力ストリーム
-	std::istream &is;
+	std::wistream &is;
 	// pre-processするか否かのフラグ
 	bool pp;
 	// 複数行コメントのフラグ
@@ -197,8 +201,10 @@ private:
 	unsigned int ln;
 	// 現在カラム
 	unsigned int pos;
+	// 暗号化行を復号した後の文字コード
+	TKawariCharset cryptcs;
 	// 出力バッファ
-	std::string linebuf;
+	std::wstring linebuf;
 };
 //---------------------------------------------------------------------------
 // 次のトークンがあるか
@@ -210,23 +216,23 @@ inline void TKawariLexer::ResetModeSwitch(void){
 	pp->ResetModeSwitch();
 }
 //---------------------------------------------------------------------------
-inline void TKawariLexer::error(const std::string &message){
+inline void TKawariLexer::error(const std::wstring &message){
 	logger.GetStream(kawari_log::LOG_ERROR) << getFileName() << " " << getLineNo()
 		<< ": error: " << message << std::endl;
 }
 //---------------------------------------------------------------------------
-inline void TKawariLexer::warning(const std::string &message){
+inline void TKawariLexer::warning(const std::wstring &message){
 	logger.GetStream(kawari_log::LOG_WARNING) << getFileName() << " " << getLineNo()
 		<< ": warning: " << message << std::endl;
 }
 //---------------------------------------------------------------------------
-inline bool TKawariPreProcessor::peek(char &ch){
+inline bool TKawariPreProcessor::peek(wchar_t &ch){
 	bool ret = getch(ch);
 	unget();
 	return ret;
 }
 //---------------------------------------------------------------------------
-inline bool TKawariPreProcessor::getch(char &ch){
+inline bool TKawariPreProcessor::getch(wchar_t &ch){
 	if (pos>=linebuf.size())
 		if (!processNextLine())
 			return false;

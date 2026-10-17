@@ -18,28 +18,28 @@
 #include "libkawari/kawari_engine.h"
 #include "libkawari/kawari_log.h"
 //---------------------------------------------------------------------------
-string KIS_echo::Function(const vector<string>& args)
+wstring KIS_echo::Function(const vector<wstring>& args)
 {
-	if(args.size()<2) return("");
+	if(args.size()<2) return(L"");
 
-	string retstr=args[1];
+	wstring retstr=args[1];
 
-	for(unsigned int i=2;i<args.size();i++) retstr+=string(" ")+args[i];
+	for(unsigned int i=2;i<args.size();i++) retstr+=wstring(L" ")+args[i];
 
 	return(retstr);
 }
 //---------------------------------------------------------------------------
-string KIS_logprint::Function(const vector<string>& args)
+wstring KIS_logprint::Function(const vector<wstring>& args)
 {
 	TKawariLogger &Logger=GetLogger();
 	if(args.size()>=2) {
 		Logger.GetStream() << args[1];
-		for(unsigned int i=2;i<args.size();i++) Logger.GetStream() << " " << args[i];
+		for(unsigned int i=2;i<args.size();i++) Logger.GetStream() << L" " << args[i];
 	}
 
 	Logger.GetStream() << endl;
 
-	return("");
+	return(L"");
 }
 //---------------------------------------------------------------------------
 

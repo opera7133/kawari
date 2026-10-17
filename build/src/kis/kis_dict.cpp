@@ -38,39 +38,39 @@ using namespace kawari_log;
 #include <algorithm>
 using namespace std;
 //---------------------------------------------------------------------------
-string KIS_encode_entryname::Function(const vector<string>& args)
+wstring KIS_encode_entryname::Function(const vector<wstring>& args)
 {
-	if(!AssertArgument(args, 2, 2)) return("");
+	if(!AssertArgument(args, 2, 2)) return(L"");
 
 	return(TKawariEngine::EncodeEntryName(args[1]));
 }
 //---------------------------------------------------------------------------
-string KIS_eval::Function(const vector<string>& args)
+wstring KIS_eval::Function(const vector<wstring>& args)
 {
-	if(!AssertArgument(args, 2)) return("");
+	if(!AssertArgument(args, 2)) return(L"");
 
-	string word = args[1];
-	for(unsigned int i=2;i<args.size();i++) word+=string(" ")+args[i];
+	wstring word = args[1];
+	for(unsigned int i=2;i<args.size();i++) word+=wstring(L" ")+args[i];
 
 	return(Engine->Parse(word));
 }
 //---------------------------------------------------------------------------
-string KIS_size::Function(const vector<string>& args)
+wstring KIS_size::Function(const vector<wstring>& args)
 {
-	if(!AssertArgument(args, 2, 2)) return("");
+	if(!AssertArgument(args, 2, 2)) return(L"");
 
 	return(IntToString(Engine->EntrySize(args[1])));
 }
 //---------------------------------------------------------------------------
-string KIS_set::Function_(const vector<string>& args,bool flag_str)
+wstring KIS_set::Function_(const vector<wstring>& args,bool flag_str)
 {
-	if(!AssertArgument(args, 3)) return("");
+	if(!AssertArgument(args, 3)) return(L"");
 
-	string word = args[2];
-	for(unsigned int i=3;i<args.size();i++) word+=string(" ")+args[i];
+	wstring word = args[2];
+	for(unsigned int i=3;i<args.size();i++) word+=wstring(L" ")+args[i];
 
 #if 0
-	string entryname;
+	wstring entryname;
 	int st,end;
 
 	int range=TKawariEngine::DecodeEntryName(args[1],entryname,st,end);
@@ -94,7 +94,7 @@ string KIS_set::Function_(const vector<string>& args,bool flag_str)
 			if((st<0)||(end<0)||(st>end)) {
 				// エラー
 				GetLogger().GetStream(LOG_ERROR) << args[0] << RC.S(ERR_KIS_DICT_INVALID_INDEX) << endl;
-				return("");
+				return(L"");
 			}
 
 			TEntry entry=Engine->CreateEntry(entryname);
@@ -103,7 +103,7 @@ string KIS_set::Function_(const vector<string>& args,bool flag_str)
 			if(flag) id=Engine->CreateStrWord(word);
 			 else id=Engine->CreateWord(word);
 
-			TWordID nullstr=Engine->CreateStrWord("");
+			TWordID nullstr=Engine->CreateStrWord(L"");
 
 			for(unsigned int i=st;i<=(unsigned int)end;i++) {
 				entry.Replace2(i,id,nullstr);
@@ -117,7 +117,7 @@ string KIS_set::Function_(const vector<string>& args,bool flag_str)
 	if(range.Start==TKawariEngine::NPos){
 		GetLogger().GetStream(LOG_ERROR) << args[0]
 			<< RC.S(ERR_KIS_DICT_INVALID_INDEX) << endl;
-		return("");
+		return(L"");
 	}
 
 	TWordID wid=(flag_str)?
@@ -125,22 +125,22 @@ string KIS_set::Function_(const vector<string>& args,bool flag_str)
 	if(!range.Range){
 		range.Entry.PushAfterClear(wid);
 	}else{
-		TWordID nullstr=Engine->CreateStrWord("");
+		TWordID nullstr=Engine->CreateStrWord(L"");
 		for(unsigned int i=range.Start;i<=range.End;i++) 
 			range.Entry.Replace2(i,wid,nullstr);
 	}
 #endif
-	return("");
+	return(L"");
 }
 //---------------------------------------------------------------------------
-string KIS_adddict::Function_(const vector<string>& args,bool flag_str)
+wstring KIS_adddict::Function_(const vector<wstring>& args,bool flag_str)
 {
-	if(!AssertArgument(args, 3)) return ("");
+	if(!AssertArgument(args, 3)) return (L"");
 
-	string word = args[2];
-	for(unsigned int i=3;i<args.size();i++) word+=string(" ")+args[i];
+	wstring word = args[2];
+	for(unsigned int i=3;i<args.size();i++) word+=wstring(L" ")+args[i];
 #if 0
-	string entryname;
+	wstring entryname;
 	int st,end;
 	TKawariEngine::DecodeEntryName(args[1],entryname,st,end);
 
@@ -157,17 +157,17 @@ string KIS_adddict::Function_(const vector<string>& args,bool flag_str)
 		Engine->CreateStrWord(word):Engine->CreateWord(word);
 	range.Entry.Push(wid);
 #endif
-	return("");
+	return(L"");
 }
 //---------------------------------------------------------------------------
-string KIS_unshift::Function_(const vector<string>& args,bool flag_str)
+wstring KIS_unshift::Function_(const vector<wstring>& args,bool flag_str)
 {
-	if(!AssertArgument(args, 3)) return ("");
+	if(!AssertArgument(args, 3)) return (L"");
 
-	string word = args[2];
-	for(unsigned int i=3;i<args.size();i++) word+=string(" ")+args[i];
+	wstring word = args[2];
+	for(unsigned int i=3;i<args.size();i++) word+=wstring(L" ")+args[i];
 #if 0
-	string entryname;
+	wstring entryname;
 	int st,end;
 	TKawariEngine::DecodeEntryName(args[1],entryname,st,end);
 
@@ -184,19 +184,19 @@ string KIS_unshift::Function_(const vector<string>& args,bool flag_str)
 		Engine->CreateStrWord(word):Engine->CreateWord(word);
 	range.Entry.Insert(0,wid);
 #endif
-	return("");
+	return(L"");
 }
 //---------------------------------------------------------------------------
-string KIS_pop::Function_(const vector<string>& args,bool flag,bool flag2)
+wstring KIS_pop::Function_(const vector<wstring>& args,bool flag,bool flag2)
 {
-	if(!AssertArgument(args, 2, 2)) return ("");
+	if(!AssertArgument(args, 2, 2)) return (L"");
 
 	unsigned int size=Engine->EntrySize(args[1]);
-	if(size==0) return("");
+	if(size==0) return(L"");
 
 	unsigned int pos=flag?0:(size-1);
 
-	string retstr;
+	wstring retstr;
 	if(flag2)
 		retstr=Engine->IndexWord(args[1],pos);
 	else
@@ -207,11 +207,11 @@ string KIS_pop::Function_(const vector<string>& args,bool flag,bool flag2)
 	return(retstr);
 }
 //---------------------------------------------------------------------------
-string KIS_getrandom::Function(const vector<string>& args)
+wstring KIS_getrandom::Function(const vector<wstring>& args)
 {
-	if(!AssertArgument(args, 2, 3)) return ("");
+	if(!AssertArgument(args, 2, 3)) return (L"");
 
-	string failstr;
+	wstring failstr;
 	if(args.size()==3) failstr=args[2];
 
 	TEntry entry=Engine->GetEntry(args[1]);
@@ -220,17 +220,17 @@ string KIS_getrandom::Function(const vector<string>& args)
 	unsigned int size=entry.Size();
 	if(size==0) return(failstr);
 
-	string retstr=Engine->IndexParse(entry,Random(size));
+	wstring retstr=Engine->IndexParse(entry,Random(size));
 	if(retstr.size()==0) return(failstr);
 
 	return(retstr);
 }
 //---------------------------------------------------------------------------
-string KIS_get::Function_(const vector<string>& args,bool flag)
+wstring KIS_get::Function_(const vector<wstring>& args,bool flag)
 {
-	if(!AssertArgument(args, 2, 2)) return ("");
+	if(!AssertArgument(args, 2, 2)) return (L"");
 #if 0
-	string entryname;
+	wstring entryname;
 	int st,end;
 
 	TKawariEngine::DecodeEntryName(args[1],entryname,st,end);
@@ -242,10 +242,10 @@ string KIS_get::Function_(const vector<string>& args,bool flag)
 	if((st<0)||(end<0)||(st>end)) {
 		// エラー
 		GetLogger().GetStream(LOG_ERROR) << args[0] << RC.S(ERR_KIS_DICT_INVALID_INDEX) << endl;
-		return("");
+		return(L"");
 	}
 
-	string retstr;
+	wstring retstr;
 	for(unsigned int i=(unsigned int)st;i<=(unsigned int)end;i++) {
 		if(flag) retstr+=Engine->IndexWord(entry,i);
 		 else retstr+=Engine->IndexParse(entry,i);
@@ -255,10 +255,10 @@ string KIS_get::Function_(const vector<string>& args,bool flag)
 	if(range.Start==TKawariEngine::NPos){
 		GetLogger().GetStream(LOG_ERROR) << args[0]
 			<< RC.S(ERR_KIS_DICT_INVALID_INDEX) << endl;
-		return("");
+		return(L"");
 	}
 
-	string retstr;
+	wstring retstr;
 	//MEMO: サイズ外(存在しない単語)の逆コンパイル結果は仕様として保証されるのか？
 	if(flag)
 		for(unsigned int i=range.Start;i<=range.End;i++)
@@ -270,11 +270,11 @@ string KIS_get::Function_(const vector<string>& args,bool flag)
 	return(retstr);
 }
 //---------------------------------------------------------------------------
-string KIS_clear::Function(const vector<string>& args)
+wstring KIS_clear::Function(const vector<wstring>& args)
 {
-	if(!AssertArgument(args, 2, 2)) return ("");
+	if(!AssertArgument(args, 2, 2)) return (L"");
 #if 0
-	string entryname;
+	wstring entryname;
 	int st,end;
 
 	int range=TKawariEngine::DecodeEntryName(args[1],entryname,st,end);
@@ -292,7 +292,7 @@ string KIS_clear::Function(const vector<string>& args)
 			if((st<0)||(end<0)||(st>end)) {
 				// エラー
 				GetLogger().GetStream(LOG_ERROR) << args[0] << RC.S(ERR_KIS_DICT_INVALID_INDEX) << endl;
-				return("");
+				return(L"");
 			}
 
 			Engine->Erase(entryname,st,end);
@@ -304,7 +304,7 @@ string KIS_clear::Function(const vector<string>& args)
 	if(range.Start==TKawariEngine::NPos){
 		GetLogger().GetStream(LOG_ERROR) << args[0]
 			<< RC.S(ERR_KIS_DICT_INVALID_INDEX) << endl;
-		return("");
+		return(L"");
 	}
 
 	if(!range.Range)
@@ -312,14 +312,14 @@ string KIS_clear::Function(const vector<string>& args)
 	else
 		range.Entry.Erase(range.Start, range.End);
 #endif
-	return("");
+	return(L"");
 }
 //---------------------------------------------------------------------------
-string KIS_insert::Function_(const vector<string>& args,bool flag_str)
+wstring KIS_insert::Function_(const vector<wstring>& args,bool flag_str)
 {
-	if(!AssertArgument(args, 3, 3)) return ("");
+	if(!AssertArgument(args, 3, 3)) return (L"");
 #if 0
-	string entryname;
+	wstring entryname;
 	int st,end;
 
 	TKawariEngine::DecodeEntryName(args[1],entryname,st,end);
@@ -329,10 +329,10 @@ string KIS_insert::Function_(const vector<string>& args,bool flag_str)
 	if(st<0){
 		// エラー
 		GetLogger().GetStream(LOG_ERROR) << args[0] << RC.S(ERR_KIS_DICT_INVALID_INDEX) << endl;
-		return ("");
+		return (L"");
 	}
 
-	string word = args[2];
+	wstring word = args[2];
 
 	TEntry entry=Engine->CreateEntry(entryname);
 
@@ -348,7 +348,7 @@ string KIS_insert::Function_(const vector<string>& args,bool flag_str)
 	if(range.Start==TKawariEngine::NPos){
 		GetLogger().GetStream(LOG_ERROR) << args[0]
 			<< RC.S(ERR_KIS_DICT_INVALID_INDEX) << endl;
-		return("");
+		return(L"");
 	}
 
 	//MEMO: pushやunshiftは二つ目以降の引数をcatするのに、
@@ -357,33 +357,33 @@ string KIS_insert::Function_(const vector<string>& args,bool flag_str)
 		Engine->CreateStrWord(args[2]): Engine->CreateWord(args[2]);
 	range.Entry.Insert(range.Start, wid);
 #endif
-	return("");
+	return(L"");
 }
 //---------------------------------------------------------------------------
-string KIS_writeprotect::Function(const vector<string>& args)
+wstring KIS_writeprotect::Function(const vector<wstring>& args)
 {
-	if(!AssertArgument(args, 2, 2)) return ("");
+	if(!AssertArgument(args, 2, 2)) return (L"");
 
 	Engine->WriteProtect(args[1]);
-	return ("");
+	return (L"");
 }
 //---------------------------------------------------------------------------
-string KIS_wordcount::Function(const vector<string>& args)
+wstring KIS_wordcount::Function(const vector<wstring>& args)
 {
-	if(!AssertArgument(args, 1, 1)) return ("");
+	if(!AssertArgument(args, 1, 1)) return (L"");
 
 	return IntToString(Engine->WordCollectionSize());
 }
 //---------------------------------------------------------------------------
-string KIS_entrycount::Function(const vector<string>& args)
+wstring KIS_entrycount::Function(const vector<wstring>& args)
 {
-	if(!AssertArgument(args, 1, 1)) return ("");
+	if(!AssertArgument(args, 1, 1)) return (L"");
 
 #if 0
 	return IntToString(Engine->EntryCollectionSize());
 #else
 	int entryno=0;
-	TEntry rootentry=Engine->CreateEntry(".");
+	TEntry rootentry=Engine->CreateEntry(L".");
 	vector<TEntry> entrycol;
 	if(rootentry.FindTree(entrycol)){
 		// sort | uniq
@@ -397,37 +397,37 @@ string KIS_entrycount::Function(const vector<string>& args)
 #endif
 }
 //---------------------------------------------------------------------------
-string KIS_find::Function(const vector<string>& args)
+wstring KIS_find::Function(const vector<wstring>& args)
 {
-	if(!AssertArgument(args, 3, 4)) return ("");
+	if(!AssertArgument(args, 3, 4)) return (L"");
 
-	if(!Engine->EntrySize(args[1])) return ("-1");
-	unsigned int min=(args.size()==4)?atoi(args[3].c_str()):0;
+	if(!Engine->EntrySize(args[1])) return (L"-1");
+	unsigned int min=(args.size()==4)?StringToInt(args[3]):0;
 	unsigned int index=Engine->Find(args[1], args[2], min);
-	return (index==Engine->NPos)? (string("-1")):IntToString((int)index);
+	return (index==Engine->NPos)? (wstring(L"-1")):IntToString((int)index);
 }
 //---------------------------------------------------------------------------
-string KIS_rfind::Function(const vector<string>& args)
+wstring KIS_rfind::Function(const vector<wstring>& args)
 {
-	if(!AssertArgument(args, 3, 4)) return ("");
+	if(!AssertArgument(args, 3, 4)) return (L"");
 
-	if(!Engine->EntrySize(args[1])) return ("-1");
-	unsigned int max=(args.size()==4)?atoi(args[3].c_str()):Engine->NPos;
+	if(!Engine->EntrySize(args[1])) return (L"-1");
+	unsigned int max=(args.size()==4)?StringToInt(args[3]):Engine->NPos;
 	unsigned int index=Engine->RFind(args[1], args[2], max);
-	return (index==Engine->NPos)? (string("-1")):IntToString((int)index);
+	return (index==Engine->NPos)? (wstring(L"-1")):IntToString((int)index);
 }
 //---------------------------------------------------------------------------
-string KIS_cleartree::Function(const vector<string>& args)
+wstring KIS_cleartree::Function(const vector<wstring>& args)
 {
-	if(!AssertArgument(args, 2, 2)) return ("");
-	if(!args[1].size()) return ("");
+	if(!AssertArgument(args, 2, 2)) return (L"");
+	if(!args[1].size()) return (L"");
 
 	Engine->ClearTree(args[1]);
 
-	return ("");
+	return (L"");
 }
 //---------------------------------------------------------------------------
-void KIS_listsub::_Function(const vector<string>& args, bool subflag){
+void KIS_listsub::_Function(const vector<wstring>& args, bool subflag){
 	// エントリ操作周りはエラーチェックを慎重にやります。
 	if(!AssertArgument(args, 3, 3)) return;
 	if((!args[1].size())||(!args[2].size())) return;
@@ -444,7 +444,7 @@ void KIS_listsub::_Function(const vector<string>& args, bool subflag){
 		vector<TEntry>::iterator end=unique(entrycol.begin(), entrycol.end());
 
 		for(vector<TEntry>::iterator it=entrycol.begin(); it!=end; it++){
-			string entryname=it->GetName();
+			wstring entryname=it->GetName();
 			if (!entryname.size()) continue;
 			tempentry.Push(Engine->CreateStrWord(entryname));
 		}
@@ -452,7 +452,7 @@ void KIS_listsub::_Function(const vector<string>& args, bool subflag){
 	return;
 }
 //---------------------------------------------------------------------------
-void KIS_copy::_Function(const vector<string>& args, bool rmflag){
+void KIS_copy::_Function(const vector<wstring>& args, bool rmflag){
 	if(!AssertArgument(args, 3, 3)) return;
 	if((!args[1].size())||(!args[2].size())) return;
 
@@ -471,7 +471,7 @@ void KIS_copy::_Function(const vector<string>& args, bool rmflag){
 		srcentry.Clear();
 }
 //---------------------------------------------------------------------------
-void KIS_copytree::_Function(const vector<string>& args, bool rmflag){
+void KIS_copytree::_Function(const vector<wstring>& args, bool rmflag){
 	if(!AssertArgument(args, 3, 3)) return;
 	if((!args[1].size())||(!args[2].size())) return;
 	if((args[1].size()<=args[2].size())&&(args[2].substr(0,args[1].size())==args[1])){
@@ -479,9 +479,9 @@ void KIS_copytree::_Function(const vector<string>& args, bool rmflag){
 		return;
 	}
 
-	const string &srcparent=args[1];
-	const string &dstparent=(args[2]==".")?string(""):args[2];
-	const int splen=(srcparent==".")?0:srcparent.size();
+	const wstring &srcparent=args[1];
+	const wstring &dstparent=(args[2]==L".")?wstring(L""):args[2];
+	const int splen=(srcparent==L".")?0:srcparent.size();
 	TEntry srcparententry=Engine->CreateEntry(srcparent);
 
 	vector<TEntry> srccol;
@@ -493,8 +493,8 @@ void KIS_copytree::_Function(const vector<string>& args, bool rmflag){
 
 	for(vector<TEntry>::iterator it=srccol.begin(); it!=end; it++){
 		TEntry srcentry=(*it);
-		const string src=srcentry.GetName();
-		const string dst=dstparent+src.substr(splen,src.size()-splen);
+		const wstring src=srcentry.GetName();
+		const wstring dst=dstparent+src.substr(splen,src.size()-splen);
 		TEntry dstentry=Engine->CreateEntry(dst);
 
 		vector<TWordID> wordcol;

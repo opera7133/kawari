@@ -8,6 +8,7 @@
 //  2002.04.15  Phase 8.0.0   えびさわさんバージョンを参考に導入
 //  2004.02.13  Phase 8.2.0   (phonohawk) libdlを使う場合には代替ライブラリも探す
 //                  参考:  http://ccm.sherry.jp/ninni/pa_spec/saori-posix.html
+//  2026.10.18  Phase 9.0.0   wchar_t化 (LoadLibraryW, loadu対応)
 //
 //---------------------------------------------------------------------------
 #include "config.h"
@@ -88,14 +89,14 @@ static string posix_search_fallback_dll(const string& dllfile) {
 namespace {
 //---------------------------------------------------------------------------
 // prototypes
-SAORI_HANDLE load_library(const string &file);
+SAORI_HANDLE load_library(const wstring &file);
 void unload_library(SAORI_HANDLE handle);
 void *get_symbol(SAORI_HANDLE handle, const std::string &name);
 
 #if defined(WIN32)||defined(_WIN32)||defined(_Windows)||defined(__CYGWIN__)
 // Win32
-SAORI_HANDLE load_library(const string &file){
-	return (SAORI_HANDLE)::LoadLibrary(file.c_str());
+SAORI_HANDLE load_library(const wstring &wfile){
+	return (SAORI_HANDLE)::LoadLibraryW(wfile.c_str());
 }
 void unload_library(SAORI_HANDLE handle){
 	::FreeLibrary((HMODULE)handle);
@@ -110,7 +111,8 @@ void *get_symbol(SAORI_HANDLE handle, const string &name){
 }
 #else
 // libdl
-SAORI_HANDLE load_library(const string &file){
+SAORI_HANDLE load_library(const wstring &wfile){
+	string file = PathToNative(wfile);
 	bool fallback_always = false;
 	string env_fallback_always = str_getenv("SAORI_FALLBACK_ALWAYS");
 	if (env_fallback_always.length() > 0 && env_fallback_always != "0") {
@@ -162,13 +164,13 @@ void *get_symbol(SAORI_HANDLE handle, const std::string &name){
 //---------------------------------------------------------------------------
 namespace saori{
 //---------------------------------------------------------------------------
-TModule *TModuleFactoryNative::CreateModule(const string &path){
-	GetLogger().GetStream(LOG_INFO) << "[SAORI Native] CreateModule" << endl;
-	string fn=CanonicalPath(path);
+TModule *TModuleFactoryNative::CreateModule(const wstring &path){
+	GetLogger().GetStream(LOG_INFO) << L"[SAORI Native] CreateModule" << endl;
+	wstring fn=CanonicalPath(path);
 
 	SAORI_HANDLE handle=load_library(fn);
 	if (!handle){
-		GetLogger().GetStream(LOG_ERROR) << "[SAORI Native] Library ("+fn+") load failed." << endl;
+		GetLogger().GetStream(LOG_ERROR) << L"[SAORI Native] Library ("+fn+L") load failed." << endl;
 		return NULL;
 	}
 	TModuleNative *ret=new TModuleNative((*this), fn, handle);
@@ -184,7 +186,7 @@ TModule *TModuleFactoryNative::CreateModule(const string &path){
 // モジュールの完全破棄
 void TModuleFactoryNative::DeleteModule(TModule *module){
 	if (module){
-		GetLogger().GetStream(LOG_INFO) << "[SAORI Native] FreeLibrary" << endl;
+		GetLogger().GetStream(LOG_INFO) << L"[SAORI Native] FreeLibrary" << endl;
 		unload_library(module->GetHandle());
 		delete module;
 	}
@@ -202,33 +204,38 @@ TModuleFactoryNative::~TModuleFactoryNative(){
 // 初期化
 bool TModuleNative::Initialize(void){
 	func_load=(BOOL (SHIORI_CALL *)(MEMORY_HANDLE, long))get_symbol(handle, "load");
+	func_loadu=(BOOL (SHIORI_CALL *)(MEMORY_HANDLE, long))get_symbol(handle, "loadu");
 	func_unload=(BOOL (SHIORI_CALL *)(void))get_symbol(handle, "unload");
 	func_request=(MEMORY_HANDLE (SHIORI_CALL *)(MEMORY_HANDLE, long *))get_symbol(handle, "request");
 
 	if (func_request==NULL){
-		GetFactory().GetLogger().GetStream(LOG_ERROR) << "[SAORI Native] importing 'request' from ("+path+") failed." << endl;
+		GetFactory().GetLogger().GetStream(LOG_ERROR) << L"[SAORI Native] importing 'request' from ("+path+L") failed." << endl;
 		return false;
 	}
 	return true;
 }
 //---------------------------------------------------------------------------
 // SAORI/1.0 Load
+// loadu があればUTF-8のパスで、なければ(OSの既定コードページの)load で呼ぶ
 bool TModuleNative::Load(void){
-	if (!func_load) return TRUE;
+	if (!func_load&&!func_loadu) return TRUE;
 
-	string basepath;
-	unsigned int pos=path.find_last_of(FILE_SEPARATOR);
-	if (pos==string::npos){
+	wstring basepath;
+	wstring::size_type pos=path.find_last_of(FILE_SEPARATOR);
+	if (pos==wstring::npos){
 		basepath=path+FILE_SEPARATOR;
 	}else{
 		basepath=path.substr(0, pos+1);
 	}
 
-	long len=basepath.size();
+	string bytes=func_loadu?WtoUTF8(basepath):WtoACP(basepath);
+	long len=bytes.size();
 	MEMORY_HANDLE h=(MEMORY_HANDLE)SHIORI_MALLOC(len);
 	if (!h) return false;
-	basepath.copy((char *)h, len);
-	GetFactory().GetLogger().GetStream(LOG_INFO) << "[SAORI Native] load(" << basepath << ")." << endl;
+	bytes.copy((char *)h, len);
+	GetFactory().GetLogger().GetStream(LOG_INFO) << (func_loadu?L"[SAORI Native] loadu(":L"[SAORI Native] load(") << basepath << L")." << endl;
+	if (func_loadu)
+		return (0!=(func_loadu)(h,len));
 	return (0!=(func_load)(h,len));
 }
 //---------------------------------------------------------------------------
@@ -236,7 +243,7 @@ bool TModuleNative::Load(void){
 bool TModuleNative::Unload(void){
 	if (!func_unload) return true;
 
-	GetFactory().GetLogger().GetStream(LOG_INFO) << "[SAORI Native] unload()" << endl;
+	GetFactory().GetLogger().GetStream(LOG_INFO) << L"[SAORI Native] unload()" << endl;
 	(func_unload)();
 	return true;
 }

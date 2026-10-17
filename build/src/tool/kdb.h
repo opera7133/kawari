@@ -6,6 +6,7 @@
 //
 //  2001.05.24  Phase 0.10    コンソール版
 //  2001.08.12  Phase 6.2.1   幸水と統合
+//  2026.10.18  Phase 9.0.0   wchar_t化
 //
 //---------------------------------------------------------------------------
 #ifndef KDB_H
@@ -32,24 +33,24 @@ public:
 	TKawariInterfaceSakuraAPI(HWND target) : Target(target) {}
 
 	// SakuraAPI/1.3 イベント送信
-	void SakuraEvent(const string& event,const string& param);
+	void SakuraEvent(const wstring& event,const wstring& param);
 
 	// 情報を得る
-	virtual string GetInformation(void)
+	virtual wstring GetInformation(void)
 	{
-		return("UNKNOWN/0.0.0");
+		return(L"UNKNOWN/0.0.0");
 	}
 
 	// 与えられたスクリプトを解釈・実行する
-	virtual string Parse(const string& script)
+	virtual wstring Parse(const wstring& script)
 	{
-		SakuraEvent("ShioriEcho",script);
-		return("");
+		SakuraEvent(L"ShioriEcho",script);
+		return(L"");
 	}
 };
 //---------------------------------------------------------------------------
 // 認識可能な他ゴーストのHWnd一覧を返す
-void GetGhostList(map<HWND,string> &ghostlist);
+void GetGhostList(map<HWND,wstring> &ghostlist);
 //---------------------------------------------------------------------------
 #endif
 

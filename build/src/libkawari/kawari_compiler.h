@@ -8,6 +8,7 @@
 //  2002.03.18                KIUに合わせてTKawariCompiler分離
 //                            ・・・でも、インターフェースがちょっと違う(涙)
 //  2002.04.18  Phase 8.0.0   走るカウンタック。コンパイラ特集。
+//  2026.10.18  Phase 9.0.0   wchar_t化
 //
 //---------------------------------------------------------------------------
 #ifndef COMPILER_H__
@@ -15,6 +16,8 @@
 //---------------------------------------------------------------------------
 #include <string>
 #include <vector>
+#include <iostream>
+#include "misc/charset.h"
 //---------------------------------------------------------------------------
 class TKVMCode_base;		// 中間コード
 class TKVMExprCode_base;	// 式中間コード
@@ -39,7 +42,8 @@ public:
 	};
 
 	// コンストラクタ
-	TKawariCompiler(std::istream &is, class TKawariLogger &lgr, const std::string &filename, bool pp=true);
+	TKawariCompiler(std::wistream &is, class TKawariLogger &lgr, const std::wstring &filename, bool pp=true,
+					TKawariCharset cryptcharset=KC_SJIS);
 
 	// デストラクタ
 	~TKawariCompiler();
@@ -49,23 +53,23 @@ public:
 
 	// エントリ定義を読む
 	// 戻り値 : ファイルの終了かモード切り替えでfalse. それ以外はtrue.
-	bool LoadEntryDefinition(std::vector<std::string> &entries, std::vector<TKVMCode_base *> &sentences);
+	bool LoadEntryDefinition(std::vector<std::wstring> &entries, std::vector<TKVMCode_base *> &sentences);
 
 	// １つのKIS定義複文を全て読む
 	TKVMCode_base *LoadInlineScript(void);
 
 
 	// 文字列をStatementとして中間コードへコンパイル
-	static TKVMCode_base *Compile(const std::string &src, class TKawariLogger &logger);
+	static TKVMCode_base *Compile(const std::wstring &src, class TKawariLogger &logger);
 
 	// 文字列を、そのままStringとして中間コード化する
-	static TKVMCode_base *CompileAsString(const std::string &src);
+	static TKVMCode_base *CompileAsString(const std::wstring &src);
 
 	// 文字列を集合演算式('$['召]'の中身)としてコンパイル
-	static TKVMSetCode_base *CompileAsEntryExpression(const std::string &src, class TKawariLogger &logger);
+	static TKVMSetCode_base *CompileAsEntryExpression(const std::wstring &src, class TKawariLogger &logger);
 
 	// 文字列をエントリ名で使用可能な文字列にエンコードする
-	static std::string EncodeEntryName(const std::string &orgsen);
+	static std::wstring EncodeEntryName(const std::wstring &orgsen);
 
 private:
 	// 字句解析器
@@ -80,7 +84,7 @@ private:
 
 	// エントリ名並び ( IdLiteral S | IdLiteral S ',' S EntryIdList )
 	// return : 得られたエントリ名の数
-	int compileEntryIdList(std::vector<std::string> &list);
+	int compileEntryIdList(std::vector<std::wstring> &list);
 
 	// 改行不可文並び。(注意)改行コードを読み込んで終了。
 	// return : 得られた文の数

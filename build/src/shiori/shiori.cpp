@@ -16,12 +16,14 @@
 //  2001.07.19  Phase 6.2     Mingw対応
 //  2002.01.07  Phase 7.3     getversion削除(著作者表示対策)
 //  2003.02.25  Phase 8.1.0   プラットフォーム共通化
+//  2026.10.18  Phase 9.0.0   wchar_t化 (loadu追加)
 //
 //---------------------------------------------------------------------------
 #include "config.h"
 //---------------------------------------------------------------------------
 #include "shiori/kawari_shiori.h"
 #include "include/shiori.h"
+#include "misc/charset.h"
 //---------------------------------------------------------------------------
 #include <string>
 using namespace std;
@@ -44,10 +46,20 @@ SHIORI_EXPORT MEMORY_HANDLE SHIORI_CALL getmoduleversion(long *len)
 }
 //---------------------------------------------------------------------------
 // モジュール読み込み直後に呼ばれる
+// パスはOSの既定コードページ(ACP)
 SHIORI_EXPORT BOOL SHIORI_CALL load(const MEMORY_HANDLE h,long len)
 {
 	handle=TKawariShioriFactory::GetFactory().CreateInstance(
-		string((const char*)h, len));
+		ACPtoW(string((const char*)h, len)));
+	SHIORI_FREE(h);
+	return (handle!=0);
+}
+//---------------------------------------------------------------------------
+// モジュール読み込み直後に呼ばれる (パスがUTF-8)
+SHIORI_EXPORT BOOL SHIORI_CALL loadu(const MEMORY_HANDLE h,long len)
+{
+	handle=TKawariShioriFactory::GetFactory().CreateInstance(
+		UTF8toW(string((const char*)h, len)));
 	SHIORI_FREE(h);
 	return (handle!=0);
 }

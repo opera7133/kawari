@@ -24,88 +24,80 @@
 #include <string>
 #include <vector>
 #include <ctime>
-#ifdef HAVE_SSTREAM_H
 #include <sstream>
-#else
-#include <strstream>
-#endif
 #include <iomanip>
 using namespace std;
 //---------------------------------------------------------------------------
-string KIS_date::Function(const vector<string>& args)
+wstring KIS_date::Function(const vector<wstring>& args)
 {
 	time_t nowtt;
 	if(args.size()>=3) {
-		nowtt=(time_t)atoi(args[2].c_str());
+		nowtt=(time_t)StringToInt(args[2]);
 	} else {
 		nowtt=time(NULL);
 	}
 	struct tm *now=localtime(&nowtt);
 
-	string format="%y/%m/%d %H:%M:%S";
+	wstring format=L"%y/%m/%d %H:%M:%S";
 	if(args.size()>=2) format=args[1];
 
-#ifdef HAVE_SSTREAM_H
-	ostringstream ret;
-#else
-	ostrstream ret;
-#endif
-	format+=' ';	// ダミー
+	wostringstream ret;
+	format+=L' ';	// ダミー
 	for(unsigned int i=0;i<(format.size()-1);i++) {
-		if(format[i]=='%') {
+		if(format[i]==L'%') {
 			i++;
 			switch(format[i]) {
-			case 'd':	// 日 (01..31)
-				ret << setw(2) << setfill('0') << now->tm_mday;
+			case L'd':	// 日 (01..31)
+				ret << setw(2) << setfill(L'0') << now->tm_mday;
 				break;
-			case 'e':	// 日 (1..31)
+			case L'e':	// 日 (1..31)
 				ret << now->tm_mday;
 				break;
-			case 'H':	// 時 (00..23)
-				ret << setw(2) << setfill('0') << now->tm_hour;
+			case L'H':	// 時 (00..23)
+				ret << setw(2) << setfill(L'0') << now->tm_hour;
 				break;
-			case 'j':	// 元日からの通算日 (001..366)
-				ret << setw(3) << setfill('0') << (now->tm_yday+1);
+			case L'j':	// 元日からの通算日 (001..366)
+				ret << setw(3) << setfill(L'0') << (now->tm_yday+1);
 				break;
-			case 'J':	// 元日からの通算日 (1..366)
+			case L'J':	// 元日からの通算日 (1..366)
 				ret << (now->tm_yday+1);
 				break;
-			case 'k':	// 時 (0..23)
+			case L'k':	// 時 (0..23)
 				ret << now->tm_hour;
 				break;
-			case 'm':	// 月 (01..12)
-				ret << setw(2) << setfill('0') << (now->tm_mon+1);
+			case L'm':	// 月 (01..12)
+				ret << setw(2) << setfill(L'0') << (now->tm_mon+1);
 				break;
-			case 'M':	// 分 (00..59)
-				ret << setw(2) << setfill('0') << now->tm_min;
+			case L'M':	// 分 (00..59)
+				ret << setw(2) << setfill(L'0') << now->tm_min;
 				break;
-			case 'n':	// 月 (1..12)
+			case L'n':	// 月 (1..12)
 				ret << (now->tm_mon+1);
 				break;
-			case 'N':	// 分 (0..59)
+			case L'N':	// 分 (0..59)
 				ret << now->tm_min;
 				break;
-			case 'r':	// 秒 (0..59)
+			case L'r':	// 秒 (0..59)
 				ret << now->tm_sec;
 				break;
-			case 'S':	// 秒 (00..59)
-				ret << setw(2) << setfill('0') << now->tm_sec;
+			case L'S':	// 秒 (00..59)
+				ret << setw(2) << setfill(L'0') << now->tm_sec;
 				break;
-			case 's':	// 1970/1/1 00:00:00 UTCからの秒数
+			case L's':	// 1970/1/1 00:00:00 UTCからの秒数
 				ret << nowtt;
 				break;
-			case 'w':	// 曜日 (0..6) 日曜日が0
+			case L'w':	// 曜日 (0..6) 日曜日が0
 				ret << now->tm_wday;
 				break;
-			case 'y':	// 年 (2000...) 4桁
-			case 'Y':	// 年 (2000...) 4桁
+			case L'y':	// 年 (2000...) 4桁
+			case L'Y':	// 年 (2000...) 4桁
 				ret << (now->tm_year+1900);
 				break;
-			case '%':
-				ret << '%';
+			case L'%':
+				ret << L'%';
 				break;
 			default:
-				ret << '%';
+				ret << L'%';
 				i--;
 			}
 		} else {
@@ -113,27 +105,20 @@ string KIS_date::Function(const vector<string>& args)
 		}
 	}
 
-#ifdef HAVE_SSTREAM_H
-	return string(ret.str());
-#else
-	ret << ends;
-	string retstr(ret.str());
-	ret.freeze(false);
-	return(retstr);
-#endif
+	return wstring(ret.str());
 }
 //---------------------------------------------------------------------------
-string KIS_mktime::Function(const vector<string>& args)
+wstring KIS_mktime::Function(const vector<wstring>& args)
 {
-	if(!AssertArgument(args, 7, 7)) return("");
+	if(!AssertArgument(args, 7, 7)) return(L"");
 
 	struct tm tt;
-	tt.tm_year =atoi(args[1].c_str())-1900;
-	tt.tm_mon  =atoi(args[2].c_str())-1;
-	tt.tm_mday =atoi(args[3].c_str());
-	tt.tm_hour =atoi(args[4].c_str());
-	tt.tm_min  =atoi(args[5].c_str());
-	tt.tm_sec  =atoi(args[6].c_str());
+	tt.tm_year =StringToInt(args[1])-1900;
+	tt.tm_mon  =StringToInt(args[2])-1;
+	tt.tm_mday =StringToInt(args[3]);
+	tt.tm_hour =StringToInt(args[4]);
+	tt.tm_min  =StringToInt(args[5]);
+	tt.tm_sec  =StringToInt(args[6]);
 	tt.tm_isdst=0;
 
 	// 最低限の数値の正当性を保証する

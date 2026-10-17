@@ -1,7 +1,17 @@
 # CLAUDE.md
 
-華和梨 (KAWARI) — 伺か用の SHIORI (擬似AI) モジュール。C++ 製、Phase 8.2.9 (Core 3.2.9)。
+華和梨 (KAWARI) — 伺か用の SHIORI (擬似AI) モジュール。C++ 製、Phase 9.0.0 (Core 4.0.0)。
 CI は無い。最低限のテストは `build/src/test/` (下記「テスト」)。
+旧 ACP (SJIS の std::string) 版のコードは `v8acp` ブランチに保存してある。
+
+## 内部文字列 (Phase 9.0.0 以降)
+
+- 内部のテキストはすべて `std::wstring` / `wchar_t`。文字数は wchar_t 1 要素 = 1 文字 (Windows のサロゲートペアは 2 文字)。`std::string` は外部とのバイト列 (ファイルの生バイト、SHIORI/SAORI の生リクエスト、暗号化の中間データ) にだけ使う。
+- 変換は `misc/charset.h` (`SJIStoW` / `UTF8toW` / `ACPtoW` / `MBtoW(str, cs)` / `DetectCharset` / `CharsetFromName` 等。Windows は Win32 API、POSIX は iconv)。ファイル I/O とパスは `misc/wfile.h` (`kawari_wfopen` / `ReadTextFile` / `WriteTextFile` / `ListDirectory` / `PathStat` / `GetEnvironmentW`)。旧 `ctow` / `wtoc` / `iskanji1st` / `misc/_dirent.*` は廃止 (`misc/l10n.h` は互換スタブ)。
+- ロガーは `std::wostream`。バイト出力先へは `TWideOStream` (`ostream*` か `FILE*` + charset、CRLF 変換可) を挟む。
+- 文字コードの規則 (変更時は `document/changelog.txt` と整合させる): 辞書は BOM か UTF-8 として正当なら UTF-8、でなければ SJIS。暗号化行はファイルに BOM があれば UTF-8、なければ SJIS。save/savecrypt は UTF-8 BOM あり、textsave/textappend とログファイルは UTF-8 BOM なし、コンソールは ACP。SHIORI はリクエストの Charset (無ければ SJIS) で応答も返す。`loadu` (UTF-8 パス) もエクスポート。SAORI は satoriya 互換 (UTF-8 で開始、GET Version に Charset が無ければ以後 SJIS、応答の Charset を次回に引き継ぐ。`loadu` があれば UTF-8 パス)。
+- Win32 API は W 版 (`UNICODE` / `_UNICODE`、`WINVER` / `_WIN32_WINNT` = 0x0500 を `config.h` と `gcc-mach.mak` で定義)。ただし i686-posix の MinGW 8.1.0 は winpthreads 由来で `AddVectoredExceptionHandler` 等 (XP 以降) を import するので、生成物は実際には Windows 2000 では動かない (8.2.9 のリリース版も同じ)。
+- コード中の文字列リテラルに非 ASCII を直書きしない (`L"\x3042"` 等を使う)。
 
 ## 文字コード (最重要)
 
@@ -10,7 +20,7 @@ CI は無い。最低限のテストは `build/src/test/` (下記「テスト」
   - `sed` や PowerShell の `-replace`、`od` / `xxd` 等はフックで禁止。
   - 純 ASCII の `.cpp` / `.h` に日本語を足す場合も `euc_edit` を使う (標準 Edit だと UTF-8 が混入する)。
 - 例外: `gcc.mak` / `files.mak` / `kawari_rc_sjis_encoded.h` などは UTF-8 (実質 ASCII)。`document/*.html` も UTF-8 (フックの記述による)。
-- `build/BUILD.TXT` と `README.jp.md` は **CP932 (Shift-JIS)**。`euc_*` ツールでは編集できず、標準 Edit / Write も拒否される。変更するなら cp932 を明示して書き換えること。
+- `build/BUILD.TXT` は **CP932 (Shift-JIS)**。`euc_*` ツールでは編集できず、標準 Edit / Write も拒否される。変更するなら cp932 を明示して書き換えること。`README.md` は UTF-8 (9.0.0 β1 で旧 `README.jp.md` (CP932) から変換・改名)。
 - `libkawari/kawari_rc.cpp` が include する `kawari_rc_sjis_encoded.h` は、`kawari_rc.sjis` を `sjis2ascii.rb` で八進エスケープ化した生成物と思われる。直接手編集せず、元の `.sjis` 側を直す。
 
 ## ビルド
@@ -38,10 +48,10 @@ make -f gcc.mak
     ```
   - 確認は `objdump -p shiori.dll | grep "DLL Name"`。`api-ms-win-crt-*` が出たら UCRT 版でビルドしている。
   ビルドは `build/src` に `.o` と `build/mach/mingw` に成果物を作るので、作業ツリーを汚したくなければ `build/` をコピーして実行する。`"SHIORI/"SHIORIVER" ..."` の文字列連結が C++11 以降で警告になるが無害。
-- 最適化は `-O2`。かつては `-O1` 固定だった (README.jp.md の 8.2.5 の項: 辞書に半角中点があると異常動作。原因は UPX か gcc 最適化か不明のまま) が、UPX を外した上で `-O2` でも既存テスト 19 件と半角中点入り辞書の動作を確認した。
+- 最適化は `-O2`。かつては `-O1` 固定だった (README.md の 8.2.5 の項: 辞書に半角中点があると異常動作。原因は UPX か gcc 最適化か不明のまま) が、UPX を外した上で `-O2` でも既存テスト 19 件と半角中点入り辞書の動作を確認した。
 - `FASTALLOC` (既定 yes、`MACH_TYPE=mingw` のみ): `misc/fastalloc.cpp` がグローバルの `operator new/delete` を小オブジェクト用のフリーリストに差し替える。インタプリタは小さな確保を大量に繰り返すため、実ゴースト (1000 曲プレイリスト) で処理時間が 1.4〜1.9 倍速くなった。確保済みのメモリは OS に返さない。外すなら `gmake -f gcc.mak FASTALLOC=no`。
 - バージョン情報リソース (ファイルのプロパティに出る版): `build/src/kawari_version.rc` を `windres` で `shiori.dll` / `kosui.exe` / `kawari_*.exe` に埋め込む (`MACH_TYPE=mingw` のみ)。版を上げるときは `libkawari/kawari_version.h` の `KAWARI_SUBMINOR`・`KAWARI_CORE_VERSION` に加えて、同ファイルの `KAWARI_VERSION_RC` / `KAWARI_VERSION_RC_STR` も揃えること。
-- リリース手順: 32bit MinGW でビルドした 5 ファイル (`shiori.dll` / `kosui.exe` / `kawari_encode.exe` / `kawari_encode2.exe` / `kawari_decode2.exe`) を `bin/` にコピーして版更新と同じコミットに入れ、`git push` 後に GitHub Release (タグ `v8.2.9` の形式) を作る。リリースには、`bin/` の 5 ファイルと `license.txt` (= リポジトリ直下の `LICENSE`)、`readme.1st` (= `README.jp.md`、CP932 のまま) をフラットに zip にして添付する。zip 名は `kawari-8.2.9.zip` の形式。
+- リリース手順: 32bit MinGW でビルドした 5 ファイル (`shiori.dll` / `kosui.exe` / `kawari_encode.exe` / `kawari_encode2.exe` / `kawari_decode2.exe`) を `bin/` にコピーして版更新と同じコミットに入れ、`git push` 後に GitHub Release (タグ `v8.2.9` の形式。β版は `v9.0.0-beta1` で prerelease にする) を作る。リリースには、`bin/` の 5 ファイルと `license.txt` (= リポジトリ直下の `LICENSE`)、`readme.1st` (= `README.md`、UTF-8 のまま) をフラットに zip にして添付する。zip 名は `kawari-8.2.9.zip` / `kawari-9.0.0-beta1.zip` の形式。コード上の版 (`kawari_version.h`) には β の区別が無い (SHIORI/2.x の GET Version が版の数字を連結して返すため、`KAWARI_SUBMINOR` に文字を足さないこと)。
 - `depend.mak` は `foo.cpp : ヘッダ…` の形で、**ヘッダだけ変えても `.o` は再ビルドされない** (`touch` で確認済み)。ヘッダを触ったら `.o` を消してからビルドし直すこと。
 - ソースファイルを追加・削除したら `build/src/files.mak` を編集し、`make depend` で `depend.mak` を作り直す。VC++ 用の `vc_kawari/*.sln|*.vcproj|*.dsp` は手動メンテで、gcc.mak と同期していない可能性が高い。
 - 任意機能は `gcc.mak` のフラグで切り替える: `SAORI_NATIVE` (デフォルト yes) / `SAORI_PYTHON` / `SAORI_JAVA` / `SHIORI_PYTHON` / `STLport`。Python 関連の記述は Python 2 構文 (`print sys.version[:3]`)。
@@ -53,8 +63,10 @@ make -f gcc.mak
 
 ビルド後に `powershell -NoProfile -ExecutionPolicy Bypass -File build/src/test/run.ps1` (詳細は `build/src/test/README.md`)。`kosui.exe` に 1 行ずつ評価させる kosui スイートと、`shiori.dll` を直接 `load` / `request` / `unload` する shiori スイートがあり、ケースは `kosui/cases.txt` / `shiori/cases.txt` に足す。
 
+- POSIX (linux / darwin) では `python3 build/src/test/run_posix.py --bin-dir build/mach/linux` (同じ cases.txt を使い、SHIORI は ctypes で直接呼ぶ。UTF-8 の往復も見る)。GitHub Actions の `posix-build` (手動実行) がこれを走らせる。
 - shiori スイートは C のハーネスをその場でビルドするので、**DLL と同じ 32bit の gcc** が `PATH` の先頭に必要 (ビット数が違うとランナーが止まる)。
 - テスト用のソース・辞書・ケースは ASCII のみ (本体の EUC-JP と混ぜない)。
+- ハーネスは環境変数 `HARNESS_LOADU` があると `load` の代わりに `loadu` (UTF-8 パス) を呼ぶ。`HARNESS_DIR_W` (UTF-16 の環境変数) と併用すると ACP 外の文字を含むフォルダも試せる。
 - kosui を手で使うときの注意: 入力の最後に `exit` が無いと EOF で無限ループする。非 ASCII を含む出力は未検証。KIS の要素数は `size <エントリ>`。辞書のカンマは単語の区切りで、複数単語のエントリはランダムに 1 つが選ばれる (期待値が揺れる原因)。
 - .NET Framework の `Process` は標準入力の先頭に UTF-8 BOM を付ける。kosui のような stdin を読むツールには、`cmd /c "exe < file"` で渡すこと (`run.ps1` はそうしている)。
 

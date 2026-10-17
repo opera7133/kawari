@@ -20,18 +20,18 @@ using namespace std;
 // 集合演算式中間コードの基底クラス
 
 // 実行
-string TKVMSetCode_base::Run(TKawariVM &vm){
+wstring TKVMSetCode_base::Run(TKawariVM &vm){
 	set<TWordID> wordset;
 	Evaluate(vm, wordset);
-	if (!wordset.size()) return "";
+	if (!wordset.size()) return L"";
 
 	unsigned int index=Random(wordset.size());
 	set<TWordID>::iterator it=wordset.begin();
 	for(unsigned int i=0; i<index; i++) it++;
 
 	TKVMCode_base *code=vm.Dictionary().GetWordFromID(*it);
-	if (!code) return "";
-	string retstr=vm.RunWithNewContext(code);
+	if (!code) return L"";
+	wstring retstr=vm.RunWithNewContext(code);
 
 	return retstr;
 }
@@ -49,12 +49,12 @@ bool TKVMSetBinaryCode_base::Less(const TKVMCode_base& r_) const{
 	return (false);
 }
 // 逆コンパイル
-string TKVMSetBinaryCode_base::DisCompile(void) const{
-	if (!(lhs&&rhs)) return "";
+wstring TKVMSetBinaryCode_base::DisCompile(void) const{
+	if (!(lhs&&rhs)) return L"";
 	return lhs->DisCompile()+GetOperator()+rhs->DisCompile();
 }
 // デバッグ用ツリー表示
-ostream &TKVMSetBinaryCode_base::Debug(ostream& os, unsigned int level) const{
+wostream &TKVMSetBinaryCode_base::Debug(wostream& os, unsigned int level) const{
 	if (lhs) lhs->Debug(os, level+1);
 	DebugIndent(os, level) << GetOperator() << endl;
 	if (rhs) rhs->Debug(os, level+1);
@@ -155,7 +155,7 @@ void TKVMSetCodeAND::Evaluate(TKawariVM &vm, set<TWordID> &wordcol){
 
 // 式評価
 void TKVMSetCodeWord::Evaluate(TKawariVM &vm, set<TWordID> &wordcol){
-	string entryname=code->Run(vm);
+	wstring entryname=code->Run(vm);
 	TEntry entry=vm.Dictionary().GetEntry(entryname);
 	if (!entry.IsValid()) return;
 	vm.Dictionary().GetWordCollection(entry, wordcol);
@@ -178,14 +178,14 @@ const TKVMCodeIDString *TKVMSetCodeWord::GetIfPVW(void) const{
 // エントリ呼び出し ( '${' EntryExpr '}' )
 
 // 実行
-string TKVMCodeEntryCall::Run(TKawariVM &vm){
-	string retstr=code->Run(vm);
+wstring TKVMCodeEntryCall::Run(TKawariVM &vm){
+	wstring retstr=code->Run(vm);
 	vm.Dictionary().PushToHistory(retstr);
 	return retstr;
 }
 // 逆コンパイル
-string TKVMCodeEntryCall::DisCompile(void) const{
-	return "${"+code->DisCompile()+"}";
+wstring TKVMCodeEntryCall::DisCompile(void) const{
+	return L"${"+code->DisCompile()+L"}";
 }
 // 序列 同じクラスの場合のみ呼ばれる。
 bool TKVMCodeEntryCall::Less(const TKVMCode_base& r_) const{
@@ -195,10 +195,10 @@ bool TKVMCodeEntryCall::Less(const TKVMCode_base& r_) const{
 	return false;
 }
 // デバッグ用ツリー表示
-ostream &TKVMCodeEntryCall::Debug(ostream& os, unsigned int level) const{
-	DebugIndent(os, level) << "EntryCall(" << endl;
+wostream &TKVMCodeEntryCall::Debug(wostream& os, unsigned int level) const{
+	DebugIndent(os, level) << L"EntryCall(" << endl;
 	code->Debug(os, level+1);
-	return DebugIndent(os, level) << ")" << endl;
+	return DebugIndent(os, level) << L")" << endl;
 }
 // デストラクタ
 TKVMCodeEntryCall::~TKVMCodeEntryCall(){
@@ -209,17 +209,17 @@ TKVMCodeEntryCall::~TKVMCodeEntryCall(){
 // 純粋仮想単語(特殊エントリ呼び出し) ( '${' Literal '}' )
 
 // 実行
-string TKVMCodePVW::Run(class TKawariVM &vm){
+wstring TKVMCodePVW::Run(class TKawariVM &vm){
 	TEntry eid=vm.Dictionary().GetEntry(entry);
 	eid.AssertIfEmpty(entry);
-	if (!eid.IsValid()) return "";
+	if (!eid.IsValid()) return L"";
 
 	unsigned int size=eid.Size();
 	TWordID wid=eid.Index(Random(size));
-	if (!wid) return "";
+	if (!wid) return L"";
 
 	TKVMCode_base *code=vm.Dictionary().GetWordFromID(wid);
-	string retstr=vm.RunWithNewContext(code);
+	wstring retstr=vm.RunWithNewContext(code);
 
 	vm.Dictionary().PushToHistory(retstr);
 
@@ -231,22 +231,22 @@ bool TKVMCodePVW::Less(const TKVMCode_base& r_) const{
 	return (entry < r.entry);
 }
 // 逆コンパイル
-string TKVMCodePVW::DisCompile(void) const{
-	return "${"+entry+"}";
+wstring TKVMCodePVW::DisCompile(void) const{
+	return L"${"+entry+L"}";
 }
 // デバッグ用ツリー表示
-ostream &TKVMCodePVW::Debug(ostream& os, unsigned int level) const{
-	DebugIndent(os, level) << "EntryCall[PVW](" << endl;
+wostream &TKVMCodePVW::Debug(wostream& os, unsigned int level) const{
+	DebugIndent(os, level) << L"EntryCall[PVW](" << endl;
 	DebugIndent(os, level+1) << entry << endl;
-	return DebugIndent(os, level) << ")" << endl;
+	return DebugIndent(os, level) << L")" << endl;
 }
 
 //---------------------------------------------------------------------------
 // 履歴参照 ( '${' Integer '}' )
 
 // 実行
-string TKVMCodeHistoryCall::Run(class TKawariVM &vm){
-	string retstr=vm.Dictionary().GetHistory(index);
+wstring TKVMCodeHistoryCall::Run(class TKawariVM &vm){
+	wstring retstr=vm.Dictionary().GetHistory(index);
 
 	vm.Dictionary().PushToHistory(retstr);
 
@@ -258,13 +258,13 @@ bool TKVMCodeHistoryCall::Less(const TKVMCode_base& r_) const{
 	return (index<r.index);
 }
 // 逆コンパイル
-string TKVMCodeHistoryCall::DisCompile(void) const{
-	return "${"+IntToString(index)+"}";
+wstring TKVMCodeHistoryCall::DisCompile(void) const{
+	return L"${"+IntToString(index)+L"}";
 }
 // デバッグ用ツリー表示
-ostream &TKVMCodeHistoryCall::Debug(ostream& os, unsigned int level) const{
-	DebugIndent(os, level) << "HistoryCall(" << endl;
+wostream &TKVMCodeHistoryCall::Debug(wostream& os, unsigned int level) const{
+	DebugIndent(os, level) << L"HistoryCall(" << endl;
 	DebugIndent(os, level+1) << index << endl;
-	return DebugIndent(os, level) << ")" << endl;
+	return DebugIndent(os, level) << L")" << endl;
 }
 //---------------------------------------------------------------------------

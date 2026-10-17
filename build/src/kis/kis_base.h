@@ -9,6 +9,7 @@
 //  2001.05.24  Phase 5.1     インタープリタ・コンパイラ化
 //  2002.03.17  Phase 7.9.0   TKisEngineからKIUに合わせてTKawariVMに名称変更
 //  2002.03.19  Phase 8.0     今度はTKawariEngineに変更
+//  2026.10.18  Phase 9.0.0   wchar_t化 (関数情報はconst wchar_t*、引数/戻り値はwstring)
 //
 //---------------------------------------------------------------------------
 #ifndef KIS_BASE_H
@@ -26,14 +27,14 @@ using namespace std;
 //---------------------------------------------------------------------------
 // KIS関数の情報を表す構造体
 struct TKisFunctionInfo {
-	string name;			// 関数名
-	string format;			// 文法
-	string returnval;		// 戻り値
-	string information;	// 解説
+	wstring name;			// 関数名
+	wstring format;			// 文法
+	wstring returnval;		// 戻り値
+	wstring information;	// 解説
 	TKisFunctionInfo (void) {}
-	TKisFunctionInfo (const char *n, const char *f, const char *r, const char *i)
-		: name(string(n)), format(string(f)),
-		  returnval(string(r)), information(string(i)) {}
+	TKisFunctionInfo (const wchar_t *n, const wchar_t *f, const wchar_t *r, const wchar_t *i)
+		: name(wstring(n)), format(wstring(f)),
+		  returnval(wstring(r)), information(wstring(i)) {}
 	TKisFunctionInfo &operator = (const TKisFunctionInfo &r){
 		name=r.name;
 		format=r.format;
@@ -49,10 +50,10 @@ class TKisFunction_base {
 protected:
 
 	// 関数情報
-	char *Name_;
-	char *Format_;
-	char *Returnval_;
-	char *Information_;
+	const wchar_t *Name_;
+	const wchar_t *Format_;
+	const wchar_t *Returnval_;
+	const wchar_t *Information_;
 
 	// 華和梨エンジン
 	class TKawariEngine *Engine;
@@ -62,10 +63,10 @@ public:
 
 	TKisFunction_base(void)
 	{
-		Name_="none.";
-		Format_="none.";
-		Returnval_="none.";
-		Information_="none.";
+		Name_=L"none.";
+		Format_=L"none.";
+		Returnval_=L"none.";
+		Information_=L"none.";
 	}
 
 	// ですとらくた
@@ -76,10 +77,10 @@ public:
 		return TKisFunctionInfo(Name_, Format_, Returnval_, Information_);
 	}
 
-	const char* Name(void) const {return(Name_);}
-	const char* Format(void) const {return(Format_);}
-	const char* Returnval(void) const {return(Returnval_);}
-	const char* Information(void) const {return(Information_);}
+	const wchar_t* Name(void) const {return(Name_);}
+	const wchar_t* Format(void) const {return(Format_);}
+	const wchar_t* Returnval(void) const {return(Returnval_);}
+	const wchar_t* Information(void) const {return(Information_);}
 
 	// 華和梨エンジン設定
 	void NotifyEngine(class TKawariEngine *engine)
@@ -91,37 +92,37 @@ public:
 	virtual bool Init(void)=0;
 
 	// インタープリタ
-	virtual string Function(const vector<string>& args)=0;
+	virtual wstring Function(const vector<wstring>& args)=0;
 
 	// 引数指定エラーのログ出力
-	bool AssertArgument(const vector<string>& args, const unsigned int min){
+	bool AssertArgument(const vector<wstring>& args, const unsigned int min){
 		using namespace kawari_log;
 		bool ret=true;
 		if(args.size()<min){
 			if(GetLogger().Check(LOG_WARNING))
-				GetLogger().GetStream() << "KIS[" << args[0] << "] error : too few arguments." << endl;
+				GetLogger().GetStream() << L"KIS[" << args[0] << L"] error : too few arguments." << endl;
 			ret=false;
 		}
 		if ((!ret)&&(GetLogger().Check(LOG_INFO)))
-			GetLogger().GetStream() << "usage> " << Format() << endl;
+			GetLogger().GetStream() << L"usage> " << Format() << endl;
 		return ret;
 	}
 
 	// 引数指定エラーのログ出力
-	bool AssertArgument(const vector<string>& args, const unsigned int min, const unsigned int max){
+	bool AssertArgument(const vector<wstring>& args, const unsigned int min, const unsigned int max){
 		using namespace kawari_log;
 		bool ret=true;
 		if(args.size()<min){
 			if(GetLogger().Check(LOG_WARNING))
-				GetLogger().GetStream() << "KIS[" << args[0] << "] error : too few arguments." << endl;
+				GetLogger().GetStream() << L"KIS[" << args[0] << L"] error : too few arguments." << endl;
 			ret=false;
 		}else if(args.size()>max){
 			if(GetLogger().Check(LOG_WARNING))
-				GetLogger().GetStream() << "KIS[" << args[0] << "] error : too many arguments." << endl;
+				GetLogger().GetStream() << L"KIS[" << args[0] << L"] error : too many arguments." << endl;
 			ret=false;
 		}
 		if ((!ret)&&(GetLogger().Check(LOG_INFO)))
-			GetLogger().GetStream() << "usage> " << Format() << endl;
+			GetLogger().GetStream() << L"usage> " << Format() << endl;
 		return ret;
 	}
 };
@@ -133,19 +134,19 @@ public:
 	// Initで名前その他の情報を設定してください
 	virtual bool Init(void)
 	{
-		Name_="SampleFunction";
-		Format_="SampleFunction [Arg1 ...]";
-		Returnval_="string which join all argument";
-		Information_="KawariInlineScript sample";
+		Name_=L"SampleFunction";
+		Format_=L"SampleFunction [Arg1 ...]";
+		Returnval_=L"string which join all argument";
+		Information_=L"KawariInlineScript sample";
 
 		return(true);
 	}
 
 	// インタープリタ
-	virtual string Function(const vector<string>& args)
+	virtual wstring Function(const vector<wstring>& args)
 	{
-		string ret;
-		for(unsigned int i=0;i<args;i++) ret=ret+args[i]+" ";
+		wstring ret;
+		for(unsigned int i=0;i<args;i++) ret=ret+args[i]+L" ";
 		return(ret);
 	}
 };

@@ -52,7 +52,7 @@ protected:
 public:
 	// モジュールの検索と生成
 	// 戻り値: 生成に成功した場合、インスタンス。失敗した場合、NULL。
-	virtual TModule *CreateModule(const std::string &path);
+	virtual TModule *CreateModule(const std::wstring &path);
 
 	// モジュールの完全破棄
 	virtual void DeleteModule(TModule *module);
@@ -81,7 +81,7 @@ public:
 
 protected:
 	// SAORI_HANDLEは、さおりオブジェクト実体へのグローバル参照
-	TModuleJava(TModuleFactoryJava &fac, const std::string &p, SAORI_HANDLE handle)
+	TModuleJava(TModuleFactoryJava &fac, const std::wstring &p, SAORI_HANDLE handle)
 		: TModule(fac, p, handle){}
 
 	// さおりへのグローバル参照

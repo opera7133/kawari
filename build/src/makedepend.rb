@@ -35,7 +35,7 @@ end
 def sh_grep(file,patterns)
 	finded=Array::new
 
-	IO::foreach(file) {|line|
+	IO::foreach(file, mode: "rb") {|line|
 		line.chomp!("\n")
 		line.chomp!("\r")
 		flag=false

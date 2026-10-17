@@ -55,9 +55,9 @@ public:
 			RETURN,
 			EXCEPTION
 		} state;
-		std::string mes;
+		std::wstring mes;
 		bool override;
-		InterpState (StateValue s, std::string str, bool ovr=true);
+		InterpState (StateValue s, std::wstring str, bool ovr=true);
 	};
 
 private:
@@ -68,7 +68,7 @@ private:
 	class TNS_KawariDictionary &dictionary;
 
 	// 関数テーブル
-	std::map<std::string, class TKisFunction_base *> FunctionTable;
+	std::map<std::wstring, class TKisFunction_base *> FunctionTable;
 
 	// 関数リスト
 	std::vector<class TKisFunction_base*> FunctionList;
@@ -84,7 +84,7 @@ public:
 	~TKawariVM();
 
 	// "System.function."
-	static const std::string SYSTEM_FUNCTION_PREFIX;
+	static const std::wstring SYSTEM_FUNCTION_PREFIX;
 
 	//=====================================================================
 	// 中間コード実行機能
@@ -92,15 +92,15 @@ public:
 
 	// 新しいコンテキストを作成し、コードを実行する。
 	// 実行が終了するとコンテキストは破棄。
-	std::string RunWithNewContext(class TKVMCode_base *code);
+	std::wstring RunWithNewContext(class TKVMCode_base *code);
 
 	// 現在のコンテキスト上でコードを実行する。
 	// 実行が終了すると履歴参照スタックを実行前のポイントまで巻き戻す。
 	// 現在のコンテキストがない場合はRunWithNewContext()を呼ぶ。
-	std::string RunWithCurrentContext(class TKVMCode_base *code);
+	std::wstring RunWithCurrentContext(class TKVMCode_base *code);
 
 	// 関数実行
-	std::string FunctionCall(const std::vector<std::string>& args);
+	std::wstring FunctionCall(const std::vector<std::wstring>& args);
 
 	// 例外状態(continue, break, return, exception)であるかを知る
 	bool IsOnException(void) { return (state.state!=InterpState::NORMAL); }
@@ -115,12 +115,12 @@ public:
 	void SetState(const InterpState &st) { state=st; }
 
 	// 状態のリセット
-	void ResetState(void) { state=InterpState(InterpState::NORMAL, ""); }
+	void ResetState(void) { state=InterpState(InterpState::NORMAL, L""); }
 
 	// 指定状態のリセット
 	void ResetState(InterpState::StateValue test) {
 		if (state.state==test)
-			state=InterpState(InterpState::NORMAL, "");
+			state=InterpState(InterpState::NORMAL, L"");
 	}
 
 	//=====================================================================
@@ -141,12 +141,12 @@ public:
 	// name : (入力)コマンド名
 	// info : (出力)コマンド情報
 	// 戻り値(bool) : 存在すればtrue
-	bool GetFunctionInfo(const std::string &name, struct TKisFunctionInfo &info);
+	bool GetFunctionInfo(const std::wstring &name, struct TKisFunctionInfo &info);
 
 	// ビルトインコマンドのリスト
 	// list : (出力)コマンド名リスト
 	// 戻り値(unsigned int) : コマンドの数
-	unsigned int GetFunctionList(std::vector<std::string> &list) const;
+	unsigned int GetFunctionList(std::vector<std::wstring> &list) const;
 };
 //---------------------------------------------------------------------------
 #endif // KAWARI_VM_H__

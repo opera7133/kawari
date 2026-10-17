@@ -1,0 +1,65 @@
+name: posix-build
+
+# 手動実行のみ。Actions タブの "Run workflow" からブランチを選んで実行する
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  linux:
+    name: Linux (gcc.mak MACH_TYPE=linux)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build
+        working-directory: build/src
+        run: |
+          make -f gcc.mak MACH_TYPE=linux depend
+          make -f gcc.mak MACH_TYPE=linux CXX=g++ UPX= -j"$(nproc)"
+
+      - name: Check output
+        working-directory: build/mach/linux
+        run: |
+          ls -l
+          file libshiori.so kosui kawari_encode kawari_encode2 kawari_decode2
+
+      - name: Check exported symbols
+        working-directory: build/mach/linux
+        run: |
+          nm -D --defined-only libshiori.so | grep -E ' (load|loadu|unload|request)$'
+          test "$(nm -D --defined-only libshiori.so | grep -cE ' (load|loadu|unload|request)$')" -eq 4
+
+      - name: Test (kosui / SHIORI load/request/unload / UTF-8)
+        run: python3 build/src/test/run_posix.py --bin-dir build/mach/linux
+
+  macos:
+    name: macOS (gcc.mak MACH_TYPE=darwin)
+    runs-on: macos-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build
+        working-directory: build/src
+        run: |
+          make -f gcc.mak MACH_TYPE=darwin depend
+          make -f gcc.mak MACH_TYPE=darwin CXX=clang++ UPX= -j"$(sysctl -n hw.ncpu)"
+
+      - name: Check output
+        working-directory: build/mach/darwin
+        run: |
+          ls -l
+          file libshiori.bundle kosui kawari_encode kawari_encode2 kawari_decode2
+
+      - name: Check exported symbols
+        working-directory: build/mach/darwin
+        run: |
+          nm -gU libshiori.bundle | grep -E ' _(load|loadu|unload|request)$'
+          test "$(nm -gU libshiori.bundle | grep -cE ' _(load|loadu|unload|request)$')" -eq 4
+
+      - name: Test (kosui / SHIORI load/request/unload / UTF-8)
+        run: python3 build/src/test/run_posix.py --bin-dir build/mach/darwin

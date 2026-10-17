@@ -17,19 +17,24 @@
 #include <string>
 using namespace std;
 //---------------------------------------------------------------------------
+// 暗号処理はバイト列のまま (strは辞書テキストのUTF-8/SJISバイト列、
+// encodedstrは"!KAWA0000"+Base64のASCII文字列)
+// 暗号キーはwstringで受け、チェックサムは従来互換のためSJISバイト列から計算する
+//---------------------------------------------------------------------------
 // 暗号化形式を確認する
 extern bool CheckCrypt(const string& encodedstr);
+extern bool CheckCrypt(const wstring& encodedstr);
 //---------------------------------------------------------------------------
 // 標準暗号化
 extern string EncryptString(const string& str);
 //---------------------------------------------------------------------------
 // 新暗号化(暗号キー付)
-extern string EncryptString2(const string& str,const string &key);
+extern string EncryptString2(const string& str,const wstring &key);
 //---------------------------------------------------------------------------
 // 標準復号化
 extern string DecryptString(const string& encodedstr);
 //---------------------------------------------------------------------------
 // 新暗号化(暗号キー付)
-extern string DecryptString2(const string& encodedstr,const string &key);
+extern string DecryptString2(const string& encodedstr,const wstring &key);
 //---------------------------------------------------------------------------
 #endif

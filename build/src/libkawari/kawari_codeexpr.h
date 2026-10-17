@@ -18,22 +18,22 @@
 // 値(内容変更不可)
 class TValue {
 private:
-	std::string str;
+	std::wstring str;
 	int i; bool b;
 	enum { vSTRING, vINTEGER, vBOOL, vERROR } state;
-	TValue(void) : str(""), i(0), b(true), state(vERROR) {}
+	TValue(void) : str(L""), i(0), b(true), state(vERROR) {}
 	TValue &operator = (const TValue &val);
 public:
-	inline const std::string &AsString(void) { return str; }
+	inline const std::wstring &AsString(void) { return str; }
 	inline int AsInteger(void);
 	inline bool CanInteger(void);
 	inline bool IsTrue(void);
 	inline bool IsError(void) { return (state==vERROR); }
-	inline TValue(const std::string &orgsen):str(orgsen), i(0), b(true), state(vSTRING){}
+	inline TValue(const std::wstring &orgsen):str(orgsen), i(0), b(true), state(vSTRING){}
 	inline TValue(const int orgi);
 	inline TValue(const TValue &val):str(val.str), i(val.i), b(val.b), state(val.state) {}
 	inline TValue(bool bv){
-		if(bv){ str="true"; b=true; } else { str="false"; b=false; }
+		if(bv){ str=L"true"; b=true; } else { str=L"false"; b=false; }
 		i=0; state=vBOOL;
 	}
 	static inline TValue Error(void);
@@ -44,7 +44,7 @@ public:
 class TKVMExprCode_base : public TKVMCode_base {
 public:
 	// 実行
-	virtual std::string Run(class TKawariVM &vm);
+	virtual std::wstring Run(class TKawariVM &vm);
 	// 式評価
 	virtual class TValue Evaluate(class TKawariVM &vm)=0;
 	// デストラクタ
@@ -59,14 +59,14 @@ protected:
 	TKVMExprCode_base *lhs;
 	TKVMExprCode_base *rhs;
 	// 演算子文字列を返す
-	virtual std::string GetOperator(void)const=0;
+	virtual std::wstring GetOperator(void)const=0;
 public:
 	// 序列 同じクラスの場合のみ呼ばれる。
 	virtual bool Less(const TKVMCode_base& r_) const;
 	// 逆コンパイル
-	virtual std::string DisCompile(void) const;
+	virtual std::wstring DisCompile(void) const;
 	// デバッグ用ツリー表示
-	virtual std::ostream &Debug(std::ostream& os, unsigned int level=0) const;
+	virtual std::wostream &Debug(std::wostream& os, unsigned int level=0) const;
 	// コンストラクタ
 	TKVMExprBinaryCode_base(TKVMExprCode_base *l, TKVMExprCode_base *r) : lhs(l), rhs(r) {}
 	// デストラクタ
@@ -83,14 +83,14 @@ class TKVMExprUnaryCode_base : public TKVMExprCode_base {
 protected:
 	TKVMExprCode_base *code;
 	// 演算子文字列を返す
-	virtual std::string GetOperator(void)const=0;
+	virtual std::wstring GetOperator(void)const=0;
 public:
 	// 序列 同じクラスの場合のみ呼ばれる。
 	virtual bool Less(const TKVMCode_base& r_) const;
 	// 逆コンパイル
-	virtual std::string DisCompile(void) const;
+	virtual std::wstring DisCompile(void) const;
 	// デバッグ用ツリー表示
-	virtual std::ostream &Debug(std::ostream& os, unsigned int level=0) const;
+	virtual std::wostream &Debug(std::wostream& os, unsigned int level=0) const;
 	// コンストラクタ
 	TKVMExprUnaryCode_base(TKVMExprCode_base *c) : code(c) {}
 	// デストラクタ
@@ -105,19 +105,19 @@ class TKVMCodeExpression : public TKVMCode_base {
 	TKVMExprCode_base *code;
 public:
 	// 実行
-	virtual std::string Run(TKawariVM &vm);
+	virtual std::wstring Run(TKawariVM &vm);
 	// 序列 同じクラスの場合のみ呼ばれる。
 	virtual bool Less(const TKVMCode_base& r_) const;
 	// 逆コンパイル
-	virtual std::string DisCompile(void) const{
-		return "$["+code->DisCompile()+"]";
+	virtual std::wstring DisCompile(void) const{
+		return L"$["+code->DisCompile()+L"]";
 	}
 	// 演算式のみ逆コンパイル
-	virtual std::string DisCompileExpression(void) const{
+	virtual std::wstring DisCompileExpression(void) const{
 		return code->DisCompile();
 	}
 	// デバッグ用ツリー表示
-	virtual std::ostream &Debug(std::ostream& os, unsigned int level=0) const;
+	virtual std::wostream &Debug(std::wostream& os, unsigned int level=0) const;
 	// コンストラクタ
 	TKVMCodeExpression(TKVMExprCode_base *c) : code(c) {}
 	// デストラクタ
@@ -144,7 +144,7 @@ public:
 // Logical OR
 class TKVMExprCodeLOR : public TKVMExprBinaryCode_base {
 protected:
-	virtual std::string GetOperator(void)const{ return "||"; }
+	virtual std::wstring GetOperator(void)const{ return L"||"; }
 public:
 	// 式評価
 	virtual TValue Evaluate(class TKawariVM &vm);
@@ -156,7 +156,7 @@ public:
 // Logical AND
 class TKVMExprCodeLAND : public TKVMExprBinaryCode_base {
 protected:
-	virtual std::string GetOperator(void)const{ return "&&"; }
+	virtual std::wstring GetOperator(void)const{ return L"&&"; }
 public:
 	// 式評価
 	virtual TValue Evaluate(class TKawariVM &vm);
@@ -168,7 +168,7 @@ public:
 // EQUAL
 class TKVMExprCodeEQ : public TKVMExprBinaryCode_base {
 protected:
-	virtual std::string GetOperator(void)const{ return "=="; }
+	virtual std::wstring GetOperator(void)const{ return L"=="; }
 public:
 	// 式評価
 	virtual TValue Evaluate(class TKawariVM &vm);
@@ -180,7 +180,7 @@ public:
 // NOT EQUAL
 class TKVMExprCodeNEQ : public TKVMExprBinaryCode_base {
 protected:
-	virtual std::string GetOperator(void)const{ return "!="; }
+	virtual std::wstring GetOperator(void)const{ return L"!="; }
 public:
 	// 式評価
 	virtual TValue Evaluate(class TKawariVM &vm);
@@ -192,7 +192,7 @@ public:
 // MATCH
 class TKVMExprCodeMATCH : public TKVMExprBinaryCode_base {
 protected:
-	virtual std::string GetOperator(void)const{ return "=~"; }
+	virtual std::wstring GetOperator(void)const{ return L"=~"; }
 public:
 	// 式評価
 	virtual TValue Evaluate(class TKawariVM &vm);
@@ -204,7 +204,7 @@ public:
 // NOT MATCH
 class TKVMExprCodeNMATCH : public TKVMExprBinaryCode_base {
 protected:
-	virtual std::string GetOperator(void)const{ return "!~"; }
+	virtual std::wstring GetOperator(void)const{ return L"!~"; }
 public:
 	// 式評価
 	virtual TValue Evaluate(class TKawariVM &vm);
@@ -216,7 +216,7 @@ public:
 // GREATER THAN
 class TKVMExprCodeGT : public TKVMExprBinaryCode_base {
 protected:
-	virtual std::string GetOperator(void)const{ return ">"; }
+	virtual std::wstring GetOperator(void)const{ return L">"; }
 public:
 	// 式評価
 	virtual TValue Evaluate(class TKawariVM &vm);
@@ -228,7 +228,7 @@ public:
 // GREATER OR EQUAL
 class TKVMExprCodeGTE : public TKVMExprBinaryCode_base {
 protected:
-	virtual std::string GetOperator(void)const{ return ">="; }
+	virtual std::wstring GetOperator(void)const{ return L">="; }
 public:
 	// 式評価
 	virtual TValue Evaluate(class TKawariVM &vm);
@@ -240,7 +240,7 @@ public:
 // LESS THAN
 class TKVMExprCodeLT : public TKVMExprBinaryCode_base {
 protected:
-	virtual std::string GetOperator(void)const{ return "<"; }
+	virtual std::wstring GetOperator(void)const{ return L"<"; }
 public:
 	// 式評価
 	virtual TValue Evaluate(class TKawariVM &vm);
@@ -252,7 +252,7 @@ public:
 // LESS OR EQUAL
 class TKVMExprCodeLTE : public TKVMExprBinaryCode_base {
 protected:
-	virtual std::string GetOperator(void)const{ return "<="; }
+	virtual std::wstring GetOperator(void)const{ return L"<="; }
 public:
 	// 式評価
 	virtual TValue Evaluate(class TKawariVM &vm);
@@ -264,7 +264,7 @@ public:
 // BIT OR
 class TKVMExprCodeBOR : public TKVMExprBinaryCode_base {
 protected:
-	virtual std::string GetOperator(void)const{ return "|"; }
+	virtual std::wstring GetOperator(void)const{ return L"|"; }
 public:
 	// 式評価
 	virtual TValue Evaluate(class TKawariVM &vm);
@@ -276,7 +276,7 @@ public:
 // BIT XOR
 class TKVMExprCodeBXOR : public TKVMExprBinaryCode_base {
 protected:
-	virtual std::string GetOperator(void)const{ return "^"; }
+	virtual std::wstring GetOperator(void)const{ return L"^"; }
 public:
 	// 式評価
 	virtual TValue Evaluate(class TKawariVM &vm);
@@ -288,7 +288,7 @@ public:
 // BIT AND
 class TKVMExprCodeBAND : public TKVMExprBinaryCode_base {
 protected:
-	virtual std::string GetOperator(void)const{ return "&"; }
+	virtual std::wstring GetOperator(void)const{ return L"&"; }
 public:
 	// 式評価
 	virtual TValue Evaluate(class TKawariVM &vm);
@@ -300,7 +300,7 @@ public:
 // PLUS
 class TKVMExprCodePLUS : public TKVMExprBinaryCode_base {
 protected:
-	virtual std::string GetOperator(void)const{ return "+"; }
+	virtual std::wstring GetOperator(void)const{ return L"+"; }
 public:
 	// 式評価
 	virtual TValue Evaluate(class TKawariVM &vm);
@@ -312,7 +312,7 @@ public:
 // MINUS
 class TKVMExprCodeMINUS : public TKVMExprBinaryCode_base {
 protected:
-	virtual std::string GetOperator(void)const{ return "-"; }
+	virtual std::wstring GetOperator(void)const{ return L"-"; }
 public:
 	// 式評価
 	virtual TValue Evaluate(class TKawariVM &vm);
@@ -324,7 +324,7 @@ public:
 // MULTIPLY
 class TKVMExprCodeMUL : public TKVMExprBinaryCode_base {
 protected:
-	virtual std::string GetOperator(void)const{ return "*"; }
+	virtual std::wstring GetOperator(void)const{ return L"*"; }
 public:
 	// 式評価
 	virtual TValue Evaluate(class TKawariVM &vm);
@@ -336,7 +336,7 @@ public:
 // DIVERSION
 class TKVMExprCodeDIV : public TKVMExprBinaryCode_base {
 protected:
-	virtual std::string GetOperator(void)const{ return "/"; }
+	virtual std::wstring GetOperator(void)const{ return L"/"; }
 public:
 	// 式評価
 	virtual TValue Evaluate(class TKawariVM &vm);
@@ -348,7 +348,7 @@ public:
 // MODULER
 class TKVMExprCodeMOD : public TKVMExprBinaryCode_base {
 protected:
-	virtual std::string GetOperator(void)const{ return "%"; }
+	virtual std::wstring GetOperator(void)const{ return L"%"; }
 public:
 	// 式評価
 	virtual TValue Evaluate(class TKawariVM &vm);
@@ -360,7 +360,7 @@ public:
 // Unary PLUS
 class TKVMExprCodeUPLUS : public TKVMExprUnaryCode_base {
 protected:
-	virtual std::string GetOperator(void)const{ return "+"; }
+	virtual std::wstring GetOperator(void)const{ return L"+"; }
 public:
 	// 式評価
 	virtual TValue Evaluate(class TKawariVM &vm);
@@ -372,7 +372,7 @@ public:
 // Unary MINUS
 class TKVMExprCodeUMINUS : public TKVMExprUnaryCode_base {
 protected:
-	virtual std::string GetOperator(void)const{ return "-"; }
+	virtual std::wstring GetOperator(void)const{ return L"-"; }
 public:
 	// 式評価
 	virtual TValue Evaluate(class TKawariVM &vm);
@@ -384,7 +384,7 @@ public:
 // NOT
 class TKVMExprCodeNOT : public TKVMExprUnaryCode_base {
 protected:
-	virtual std::string GetOperator(void)const{ return "!"; }
+	virtual std::wstring GetOperator(void)const{ return L"!"; }
 public:
 	// 式評価
 	virtual TValue Evaluate(class TKawariVM &vm);
@@ -396,7 +396,7 @@ public:
 // COMPLIMENTAL
 class TKVMExprCodeCOMP : public TKVMExprUnaryCode_base {
 protected:
-	virtual std::string GetOperator(void)const{ return "~"; }
+	virtual std::wstring GetOperator(void)const{ return L"~"; }
 public:
 	// 式評価
 	virtual TValue Evaluate(class TKawariVM &vm);
@@ -408,7 +408,7 @@ public:
 // POWER
 class TKVMExprCodePOW : public TKVMExprBinaryCode_base {
 protected:
-	virtual std::string GetOperator(void)const{ return "**"; }
+	virtual std::wstring GetOperator(void)const{ return L"**"; }
 public:
 	// 式評価
 	virtual TValue Evaluate(class TKawariVM &vm);
@@ -426,11 +426,11 @@ public:
 	// 序列 同じクラスの場合のみ呼ばれる。
 	virtual bool Less(const TKVMCode_base& r_) const;
 	// 逆コンパイル
-	virtual std::string DisCompile(void) const{
+	virtual std::wstring DisCompile(void) const{
 		return code->DisCompile();
 	}
 	// デバッグ用ツリー表示
-	virtual std::ostream &Debug(std::ostream& os, unsigned int level=0) const{
+	virtual std::wostream &Debug(std::wostream& os, unsigned int level=0) const{
 		return code->Debug(os, level);
 	}
 	// コンストラクタ
@@ -445,8 +445,8 @@ public:
 class TKVMExprCodeGroup : public TKVMExprCodeWord {
 public:
 	// 逆コンパイル
-	virtual std::string DisCompile(void) const{
-		return "("+code->DisCompile()+")";
+	virtual std::wstring DisCompile(void) const{
+		return L"("+code->DisCompile()+L")";
 	}
 	// コンストラクタ
 	TKVMExprCodeGroup(TKVMCode_base *c) : TKVMExprCodeWord(c) {}

@@ -80,6 +80,15 @@ SHIORI_EXPORT const char * SHIORI_CALL so_getmoduleversion(long *length);
 SHIORI_EXPORT SO_HANDLE SHIORI_CALL so_create(const char *argument, long length);
 //-------------------------------------------------------------------------
 /**
+ * @brief			create new instance (UTF-8 version of so_create)
+ * @param argument	(I) directory path to library in UTF-8.
+ *					so_create()ではOSの既定コードページ、こちらはUTF-8。
+ * @param length	(I) byte length of argument parameter.
+ * @return			returns handle of the instance. 0 if library is not ready.
+ */
+SHIORI_EXPORT SO_HANDLE SHIORI_CALL so_createu(const char *argument, long length);
+//-------------------------------------------------------------------------
+/**
  * @brief			delete instance
  * @param h		handle of the instance.
  * @return			returns 0 if failed, non 0 if success.

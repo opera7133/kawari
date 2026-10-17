@@ -14,27 +14,26 @@
 //---------------------------------------------------------------------------
 #include "libkawari/kawari_engine.h"
 #include "libkawari/kawari_rc.h"
-#include "misc/l10n.h"
 #include "misc/misc.h"
 using namespace kawari::resource;
 using namespace kawari_log;
 //---------------------------------------------------------------------------
-string KIS_matchall::Function(const vector<string>& args)
+wstring KIS_matchall::Function(const vector<wstring>& args)
 {
-	if(!AssertArgument(args, 3)) return ("");
+	if(!AssertArgument(args, 3)) return (L"");
 
 	for(unsigned int i=2;i<args.size();i++) {
-		if(ctow(args[1]).find(ctow(args[i]))==string::npos) return("");
+		if((args[1]).find((args[i]))==wstring::npos) return(L"");
 	}
 
-	return("true");
+	return(L"true");
 }
 //---------------------------------------------------------------------------
-string KIS_communicate::Function(const vector<string>& args)
+wstring KIS_communicate::Function(const vector<wstring>& args)
 {
-	if(!AssertArgument(args, 2)) return ("");
+	if(!AssertArgument(args, 2)) return (L"");
 #if 0
-	string entryname;
+	wstring entryname;
 	int st,end;
 
 	TKawariEngine::DecodeEntryName(args[1],entryname,st,end);
@@ -46,12 +45,12 @@ string KIS_communicate::Function(const vector<string>& args)
 	if((st<0)||(end<0)||(st>end)) {
 		// エラー
 		GetLogger().GetStream(LOG_ERROR) << args[0] << RC.S(ERR_KIS_DICT_INVALID_INDEX) << endl;
-		return("");
+		return(L"");
 	}
 
-	vector<string> matched;
+	vector<wstring> matched;
 	for(unsigned int i=(unsigned int)st;i<=(unsigned int)end;i++) {
-		string result=Engine->IndexParse(entry,i);
+		wstring result=Engine->IndexParse(entry,i);
 		if(result.size()) matched.push_back(result);
 	}
 #else
@@ -59,21 +58,21 @@ string KIS_communicate::Function(const vector<string>& args)
 	if(range.Start==TKawariEngine::NPos){
 		// エラー
 		GetLogger().GetStream(LOG_ERROR) << args[0] << RC.S(ERR_KIS_DICT_INVALID_INDEX) << endl;
-		return("");
+		return(L"");
 	}
 	
-	vector<string> matched;
+	vector<wstring> matched;
 	for(unsigned int i=range.Start;i<=range.End;i++) {
-		string result=Engine->IndexParse(range.Entry,i);
+		wstring result=Engine->IndexParse(range.Entry,i);
 		if(result.size()) matched.push_back(result);
 	}
 #endif
 
-	string retstr;
+	wstring retstr;
 	if(matched.size()) {
 		unsigned int index=Random(matched.size());
 		TEntry entry2=Engine->GetEntry(matched[index]);
-		if(!entry2.IsValid()) return("");
+		if(!entry2.IsValid()) return(L"");
 
 		unsigned int size=entry2.Size();
 		retstr=Engine->IndexParse(entry2,Random(size));

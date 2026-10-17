@@ -5,12 +5,12 @@
 //      Programed by NAKAUE.T (Meister)
 //
 //  2005.05.28 isdigit() problem fixed.
+//  2026.10.18  Phase 9.0.0   wchar_t化
 //
 //---------------------------------------------------------------------------
 #include "config.h"
 //---------------------------------------------------------------------------
 #include "misc/misc.h"
-#include "misc/l10n.h"
 //---------------------------------------------------------------------------
 #include <string>
 #include <cstdlib>
@@ -20,15 +20,15 @@ using namespace std;
 TMTRandomGenerator MTRandomGenerator;
 //---------------------------------------------------------------------------
 // isdigit() problem wa
-static inline bool _isdigit(char ch){
-	return (('0'<=ch) && (ch<='9'));
+static inline bool _isdigit(wchar_t ch){
+	return ((L'0'<=ch) && (ch<=L'9'));
 }
 //---------------------------------------------------------------------------
 // 整数値判定
-bool IsInteger (const std::string &str){
+bool IsInteger (const std::wstring &str){
 	unsigned int max=str.length();
 	if (!max) return false;
-	unsigned int i=(str[0]=='-')? 1:0;
+	unsigned int i=(str[0]==L'-')? 1:0;
 	for(; i<max; i++)
 		if (!_isdigit(str[i]))
 			return false;
@@ -36,19 +36,19 @@ bool IsInteger (const std::string &str){
 }
 //---------------------------------------------------------------------------
 // 整数値から文字列を得る
-string IntToString(int n)
+wstring IntToString(int n)
 {
-	char buff[64];	// 多めに
-	char *bp=buff;
-	string ret;
+	wchar_t buff[64];	// 多めに
+	wchar_t *bp=buff;
+	wstring ret;
 
 	if(n<0) {
-		ret+='-';
+		ret+=L'-';
 		n*=-1;
 	}
 
 	do {
-		*(bp++)=(n%10)+'0';
+		*(bp++)=(wchar_t)((n%10)+L'0');
 		n/=10;
 	} while(n>0);
 
@@ -61,38 +61,27 @@ string IntToString(int n)
 }
 //---------------------------------------------------------------------------
 // パス表現の正規化
-#define cctowc(A) ((wchar_t)(((wchar_t)A)&((wchar_t)0x00ff)))
-
 #if defined(KAWARI_MS)
-#	define SEPARATOR cctowc('\\')
-#	define BADSEPARATOR cctowc('/')
+#	define SEPARATOR L'\\'
+#	define BADSEPARATOR L'/'
 #else
-#	define SEPARATOR cctowc('/')
-#	define BADSEPARATOR cctowc('\\')
+#	define SEPARATOR L'/'
+#	define BADSEPARATOR L'\\'
 #endif
 
-static wstring CanonicalPath(const wstring &path){
+wstring CanonicalPath(const wstring &path){
 	wstring ret=path;
 	unsigned int len=ret.length();
 	for (unsigned int i=0; i<len; i++)
 		if (ret[i]==BADSEPARATOR) ret[i]=SEPARATOR;
 	return ret;
 }
-static bool IsAbsolutePath(const wstring &path){
-#ifdef KAWARI_MS
-	return (((path.size()>0)&&(path[0]==cctowc('\\')))||((path.size()>1)&&(path[1]==cctowc(':'))));
-#else
-	return ((path.size()>0)&&(path[0]==cctowc('/')));
-#endif
-}
-string CanonicalPath(const string &p){
-	return wtoc(CanonicalPath(ctow(p)));
-}
 //---------------------------------------------------------------------------
-string CanonicalPath(const string &basepath, const string &path){
-	static const wstring parentlink=ctow("..")+SEPARATOR;
-	wstring p=CanonicalPath(ctow(path));
-	wstring bp=CanonicalPath(ctow(basepath));
+wstring CanonicalPath(const wstring &basepath, const wstring &path){
+	static const wstring parentlink=wstring(L"..")+SEPARATOR;
+	static const wstring currentlink=wstring(L".")+SEPARATOR;
+	wstring p=CanonicalPath(path);
+	wstring bp=CanonicalPath(basepath);
 
 	if (IsAbsolutePath(p)||(!bp.size()))
 		return path;
@@ -101,18 +90,18 @@ string CanonicalPath(const string &basepath, const string &path){
 	if (bp[bp.length()-1]==SEPARATOR)
 		bp=bp.substr(0, bp.length()-1);
 	while (bp.size()){
-		if (p[0]!=cctowc('.'))
+		if (p[0]!=L'.')
 			break;
 		
 		if (StringCompare<wchar_t>(p, parentlink, 0, 3)==0){
-			unsigned int pos=bp.rfind(SEPARATOR);
-			if (pos==string::npos){
-				bp=ctow("");
+			wstring::size_type pos=bp.rfind(SEPARATOR);
+			if (pos==wstring::npos){
+				bp=L"";
 			}else{
 				bp=bp.substr(0, pos);
 			}
 			p.erase(0, 3);
-		}else if (StringCompare<wchar_t>(p, ctow(".")+SEPARATOR, 0, 2)==0){
+		}else if (StringCompare<wchar_t>(p, currentlink, 0, 2)==0){
 			p.erase(0, 2);
 		}else{
 			// '.'で始まるファイル名？
@@ -120,24 +109,22 @@ string CanonicalPath(const string &basepath, const string &path){
 		}
 	}
 	if (bp.size()) bp+=SEPARATOR;
-	return wtoc(bp+p);
+	return bp+p;
 }
 //---------------------------------------------------------------------------
-string PathToFileName(const string &p){
-	const wstring path=ctow(p);
-	unsigned int pos=path.rfind(SEPARATOR);
-	if (pos==string::npos)
-		return p;
+wstring PathToFileName(const wstring &path){
+	wstring::size_type pos=path.rfind(SEPARATOR);
+	if (pos==wstring::npos)
+		return path;
 	else
-		return wtoc(path.substr(pos+1));
+		return path.substr(pos+1);
 }
 //---------------------------------------------------------------------------
-string PathToBaseDir(const string &p){
-	const wstring path=ctow(p);
-	unsigned int pos=path.rfind(SEPARATOR);
-	if (pos==string::npos)
-		return ("");
+wstring PathToBaseDir(const wstring &path){
+	wstring::size_type pos=path.rfind(SEPARATOR);
+	if (pos==wstring::npos)
+		return L"";
 	else
-		return wtoc(path.substr(0, pos));
+		return path.substr(0, pos);
 }
 //---------------------------------------------------------------------------

@@ -29,7 +29,7 @@ public:
 
 	// モジュールの検索と生成
 	// 戻り値: 生成に成功した場合、モジュール。失敗した場合、NULL。
-	virtual TModule *CreateModule(const std::string &path);
+	virtual TModule *CreateModule(const std::wstring &path);
 
 	// モジュールの完全破棄
 	// ライブラリの場合はFreeLibraryすること。
@@ -59,7 +59,7 @@ public:
 	unsigned int GetLoadCount(void){
 		return loadcount;
 	}
-	TUniqueModule(class IModuleFactory &fac, const std::string &p, TModule *m)
+	TUniqueModule(class IModuleFactory &fac, const std::wstring &p, TModule *m)
 		 : TModule(fac, p, m->GetHandle()), module(m), loadcount(1) {}
 
 	virtual ~TUniqueModule () {}

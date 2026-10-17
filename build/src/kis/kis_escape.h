@@ -26,16 +26,16 @@ public:
 	// Initで名前その他の情報を設定してください
 	virtual bool Init(void)
 	{
-		Name_="escape";
-		Format_="escape Word1 ...";
-		Returnval_="Word1 ...";
-		Information_="replace \\ into \\\\ in all arguments";
+		Name_=L"escape";
+		Format_=L"escape Word1 ...";
+		Returnval_=L"Word1 ...";
+		Information_=L"replace \\ into \\\\ in all arguments";
 
 		return(true);
 	}
 
 	// インタープリタ
-	virtual string Function(const vector<string>& args);
+	virtual wstring Function(const vector<wstring>& args);
 };
 //---------------------------------------------------------------------------
 #endif

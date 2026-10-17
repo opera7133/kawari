@@ -6,6 +6,7 @@
 //      Programed by Suikyo.
 //
 //  2003.02.25  Phase 8.1.0   導入
+//  2026.10.18  Phase 9.0.0   wchar_t化 (loadu対応)
 //
 //---------------------------------------------------------------------------
 #ifndef SAORI_NATIVE_H
@@ -24,7 +25,7 @@ class TModuleFactoryNative : public IModuleFactory{
 public:
 	// モジュールの検索と生成
 	// 戻り値: 生成に成功した場合、インスタンス。失敗した場合、NULL。
-	virtual TModule *CreateModule(const std::string &path);
+	virtual TModule *CreateModule(const std::wstring &path);
 
 	// モジュールの完全破棄
 	virtual void DeleteModule(TModule *module);
@@ -48,10 +49,11 @@ public:
 	virtual std::string Request(const std::string &reqstr);
 
 protected:
-	TModuleNative(TModuleFactoryNative &fac, const std::string &p, SAORI_HANDLE handle)
+	TModuleNative(TModuleFactoryNative &fac, const std::wstring &p, SAORI_HANDLE handle)
 		 : TModule(fac, p, handle) {}
 
 	BOOL	(SHIORI_CALL *func_load)(MEMORY_HANDLE, long);
+	BOOL	(SHIORI_CALL *func_loadu)(MEMORY_HANDLE, long);	// UTF-8パスを受ける拡張
 	BOOL	(SHIORI_CALL *func_unload)(void);
 	MEMORY_HANDLE	(SHIORI_CALL *func_request)(MEMORY_HANDLE, long *);
 

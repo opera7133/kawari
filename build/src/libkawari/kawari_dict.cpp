@@ -40,7 +40,7 @@ const unsigned int TNS_KawariDictionary::NPos=UINT_MAX;
 // エントリを生成する
 // 既にエントリが存在する場合は、生成せずにIDを返す
 // 戻り値 : 生成したエントリのID
-TEntry TNS_KawariDictionary::CreateEntry(const string& entry)
+TEntry TNS_KawariDictionary::CreateEntry(const wstring& entry)
 {
 	TNameSpace *ns=SearchNameSpace(entry);
 	return ((ns)?ns->Create(entry): TEntry(GlobalNameSpace,0));
@@ -141,7 +141,7 @@ void TNS_KawariDictionary::DeleteContext(void){
 	if (!ContextStack.size()){
 		// GC
 		if(logger.Check(LOG_DUMP)){
-			ostream &logstream=logger.GetStream(LOG_DUMP);
+			wostream &logstream=logger.GetStream(LOG_DUMP);
 			for (set<TWordID>::iterator it=Garbage.begin(); it!=Garbage.end(); it++){
 				TWordID id=(*it);
 				if (!GlobalNameSpace->ContainsWord(id)){
@@ -176,20 +176,20 @@ void TNS_KawariDictionary::DeleteContext(void){
 }
 //--------------------------------------------------------------------------
 // 履歴参照スタックに置換結果文字列をpushする。
-void TNS_KawariDictionary::PushToHistory (const string &str){
+void TNS_KawariDictionary::PushToHistory (const wstring &str){
 	TContext *ctx=GetCurrentContext();
 	if (!ctx) return;
 	ctx->history.push_back(str);
 }
 //---------------------------------------------------------------------------
 // 履歴参照
-string TNS_KawariDictionary::GetHistory (int index){
+wstring TNS_KawariDictionary::GetHistory (int index){
 	TContext *ctx=GetCurrentContext();
-	if (!ctx) return "";
+	if (!ctx) return L"";
 	if (index<0)
 		index = ctx->history.size()+index;
 	if ((index<0)||(ctx->history.size()>INT_MAX)||(index>=(int)ctx->history.size())){
-		return "";
+		return L"";
 	}else{
 		return ctx->history[index];
 	}

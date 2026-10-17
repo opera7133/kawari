@@ -174,13 +174,13 @@ $(MACH)/kosui$(EXEEXT) : $(KOSUIOBJ) $(COREOBJ) $(VERRES_KOSUI) $(DEPLIB)
 	$(CXX) -o $@ $(LDFLAGS) $(KOSUIOBJ) $(COREOBJ) $(VERRES_KOSUI) $(LIBS)
 
 $(MACH)/kawari_encode$(EXEEXT) : tool/kawari_encode$(OBJEXT) $(CRYPTOBJ) $(VERRES_TOOL)
-	$(CXX) -o $@ tool/kawari_encode$(OBJEXT) $(CRYPTOBJ) $(VERRES_TOOL) $(LDFLAGS)
+	$(CXX) -o $@ tool/kawari_encode$(OBJEXT) $(CRYPTOBJ) $(VERRES_TOOL) $(LDFLAGS) $(LIBS)
 
 $(MACH)/kawari_encode2$(EXEEXT) : tool/kawari_encode2$(OBJEXT) $(CRYPTOBJ) $(VERRES_TOOL)
-	$(CXX) -o $@ tool/kawari_encode2$(OBJEXT) $(CRYPTOBJ) $(VERRES_TOOL) $(LDFLAGS)
+	$(CXX) -o $@ tool/kawari_encode2$(OBJEXT) $(CRYPTOBJ) $(VERRES_TOOL) $(LDFLAGS) $(LIBS)
 
 $(MACH)/kawari_decode2$(EXEEXT) : tool/kawari_decode2$(OBJEXT) $(CRYPTOBJ) $(VERRES_TOOL)
-	$(CXX) -o $@ tool/kawari_decode2$(OBJEXT) $(CRYPTOBJ) $(VERRES_TOOL) $(LDFLAGS)
+	$(CXX) -o $@ tool/kawari_decode2$(OBJEXT) $(CRYPTOBJ) $(VERRES_TOOL) $(LDFLAGS) $(LIBS)
 
 $(MACH)/libjvm.dll.a : win32jvm.def
 	dlltool --def win32jvm.def -l $@ --dllname jvm.dll -k -C -a

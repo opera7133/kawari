@@ -44,7 +44,7 @@ TModuleFactoryMaster::TModuleFactoryMaster(TKawariLogger &lgr)
 //---------------------------------------------------------------------------
 // モジュールの検索と生成
 // 戻り値: 生成に成功した場合、モジュール。失敗した場合、NULL。
-TModule *TModuleFactoryMaster::CreateModule(const string &path){
+TModule *TModuleFactoryMaster::CreateModule(const wstring &path){
 	vector<IModuleFactory *>::iterator it=factory_list.begin();
 	for (; it!=factory_list.end(); it++){
 		TModule *ret=(*it)->CreateModule(path);

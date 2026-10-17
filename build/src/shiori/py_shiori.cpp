@@ -7,6 +7,7 @@
 #include "saori/saori_python.h"
 //---------------------------------------------------------------------------
 #include <string>
+#include "misc/charset.h"
 #include <Python.h>
 //---------------------------------------------------------------------------
 using namespace std;
@@ -41,7 +42,7 @@ static PyObject *wrap_load(PyObject *self, PyObject *args)
 		return NULL;
 
 	shiori_handle = TKawariShioriFactory::GetFactory().CreateInstance(
-		string(datapath));
+		ACPtoW(string(datapath)));
 #if 0
 	if (shiori_handle == 0) {
 		Py_INCREF(Py_False);

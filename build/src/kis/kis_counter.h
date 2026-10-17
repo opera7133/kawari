@@ -24,23 +24,23 @@ INLINE_SCRIPT_REGIST(KIS_dec);
 class KIS_inc : public TKisFunction_base {
 protected:
 
-	virtual string Function_(const vector<string>& args,bool flag);
+	virtual wstring Function_(const vector<wstring>& args,bool flag);
 
 public:
 
 	// Initで名前その他の情報を設定してください
 	virtual bool Init(void)
 	{
-		Name_="inc";
-		Format_="inc Index1 increment upperbound";
-		Returnval_="(NULL)";
-		Information_="increase a value of Index1 in an increment";
+		Name_=L"inc";
+		Format_=L"inc Index1 increment upperbound";
+		Returnval_=L"(NULL)";
+		Information_=L"increase a value of Index1 in an increment";
 
 		return(true);
 	}
 
 	// インタープリタ
-	virtual string Function(const vector<string>& args)
+	virtual wstring Function(const vector<wstring>& args)
 	{
 		return(Function_(args,false));
 	}
@@ -52,16 +52,16 @@ public:
 	// Initで名前その他の情報を設定してください
 	virtual bool Init(void)
 	{
-		Name_="dec";
-		Format_="dec Index1 decrement lowerbound";
-		Returnval_="(NULL)";
-		Information_="decrease a value of Index1 in a decrement";
+		Name_=L"dec";
+		Format_=L"dec Index1 decrement lowerbound";
+		Returnval_=L"(NULL)";
+		Information_=L"decrease a value of Index1 in a decrement";
 
 		return(true);
 	}
 
 	// インタープリタ
-	virtual string Function(const vector<string>& args)
+	virtual wstring Function(const vector<wstring>& args)
 	{
 		return(Function_(args,true));
 	}

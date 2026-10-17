@@ -25,17 +25,16 @@
 using namespace std;
 //---------------------------------------------------------------------------
 #include "libkawari/kawari_engine.h"
-#include "misc/l10n.h"
 //---------------------------------------------------------------------------
 // splitの実体
 class TSplitter {
 public:
 	// source: 切り出す文字列
 	// delim:  区切り文字列
-	TSplitter(const string &source, const string &delim);
+	TSplitter(const wstring &source, const wstring &delim);
 
 	// 次のトークンを切り出す
-	string Next(void);
+	wstring Next(void);
 
 	// まだトークンが存在するか
 	inline bool HasNext(void) { return (pos<max); }
@@ -47,63 +46,63 @@ private:
 	wstring::size_type max;	// 切り出す文字列の長さ
 };
 //---------------------------------------------------------------------------
-TSplitter::TSplitter(const string &s, const string &c)
+TSplitter::TSplitter(const wstring &s, const wstring &c)
 {
-	str=ctow(s);
-	cs=ctow(c);
+	str=(s);
+	cs=(c);
 	pos=static_cast<wstring::size_type>(0);
 	max=str.length();
 }
 //---------------------------------------------------------------------------
-string TSplitter::Next(void)
+wstring TSplitter::Next(void)
 {
 	if (!HasNext())
-		return "";
+		return L"";
 
 	unsigned int idx;	// 注目中のポインタ
-	string ret;
+	wstring ret;
 	if(cs.length()==0){
 		// 区切り文字無し
-		ret=wtoc(str.substr(pos, 1));
+		ret=(str.substr(pos, 1));
 		pos++;
-	}else if((idx=str.find(cs, pos))!=string::npos) {
+	}else if((idx=str.find(cs, pos))!=wstring::npos) {
 		// 発見
-		ret=wtoc(str.substr(pos,idx-pos));	// 空文字列が返ることもある
+		ret=(str.substr(pos,idx-pos));	// 空文字列が返ることもある
 		pos=idx+cs.length();			// 区切り文字列分だけポインタ前進
 	} else {
 		// ラスト
-		ret=wtoc(str.substr(pos));		// 空文字列が返ることもある
+		ret=(str.substr(pos));		// 空文字列が返ることもある
 		pos=max;				// ポインタを文字列最後尾に
 	}
 
 	return ret;
 }
 //---------------------------------------------------------------------------
-string KIS_split::Function(const vector<string>& args){
+wstring KIS_split::Function(const vector<wstring>& args){
 
-	if(!AssertArgument(args, 3, 4)) return ("");
+	if(!AssertArgument(args, 3, 4)) return (L"");
 
 	TEntry entry=Engine->CreateEntry(args[1]);
-	string delim=(args.size()==3)?"":args[3];
+	wstring delim=(args.size()==3)?L"":args[3];
 
 	TSplitter splitter(args[2],delim);
 	while(splitter.HasNext())
 		entry.Push(Engine->CreateStrWord(splitter.Next()));
 
-	return("");
+	return(L"");
 }
 //---------------------------------------------------------------------------
-string KIS_join::Function(const vector<string>& args)
+wstring KIS_join::Function(const vector<wstring>& args)
 {
-	if(!AssertArgument(args, 2, 3)) return ("");
+	if(!AssertArgument(args, 2, 3)) return (L"");
 
 	TEntry entry=Engine->GetEntry(args[1]);
 	unsigned int size=entry.Size();
 
-	string retstr;
-	string sep;
+	wstring retstr;
+	wstring sep;
 	if(args.size()==2) {
-		sep="";
+		sep=L"";
 	} else {
 		sep=args[2];
 	}

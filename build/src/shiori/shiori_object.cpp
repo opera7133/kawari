@@ -12,6 +12,7 @@
 //---------------------------------------------------------------------------
 #include "include/shiori_object.h"
 #include "shiori/kawari_shiori.h"
+#include "misc/charset.h"
 //---------------------------------------------------------------------------
 using namespace std;
 //---------------------------------------------------------------------------
@@ -45,7 +46,13 @@ const char *so_getmoduleversion(long *length){
 // 新規インスタンスの生成
 SO_HANDLE so_create(const char *argument, long length){
 	return TKawariShioriFactory::GetFactory().CreateInstance(
-		string(argument, length));
+		ACPtoW(string(argument, length)));
+}
+//---------------------------------------------------------------------------
+// New instance (UTF-8 path)
+SO_HANDLE so_createu(const char *argument, long length){
+	return TKawariShioriFactory::GetFactory().CreateInstance(
+		UTF8toW(string(argument, length)));
 }
 //---------------------------------------------------------------------------
 // インスタンスの削除

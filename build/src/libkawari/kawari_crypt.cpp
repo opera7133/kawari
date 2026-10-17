@@ -13,12 +13,18 @@
 //---------------------------------------------------------------------------
 #include "libkawari/kawari_crypt.h"
 #include "misc/base64.h"
+#include "misc/charset.h"
 //---------------------------------------------------------------------------
 // 暗号化形式を確認する
 bool CheckCrypt(const string& encodedstr)
 {
 	string id=encodedstr.substr(0,9);
 	return((id=="!KAWA0000")||(id=="!KAWA0001"));
+}
+bool CheckCrypt(const wstring& encodedstr)
+{
+	wstring id=encodedstr.substr(0,9);
+	return((id==L"!KAWA0000")||(id==L"!KAWA0001"));
 }
 //---------------------------------------------------------------------------
 // 標準暗号化
@@ -95,9 +101,9 @@ static unsigned char Kawa0001CalcKey(const string &key)
 }
 //---------------------------------------------------------------------------
 // 新暗号化(暗号キー付)
-string EncryptString2(const string& str,const string &key)
+string EncryptString2(const string& str,const wstring &key)
 {
-	unsigned char k=Kawa0001CalcKey(key);
+	unsigned char k=Kawa0001CalcKey(WtoSJIS(key));
 	string encodedstr;
 	encodedstr.reserve(str.size()+1);
 	encodedstr+=k;
@@ -110,14 +116,14 @@ string EncryptString2(const string& str,const string &key)
 }
 //---------------------------------------------------------------------------
 // 標準復号化
-string DecryptString2(const string& encodedstr,const string &key)
+string DecryptString2(const string& encodedstr,const wstring &key)
 {
 	string id=encodedstr.substr(0,9);
 	if(id!="!KAWA0001") return("");
 
 	string str=DecodeBase64(encodedstr.substr(9));
 
-	unsigned char k=Kawa0001CalcKey(key);
+	unsigned char k=Kawa0001CalcKey(WtoSJIS(key));
 	if(k!=(unsigned char)str[0]) return("");
 
 	string decodedstr;
