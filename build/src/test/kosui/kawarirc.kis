@@ -1,0 +1,12 @@
+# Fixture dictionary for the kosui suite (build/src/test/run.ps1).
+#
+# Keep every entry deterministic: a comma separates words, and an entry with
+# several words returns one of them at random, so never write a comma in the
+# value of an entry that a case evaluates. This file is ASCII only.
+
+greet : Hello
+name : world
+nest : ${greet} ${name}!
+key : name
+x : 1
+npw : a,b,c

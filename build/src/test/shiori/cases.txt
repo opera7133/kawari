@@ -1,0 +1,51 @@
+# Cases for the shiori suite.
+#
+#   GET <ID> [<ref0>,<ref1>,...]      SHIORI/3.0 GET request
+#   NOTIFY <ID> [<ref0>,<ref1>,...]   SHIORI/3.0 NOTIFY request
+#   ~ <text>                          the response must contain <text> (a substring)
+#
+# All the requests of this file are sent in order to one loaded module, so a
+# case can depend on the cases before it (see ownerghostname below).
+# Requests are sent with "Sender: SSP" and "SecurityLevel: local".
+# Use ASCII only.
+
+# event answered from the dictionary (backslashes are passed through)
+GET OnBoot
+~ SHIORI/3.0 200 OK
+~ Value: \0\s[0]Hello\e
+~ Charset: Shift_JIS
+
+# References reach System.Request.Reference<n>
+GET OnRef a,b
+~ SHIORI/3.0 200 OK
+~ Value: r0=a r1=b
+
+# resource from the dictionary
+GET homeurl
+~ SHIORI/3.0 200 OK
+~ Value: http://example.invalid/
+
+# resources the module answers by itself
+GET craftman
+~ SHIORI/3.0 200 OK
+~ Value: KawariDeveloperTeam
+
+GET shioriid
+~ SHIORI/3.0 200 OK
+~ Value: KAWARI.kdt
+
+# nothing to say: 204
+GET OnNoSuchEvent
+~ SHIORI/3.0 204 No Content
+
+# NOTIFY never has a value
+NOTIFY OnSomething
+~ SHIORI/3.0 204 No Content
+
+# ownerghostname becomes the Sender header of the following responses
+NOTIFY ownerghostname testghost
+~ SHIORI/3.0 204 No Content
+
+GET OnBoot
+~ SHIORI/3.0 200 OK
+~ Sender: testghost

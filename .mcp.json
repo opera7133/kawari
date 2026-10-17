@@ -1,0 +1,10 @@
+{
+  "mcpServers": {
+    "Euc-tools": {
+      "type": "stdio",
+      "command": "python",
+      "alwaysLoad": true,
+      "args": [".claude/euc-tools/server.py"]
+    }
+  }
+}

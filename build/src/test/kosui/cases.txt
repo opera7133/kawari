@@ -1,0 +1,44 @@
+# Cases for the kosui suite.
+#
+#   echo <input>   input line in echo mode (evaluated as a sentence)
+#   cmd <input>    input line in command mode (evaluated as $(<input>))
+#   = <text>       expected output, one line per "=" line (a lone "=" is an empty line)
+#
+# The output must match exactly. Every case runs in a fresh copy of the
+# fixture directory, so a case never sees the changes of another one.
+# Use ASCII only, and no entry whose value has more than one word (random).
+
+# entry reference
+echo ${greet}
+= Hello
+
+echo ${nest}
+= Hello world!
+
+echo ${${key}}
+= world
+
+echo plain text
+= plain text
+
+# an undefined entry gives an empty string
+echo ${nosuch}
+=
+
+# expression
+echo $[ 1 + 2 ]
+= 3
+
+echo $[ ${x} + 1 ]
+= 2
+
+# inline script
+echo $(echo hi)
+= hi
+
+# command mode
+cmd echo hi
+= hi
+
+cmd size npw
+= 3
