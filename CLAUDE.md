@@ -29,11 +29,14 @@ make -f gcc.mak
 - `CXX` は `ifndef CXX` で決まるため、**環境変数 `CXX` が設定されているとそれが優先される**。存在しないパスが入っていると全コンパイルが失敗するので、`CXX=g++` を明示するのが安全。
 - Windows では `make` ではなく `mingw32-make` (または `gmake`) を使う。MinGW に同梱されている。
 - **64bit の MinGW-w64 ではビルドが通らない** (g++ 13.2 / x86_64-w64-mingw32 で確認)。`saori/saori_native.cpp` と `tool/kosui_dsstp.cpp` が 32bit 前提のポインタ⇔整数キャストでエラーになり、`shiori.dll` と `kosui.exe` が作れない (`kawari_encode` / `encode2` / `decode2` だけは出来る)。`SAORI_NATIVE=no` でも `saori_module.cpp` が native 実装を参照していてリンクに失敗する。リリース版 `bin/shiori.dll` も i386 (32bit)。
-- **32bit 版 MinGW-w64 (i686) ならビルドが通る** (g++ 16.1.0 i686-posix-dwarf で `shiori.dll` / `kosui.exe` / `kawari_*.exe` の全ターゲットが i386 で生成されることを確認。`UPX=` で upx 無効)。choco なら管理者シェルで `choco install mingw -y --x86`、`C:\ProgramData\mingw64\mingw32\bin` に入る。別の (64bit 版等の) g++ が PATH にある場合は、こちらを先頭に置く:
-  ```
-  export PATH=/c/ProgramData/mingw64/mingw32/bin:$PATH
-  cd build/src && gmake -f gcc.mak CXX=g++ UPX=
-  ```
+- **32bit 版 MinGW-w64 (i686) ならビルドが通る** (`shiori.dll` / `kosui.exe` / `kawari_*.exe` の全ターゲットが i386 で生成されることを確認。`UPX=` で upx 無効)。**リリース用は msvcrt 版を使うこと**: UCRT 版 (mingw-builds 16.1.0 等、`g++ -v` の sysroot に `ucrt` と出る) だと実行ファイルが `api-ms-win-crt-*.dll` に依存し、UCRT の無い旧い OS (Windows 7 以前など) で動かない。`-mcrtdll=msvcrt` を付けても、UCRT 版ツールチェインでは `libmsvcrt.a` が `libucrt.a` と同一なので効かない。msvcrt 版なら依存は `KERNEL32.dll` / `msvcrt.dll` (kosui は `USER32.dll` も) だけになる。
+  - choco なら管理者シェルで `choco install mingw --version 8.1.0 --x86 -y` (g++ 8.1.0 i686-posix-dwarf、msvcrt 版)。**バージョン指定なしだと最新の UCRT 版が入る**。実体は `C:\ProgramData\chocolatey\lib\mingw\tools\install\mingw32\bin`。
+  - 別の g++ (64bit 版、Strawberry Perl の `C:\Strawberry\c\bin` 等) が PATH にあると、こちらを **先頭** に置かないと cc1plus が 64bit の DLL を拾い、何も表示せず `0xC000007B` (終了コード 1/127) で落ちる:
+    ```
+    export PATH=/c/ProgramData/chocolatey/lib/mingw/tools/install/mingw32/bin:$PATH
+    cd build/src && gmake -f gcc.mak CXX=g++ UPX=
+    ```
+  - 確認は `objdump -p shiori.dll | grep "DLL Name"`。`api-ms-win-crt-*` が出たら UCRT 版でビルドしている。
   ビルドは `build/src` に `.o` と `build/mach/mingw` に成果物を作るので、作業ツリーを汚したくなければ `build/` をコピーして実行する。`"SHIORI/"SHIORIVER" ..."` の文字列連結が C++11 以降で警告になるが無害。
 - 最適化は `-O2`。かつては `-O1` 固定だった (README.jp.md の 8.2.5 の項: 辞書に半角中点があると異常動作。原因は UPX か gcc 最適化か不明のまま) が、UPX を外した上で `-O2` でも既存テスト 19 件と半角中点入り辞書の動作を確認した。
 - `FASTALLOC` (既定 yes、`MACH_TYPE=mingw` のみ): `misc/fastalloc.cpp` がグローバルの `operator new/delete` を小オブジェクト用のフリーリストに差し替える。インタプリタは小さな確保を大量に繰り返すため、実ゴースト (1000 曲プレイリスト) で処理時間が 1.4〜1.9 倍速くなった。確保済みのメモリは OS に返さない。外すなら `gmake -f gcc.mak FASTALLOC=no`。
