@@ -19,7 +19,7 @@ jobs:
         working-directory: build/src
         run: |
           make -f gcc.mak MACH_TYPE=linux depend
-          make -f gcc.mak MACH_TYPE=linux CXX=g++ UPX= -j"$(nproc)"
+          make -f gcc.mak MACH_TYPE=linux CXX=g++ UPX= -k -j"$(nproc)"
 
       - name: Check output
         working-directory: build/mach/linux
@@ -47,7 +47,7 @@ jobs:
         working-directory: build/src
         run: |
           make -f gcc.mak MACH_TYPE=darwin depend
-          make -f gcc.mak MACH_TYPE=darwin CXX=clang++ UPX= -j"$(sysctl -n hw.ncpu)"
+          make -f gcc.mak MACH_TYPE=darwin CXX=clang++ UPX= -k -j"$(sysctl -n hw.ncpu)"
 
       - name: Check output
         working-directory: build/mach/darwin
