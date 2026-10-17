@@ -20,6 +20,10 @@ GET OnRef a,b
 ~ SHIORI/3.0 200 OK
 ~ Value: r0=a r1=b
 
+# System.Sender.Path holds the sender path of the request (SecurityLevel: local)
+GET OnSenderPath
+~ Value: local
+
 # resource from the dictionary
 GET homeurl
 ~ SHIORI/3.0 200 OK

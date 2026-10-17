@@ -68,7 +68,7 @@ bool KIS_callsaori::CallSaori(
 	TPHMessage request;
 	request.SetStartline(L"EXECUTE SAORI/1.0");
 	request[L"Sender"]=L"kawari";
-	wstring slevel=Engine->IndexParse(L"system.Sender.Path");
+	wstring slevel=Engine->IndexParse(L"System.Sender.Path");
 	// shiori.dllから動かした場合、Sender.Pathは必ず設定される。
 	// そうでないのは幸水。だからLocalで良い。
 	request[L"SecurityLevel"]=(slevel.size())?

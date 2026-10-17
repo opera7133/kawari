@@ -57,6 +57,7 @@ Phase 9 系は、オリジナルの華和梨をフォークし、[ponapalt](http
   - `saoriregist` に実体のない DLL 名を指定するか、未登録の `internal_*` を直接呼ぶ (初回に `internal_system` の `ListModules` で確かめて自動登録)。DLL の実体があれば従来どおり DLL として読む
 - 上記は SecurityLevel が local 以外のリクエストの処理からは使えない
 - Linux のビルドに `-lrt -lpthread` を追加 (ninix の FMO)
+- `System.Sender.Path` が一度もセットされず、`callsaori` が常に `SecurityLevel: Local` を送っていた不具合を修正 (リクエストの伝達経路 `local` / `external` / `unknown` が入り、SAORI へ渡す SecurityLevel になる)
 
 #### 2026/10/18 Phase 9.0.0 β1 (Core 4.0.0)
 

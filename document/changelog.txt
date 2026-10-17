@@ -13,6 +13,9 @@ ChangeLog
    internal_system). A DLL file, if it exists, is loaded as before
  * the commands above are refused for requests whose SecurityLevel is not local
  * Linux: link with -lrt -lpthread (FMO of ninix)
+ * fixed: System.Sender.Path was never set, so "callsaori" always sent
+   "SecurityLevel: Local" to SAORI. It is now set for every request (local /
+   external / unknown) and used as the SecurityLevel of the SAORI request
 
 2026/10/18 Phase 9.0.0 beta1 (Core 4.0.0)
  * changed the internal strings to wchar_t (UTF-16 on Windows, UTF-32 on

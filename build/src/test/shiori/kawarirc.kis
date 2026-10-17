@@ -13,6 +13,7 @@ System.Callback.OnGET: $(
         ${resource.${System.Request.ID}} )
 
 event.OnBoot: \0\s[0]Hello\e
+event.OnSenderPath: ${System.Sender.Path}
 event.OnRef: r0=${System.Request.Reference0} r1=${System.Request.Reference1}
 
 resource.homeurl: http://example.invalid/

@@ -237,6 +237,9 @@ void TKawariShioriAdapter::Request(TPHMessage &request, TPHMessage &response, TK
 		// リクエストヘッダを辞書に格納
 		Engine.ClearTree(L"System.Request");
 		Engine.CreateEntry(L"System.Request").Push(Engine.CreateStrWord(type));
+
+		// 伝達経路 (local / external / unknown)。callsaoriがSAORIに渡すSecurityLevelに使う
+		Engine.PushStrAfterClear(L"System.Sender.Path", sender_path_name);
 		for(TMMap<wstring,wstring>::const_iterator it=request.begin();it!=request.end();it++) {
 			Engine.CreateEntry(L"System.Request."+Engine.EncodeEntryName(it->first)).Push(Engine.CreateStrWord(it->second));
 		}
