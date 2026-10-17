@@ -19,3 +19,7 @@
 
 __pycache__
 
+
+# Build outputs (build/src: gmake -f gcc.mak). Only the .keep files that keep the folders are tracked.
+/build/mach/*/*
+!/build/mach/*/.keep
