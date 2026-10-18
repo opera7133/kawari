@@ -227,7 +227,7 @@ wstring KIS_isexist::Function(const vector<wstring>& args)
 	wstring dirname=PathToBaseDir(CanonicalPath(Engine->GetDataPath(), args[1]));
 	wstring filename=PathToFileName(CanonicalPath(Engine->GetDataPath(), args[1]));
 
-	unsigned int pos=(dirname).rfind(FILE_SEPARATOR);
+	wstring::size_type pos=(dirname).rfind(FILE_SEPARATOR);
 	if(pos==wstring::npos) {
 		// フルパスなのにdirnameにFILE_SEPARATORがない場合、推定でルート
 		// FILE_SEPARATORを追加しカレントディレクトリとの誤認を防ぐ

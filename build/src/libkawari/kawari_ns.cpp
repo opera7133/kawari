@@ -158,6 +158,8 @@ TWordID TEntry::Pop(void)
 {
 	if((!IsValid())||(ns->Dictionary.count(entry)==0)) return(0);
 	if(AssertIfProtected()) return(0);
+	// Clear()は空のエントリを残すので、空の場合を弾く
+	if(ns->Dictionary[entry].empty()) return(0);
 	TWordID id=ns->Dictionary[entry].back();
 	ns->Dictionary[entry].pop_back();
 
@@ -211,7 +213,8 @@ TWordID TEntry::Replace(unsigned int pos,TWordID id)
 	if((!IsValid())||(id==0)) return(0);
 	if(AssertIfProtected()) return(0);
 
-	if(ns->Dictionary[entry].size()<pos) return(0);
+	// pos==sizeの位置には単語が無い(追加はReplace2の仕事)
+	if(ns->Dictionary[entry].size()<=pos) return(0);
 
 	// 逆引き辞書の消去
 	TWordID oldid=ns->Dictionary[entry][pos];

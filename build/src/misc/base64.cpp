@@ -86,7 +86,9 @@ string DecodeBase64(const string& encodedstr)
 		s += 3;
 	}
 
-	str.assign(s_top, s - s_top - rest);
+	// 壊れた入力で'='が復号結果より多いと、負の長さになる
+	size_t decoded=s - s_top;
+	str.assign(s_top, (rest<decoded) ? decoded-rest : 0);
 	
 	delete[] s_top;
 	return(str);
@@ -125,6 +127,8 @@ string DecodeBase64(const string& encodedstr)
 		str+=(char)((dat    )&0x0ff);
 	}
 
+	// 壊れた入力で'='が復号結果より多いと、size()-restが負になりerase()が例外を投げる
+	if(rest>str.size()) rest=str.size();
 	str=str.erase(str.size()-rest,rest);
 
 	return(str);

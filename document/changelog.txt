@@ -1,5 +1,27 @@
 ChangeLog
 
+2026/10/18 Phase 9.0.0 beta3 (Core 4.0.0)
+ * fixed: the module names of SAORI over DirectSSTP were lowercased with
+   towlower(), which depends on the LC_CTYPE of the host (with tr_TR, "I"
+   became U+0131 and "INTERNAL_..." was not recognized). Only ASCII letters
+   are lowercased now
+ * fixed the misuse of the STL:
+   - the destructor of the unique SAORI module factory used an iterator
+     after erase()
+   - the result of find() was kept in "unsigned int" and compared with
+     npos. On 64-bit POSIX the comparison never became true, so "gsub"
+     (when no more match is left) threw an exception, "tr" read out of
+     bounds, and "isexist" did not append the separator. "split", the
+     "match" family and the status line of SAORI are changed to
+     size_type too (no change of behavior). On 32-bit Windows nothing
+     changes
+   - the length given to "substr" could overflow
+   - decoding a broken Base64 text with more "=" than the decoded length
+     threw an exception
+   - internal only (not reachable from KIS so far): TEntry::Pop on an entry
+     emptied by Clear() called back() on an empty vector, and
+     TEntry::Replace accepted the index just past the last word
+
 2026/10/18 Phase 9.0.0 beta2 (Core 4.0.0)
  * add "getproperty", "setproperty" and "executesstp"/"executesstpx":
    property system and SSTP EXECUTE commands sent to the baseware (SSP, ninix)

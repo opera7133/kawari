@@ -13,7 +13,6 @@
 #include "misc/misc.h"
 #include "misc/charset.h"
 //---------------------------------------------------------------------------
-#include <cwctype>
 #include <map>
 #include <vector>
 using namespace std;
@@ -29,11 +28,12 @@ static const wchar_t * const compat_modules[]={
 	L"mciaudio", L"cpuusage", L"httpc", L"string", L"hanayu",
 };
 //---------------------------------------------------------------------------
+// ASCIIだけを小文字にする (towlowerはホストのLC_CTYPEに依存し、tr_TRでは I が ı になる)
 wstring LowerModuleName(const wstring &name)
 {
 	wstring ret=name;
 	for (wstring::iterator it=ret.begin(); it!=ret.end(); it++)
-		*it=(wchar_t)towlower(*it);
+		if ((*it>=L'A')&&(*it<=L'Z')) *it=(wchar_t)(*it-L'A'+L'a');
 	return ret;
 }
 //---------------------------------------------------------------------------

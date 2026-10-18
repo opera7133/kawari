@@ -56,8 +56,9 @@ void TUniqueModuleFactory::DeleteModule(TModule *module){
 }
 //---------------------------------------------------------------------------
 TUniqueModuleFactory::~TUniqueModuleFactory(){
-	map<SAORI_HANDLE, TUniqueModule *>::iterator it=modules.begin();
-	for (; it!=modules.end(); it++){
+	// erase(it)した後のitは無効なので、毎回begin()を取り直す
+	while (!modules.empty()){
+		map<SAORI_HANDLE, TUniqueModule *>::iterator it=modules.begin();
 		TUniqueModule *mod=it->second;
 		modules.erase(it);
 		mod->module->Unload();

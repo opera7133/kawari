@@ -42,3 +42,41 @@ cmd echo hi
 
 cmd size npw
 = 3
+
+# gsub: the pattern is not found after the last match (npos handling)
+echo $(gsub "a-b-c" "-" "+")
+= a+b+c
+
+echo $(gsub "abc" "x" "y")
+= abc
+
+echo $(gsub "aXbXc" "X" "")
+= abc
+
+# tr: a char is replaced, a char without a counterpart is deleted
+echo $(tr "hello" "l" "L")
+= heLLo
+
+echo $(tr "abc" "x" "y")
+= abc
+
+# substr: a huge length must not overflow
+echo $(substr "hello" 1 2147483647)
+= ello
+
+echo $(substr "hello" 1 2)
+= el
+
+# split: the last piece has no delimiter after it
+echo $(split sp "a-b-c" "-")$(size sp)
+= 3
+
+echo $(split sp2 "abc" "-")$(size sp2)
+= 1
+
+# pop on an entry that was emptied by clear
+echo $(push t a)$(clear t)$(pop t)ok$(size t)
+= ok0
+
+echo $(push u a)$(push u b)$(pop u)$(size u)
+= b1
