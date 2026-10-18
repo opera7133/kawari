@@ -15,7 +15,7 @@ CI は無い。最低限のテストは `build/src/test/` (下記「テスト」
 
 ## 文字コード (最重要)
 
-- `build/src` 配下の `.cpp` / `.h` / `.rb` は **EUC-JP**、改行は LF。コメントやリテラルに日本語を含む。
+- `build/src` 配下の `.cpp` / `.h` / `.rb` は **EUC-JP**、改行は LF (`makedepend.rb` も EUC-JP に揃えてある)。例外として `build/src/uka_regexp/` は git サブモジュール (ASCII のみ、触らない)。コメントやリテラルに日本語を含む。
 - 標準の Read / Edit / Write は UTF-8 前提のため EUC-JP を壊す。`.claude/euc-tools/hook.py` (PreToolUse フック) が弾くので、**`euc_read` / `euc_edit` / `euc_write` / `euc_sed` / `euc_grep` を使う** (`.mcp.json` で MCP サーバとして登録済み)。
   - `sed` や PowerShell の `-replace`、`od` / `xxd` 等はフックで禁止。
   - 純 ASCII の `.cpp` / `.h` に日本語を足す場合も `euc_edit` を使う (標準 Edit だと UTF-8 が混入する)。
@@ -53,6 +53,7 @@ make -f gcc.mak
 - バージョン情報リソース (ファイルのプロパティに出る版): `build/src/kawari_version.rc` を `windres` で `shiori.dll` / `kosui.exe` / `kawari_*.exe` に埋め込む (`MACH_TYPE=mingw` のみ)。版を上げるときは `libkawari/kawari_version.h` の `KAWARI_SUBMINOR`・`KAWARI_CORE_VERSION` に加えて、同ファイルの `KAWARI_VERSION_RC` / `KAWARI_VERSION_RC_STR` も揃えること。
 - リリース手順: 32bit MinGW でビルドした 5 ファイル (`shiori.dll` / `kosui.exe` / `kawari_encode.exe` / `kawari_encode2.exe` / `kawari_decode2.exe`) を `bin/` にコピーして版更新と同じコミットに入れ、`git push` 後に GitHub Release (タグ `v8.2.9` の形式。β版は `v9.0.0-beta1` で prerelease にする) を作る。リリースには、`bin/` の 5 ファイルと `license.txt` (= リポジトリ直下の `LICENSE`)、`readme.1st` (= `README.md`、UTF-8 のまま) をフラットに zip にして添付する。zip 名は `kawari-8.2.9.zip` / `kawari-9.0.0-beta1.zip` の形式。コード上の版 (`kawari_version.h`) には β の区別が無い (SHIORI/2.x の GET Version が版の数字を連結して返すため、`KAWARI_SUBMINOR` に文字を足さないこと)。
 - `depend.mak` は `foo.cpp : ヘッダ…` の形で、**ヘッダだけ変えても `.o` は再ビルドされない** (`touch` で確認済み)。ヘッダを触ったら `.o` を消してからビルドし直すこと。
+- 正規表現エンジン [uka_regexp](https://github.com/ukatech/uka_regexp) (Unlicense、2 ファイル、C++98) は git サブモジュール `build/src/uka_regexp`。clone は `--recursive` か、後から `git submodule update --init` (`posix-build` のチェックアウトは `submodules: true`)。`files.mak` の `CORESRC` に `uka_regexp/uka_regexp.cpp` を入れてある。`makedepend.rb` は `"uka_regexp.h"` のような同じフォルダのヘッダの `#include` を、そのファイルのフォルダ基準で解決する。
 - ソースファイルを追加・削除したら `build/src/files.mak` を編集し、`make depend` で `depend.mak` を作り直す。VC++ 用の `vc_kawari/*.sln|*.vcproj|*.dsp` は手動メンテで、gcc.mak と同期していない可能性が高い。
 - 任意機能は `gcc.mak` のフラグで切り替える: `SAORI_NATIVE` (デフォルト yes) / `SAORI_PYTHON` / `SAORI_JAVA` / `SHIORI_PYTHON` / `STLport`。Python 関連の記述は Python 2 構文 (`print sys.version[:3]`)。
 - mingw / cygwin で gcc3 系の `wstring` が通らない場合は STLport を使う (`STLport = yes`)。
@@ -79,6 +80,14 @@ make -f gcc.mak
 - SAORI over DirectSSTP は `saori/saori_dsstp.*`。`TModuleFactoryDirectSSTP` が `TModuleFactoryMaster` の先頭にあり、DLL の実体が無い `internal_*` と互換名 (houchi など) のパスを引き受ける。`TModule::RequestMessage` はシリアライズ前のメッセージを直接受けるための口 (空の `ArgumentN` を位置として残すため)。未登録の `internal_*` は `TSaoriPark::GetModule` が `ListModules` を問い合わせて自動登録する。
 - リクエストの SecurityLevel が local 以外なら `TBasewareLink::IsAllowed` が偽になり、上のどれも送らない (Direct SSTP は常に Local 扱いになるため)。
 - テストは `-Suite baseware` (`test/baseware/`)。ハーネスの `HARNESS_BASEWARE` が本体の代役の窓 (スタブ baseware) を同じプロセスに作り、リクエスト中の `%HWND%` を窓ハンドルに置き換える。POSIX 側 (ninix) と実際の SSP は未検証。
+
+## 正規表現 (KIS の regex_*)
+
+- `kis/kis_regex.*` が `regex_match` / `find` / `findall` / `count` / `replace(_first)` / `erase(_first)` / `split` / `escape`。仕様は `document/kis_reference.html` の「正規表現」。複数の結果は引数のエントリに入れる (`split` と違い、中身を置き換える)。
+- サブルーチン呼び出し: パターン内に定義の無い `(?&名前)` / `\g<名前>` は、`CRegexpW::Compile` のリゾルバ (`TRegex::Resolve`) が辞書の `${名前}` の展開結果に解決する。エントリが無ければ構文エラー (名前入り)。入れ子の展開は深さ 16 で打ち切る。
+- 取り込まれたサブルーチンのグループは、パターン自身のグループの**後ろ**に (サブルーチン内の括弧も含めて) 番号が振られ、`GetGroupCount()` にも数えられる。結果に出すのはパターン自身の分だけなので、`TRegex::GroupCount` は「最初に取り込まれた名前の番号 - 1」で数える (satoriya の実装は取り込み数を引いており、サブルーチン内に括弧があるとずれる)。
+- **辞書やスクリプトに書くパターンは、括弧を含むなら `"..."` で囲む**。素の `( )` は華和梨の構文 (グループ) として消える。`"..."` の中は `${}` `$()` が展開されないので、置換文字列の `${1}` も同様。`\n` は改行にならない。
+- テストは `test/kosui/cases.txt` (フィクスチャは `kosui/kawarirc.kis` の `re_*`)。
 
 ## 華和梨スクリプト (KIS) の勘所
 

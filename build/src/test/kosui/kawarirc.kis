@@ -10,3 +10,11 @@ nest : ${greet} ${name}!
 key : name
 x : 1
 npw : a,b,c
+
+# Entries for the regex_* cases. A pattern with parentheses must be quoted:
+# a bare ( ) is the grouping syntax of the dictionary and disappears.
+re_year : [0-9]{4}
+re_date : "(?&re_year)-[0-9]{2}"
+re_pair : "([a-z]+)=([0-9]+)"
+re_digits : "(\d+)"
+re_loop : "(?&re_loop)x"

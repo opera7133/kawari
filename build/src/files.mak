@@ -14,6 +14,7 @@ KISSRC =   kis/kis_echo.cpp \
            kis/kis_communicate.cpp \
            kis/kis_xargs.cpp \
            kis/kis_string.cpp \
+           kis/kis_regex.cpp \
            kis/kis_help.cpp \
            kis/kis_saori.cpp \
            kis/kis_sstp.cpp \
@@ -40,6 +41,7 @@ CORESRC =  libkawari/kawari_engine.cpp \
            misc/mt19937ar.cpp \
            misc/phttp.cpp \
            misc/dsstp.cpp \
+           uka_regexp/uka_regexp.cpp \
            saori/saori.cpp \
            saori/saori_module.cpp \
            saori/saori_dsstp.cpp \

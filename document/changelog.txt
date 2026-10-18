@@ -1,5 +1,20 @@
 ChangeLog
 
+2026/10/18 Phase 9.0.0 beta4 (Core 4.0.0)
+ * add the regular expression commands "regex_match", "regex_find",
+   "regex_findall", "regex_count", "regex_replace", "regex_replace_first",
+   "regex_erase", "regex_erase_first", "regex_split" and "regex_escape",
+   on the engine uka_regexp (build/src/uka_regexp, a git submodule; clone
+   with --recursive or run "git submodule update --init"). The syntax is
+   close to PCRE2; \d \w \s \b match ASCII only. The matches, the groups and
+   the pieces are stored to the entry given as an argument
+ * a subroutine call in a pattern, (?&name) or \g<name>, whose name the
+   pattern does not define is replaced with the expansion of the entry
+   ${name}. A pattern with parentheses must be quoted ("...") in the
+   dictionary and the script
+ * makedepend.rb resolves #include "foo.h" of the same folder (needed by
+   uka_regexp) and is converted from CP932 to EUC-JP
+
 2026/10/18 Phase 9.0.0 beta3 (Core 4.0.0)
  * fixed: the module names of SAORI over DirectSSTP were lowercased with
    towlower(), which depends on the LC_CTYPE of the host (with tr_TR, "I"

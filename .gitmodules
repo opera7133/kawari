@@ -1,0 +1,4 @@
+[submodule "build/src/uka_regexp"]
+	path = build/src/uka_regexp
+	url = https://github.com/ukatech/uka_regexp.git
+	ignore = untracked

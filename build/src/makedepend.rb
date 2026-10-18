@@ -1,6 +1,6 @@
 #!/bin/env ruby
 
-# ƒ\[ƒXƒtƒ@ƒCƒ‹‚ÌˆË‘¶ŠÖŒW‚ğ‰ğÍ‚·‚é
+# ¥½¡¼¥¹¥Õ¥¡¥¤¥ë¤Î°ÍÂ¸´Ø·¸¤ò²òÀÏ¤¹¤ë
 
 
 def sh_find(path,names)
@@ -65,10 +65,16 @@ def makedepend(path,withn2a=false)
 		sh_grep(f,[/^[ \t]*#[ \t]*include[ \t]"/]).each{|inc|
 			inc.sub!(/^[^"]*"/,"")
 			inc.sub!(/".*/,"")
+			# a header in the same folder written as "bar.h" (uka_regexp etc.) is relative to that folder
+			prefix=path
+			dir=File.dirname(f)
+			if !File.exist?(path+"/"+inc) && File.exist?(dir+"/"+inc)
+				prefix=dir
+			end
 			if withn2a
 				inc.sub!(/\.([^\.])[^\.]*$/) do "."+$1+"xx" end
 			end
-			print " "+path+"/"+inc
+			print " "+prefix+"/"+inc
 		}
 		print"\n\n"
 	}

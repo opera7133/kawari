@@ -19,6 +19,7 @@
 #include "kis/kis_help.h"			// オンラインヘルプ
 #include "kis/kis_substitute.h"		// toupper,tolower
 #include "kis/kis_split.h"			// split
+#include "kis/kis_regex.h"			// 正規表現
 #include "kis/kis_string.h"			// 文字列
 #include "kis/kis_communicate.h"	// 新コミュニケート機構
 #include "kis/kis_xargs.h"			// 引数展開実行

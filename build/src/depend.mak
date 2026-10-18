@@ -10,7 +10,7 @@
 
 ./kis/kis_communicate.h : ./config.h ./kis/kis_base.h
 
-./kis/kis_config.h : ./kis/kis_echo.h ./kis/kis_dict.h ./kis/kis_date.h ./kis/kis_counter.h ./kis/kis_math.h ./kis/kis_file.h ./kis/kis_escape.h ./kis/kis_help.h ./kis/kis_substitute.h ./kis/kis_split.h ./kis/kis_string.h ./kis/kis_communicate.h ./kis/kis_xargs.h ./kis/kis_saori.h ./kis/kis_sstp.h ./kis/kis_system.h ./kis/kis_urllist.h
+./kis/kis_config.h : ./kis/kis_echo.h ./kis/kis_dict.h ./kis/kis_date.h ./kis/kis_counter.h ./kis/kis_math.h ./kis/kis_file.h ./kis/kis_escape.h ./kis/kis_help.h ./kis/kis_substitute.h ./kis/kis_split.h ./kis/kis_regex.h ./kis/kis_string.h ./kis/kis_communicate.h ./kis/kis_xargs.h ./kis/kis_saori.h ./kis/kis_sstp.h ./kis/kis_system.h ./kis/kis_urllist.h
 
 ./kis/kis_counter.cpp : ./config.h ./kis/kis_counter.h ./libkawari/kawari_engine.h ./libkawari/kawari_rc.h ./misc/misc.h
 
@@ -41,6 +41,10 @@
 ./kis/kis_help.h : ./config.h ./kis/kis_base.h
 
 ./kis/kis_math.h : ./config.h ./misc/misc.h ./kis/kis_base.h
+
+./kis/kis_regex.cpp : ./config.h ./kis/kis_regex.h ./uka_regexp/uka_regexp.h ./libkawari/kawari_engine.h ./misc/misc.h
+
+./kis/kis_regex.h : ./kis/kis_base.h
 
 ./kis/kis_saori.cpp : ./config.h ./kis/kis_saori.h ./libkawari/kawari_engine.h ./libkawari/kawari_log.h ./libkawari/kawari_rc.h ./misc/misc.h ./misc/phttp.h
 
@@ -229,4 +233,8 @@
 ./tool/logserver.cpp :
 
 ./tool/wargs.h : ./config.h ./misc/charset.h
+
+./uka_regexp/uka_regexp.cpp : ./uka_regexp/uka_regexp.h
+
+./uka_regexp/uka_regexp.h :
 

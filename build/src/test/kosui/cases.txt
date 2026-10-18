@@ -80,3 +80,90 @@ echo $(push t a)$(clear t)$(pop t)ok$(size t)
 
 echo $(push u a)$(push u b)$(pop u)$(size u)
 = b1
+
+# ---- regex_* (uka_regexp) ----
+echo $(regex_match "abc123def" "[0-9]+" "" m)$(join m "|")
+= 1123
+
+echo $(regex_match "abc" "[0-9]+" "" m)$(size m)
+= 00
+
+echo $(regex_match "key=42" "([a-z]+)=([0-9]+)" "" m)$(join m "|")
+= 1key=42|key|42
+
+# the entry is replaced, not appended to
+echo $(regex_match "a1" "[0-9]" "" m)$(regex_match "b2" "[0-9]" "" m)$(size m)
+= 111
+
+echo $(regex_match "ABC" "abc" "i")$(regex_match "ABC" "abc")
+= 10
+
+echo $(regex_match "ab" "a b" "x")$(regex_match "ab" "a b")$(regex_match "ab" "A B" "ix")
+= 101
+
+echo $(regex_find "abc123def" "[0-9]")
+= 3
+
+echo $(regex_find "a1b2" "[0-9]" "" 2)$(regex_find "a1b2" "[0-9]" "" -1)$(regex_find "a1b2" "[0-9]" "" 9)
+= 33-1
+
+echo $(regex_find "ab12" "([a-z]+)([0-9]+)" "" "" f)$(join f "|")
+= 0ab12|ab|12
+
+echo $(regex_find "abc" "[0-9]")
+= -1
+
+echo $(regex_findall fa "a1b22c333" "[0-9]+")$(join fa "|")
+= 31|22|333
+
+echo $(regex_count "a1b22c333" "[0-9]+")$(regex_count "abc" "[0-9]")
+= 30
+
+echo $(regex_replace "a1b22" "([a-z])([0-9]+)" "$2$1")
+= 1a22b
+
+echo $(regex_replace_first "a1b22" "[0-9]" "#")$(regex_replace "a1b22" "[0-9]" "#")
+= a#b22a#b##
+
+echo $(regex_erase "a1b22" "[0-9]")$(regex_erase_first "a1b22" "[0-9]")
+= abab22
+
+echo $(regex_replace "abc" "x" "y")
+= abc
+
+echo $(regex_split sp "a, b,c" ",\s*")$(join sp "|")
+= 3a|b|c
+
+echo $(regex_split sp "a,b,c,d" "," "" 2)$(join sp "|")
+= 2a|b,c,d
+
+echo $(regex_split sp "abc" "")$(join sp "|")
+= 3a|b|c
+
+echo $(regex_escape "a.b*c(d)")
+= a\.b\*c\(d\)
+
+# subroutine calls: a name the pattern does not define is the expansion of ${name}
+echo $(regex_match "2026-10" "^(?&re_date)$")$(regex_match "2026-1" "^(?&re_date)$")
+= 10
+
+# the groups of the subroutines are not in the result, only those of the pattern
+echo $(regex_match "x2026-10y" "(x)(?&re_date)(y)" "" g)$(join g "|")
+= 1x2026-10y|x|y
+
+echo $(regex_match "key=42" "(?&re_pair)" "" g)$(size g)
+= 11
+
+echo $(regex_match "key=42" "^(\w+)=(?&re_digits)$" "" g)$(join g "|")
+= 1key=42|key
+
+echo $(regex_replace "a2026-10b" "(?&re_date)" "<$&>")
+= a<2026-10>b
+
+# errors give an empty string
+echo [$(regex_match "abc" "[")][$(regex_match "abc" "(?&nosuch)")][$(regex_match "abc" "a" "z")]
+= [][][]
+
+# a subroutine that calls itself on the left does not hang
+echo $(regex_match "xxx" "(?&re_loop)")
+= 0

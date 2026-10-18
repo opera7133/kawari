@@ -8,6 +8,17 @@ KAWARI: HOW TO BUILD
 
 build/mach/MACH_TYPE : バイナリが生成される場所
 build/src            : ソース(euc-jp)
+build/src/uka_regexp  : 正規表現エンジン(git サブモジュール)
+
+uka_regexp はサブモジュールなので、取得は
+
+    $ git clone --recursive <URL>
+
+で行うか、clone 後に
+
+    $ git submodule update --init
+
+を実行してください。
 
 
 bcc32, VC++でコンパイルする場合、ソースをSJISに変換する必要があります。

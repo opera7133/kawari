@@ -255,6 +255,19 @@ TABLE.command CAPTION{
 <TR><TD><A href="#join">join</A></TD><TD>区切り文字で文字列を結合</TD></TR>
 <TR><TD><A href="#compare">compare</A></TD><TD>文字列を比較する</TD></TR>
 
+<TR class="genre"><TD colspan="2">正規表現</TD></TR>
+<TR><TD><A href="#regex">regex</A></TD><TD>正規表現コマンド共通の仕様(パターン・オプション・サブルーチン呼び出し)</TD></TR>
+<TR><TD><A href="#regex_match">regex_match</A></TD><TD>正規表現にマッチするか調べる</TD></TR>
+<TR><TD><A href="#regex_find">regex_find</A></TD><TD>正規表現にマッチする最初の位置を得る</TD></TR>
+<TR><TD><A href="#regex_findall">regex_findall</A></TD><TD>正規表現にマッチする部分すべてをエントリに格納する</TD></TR>
+<TR><TD><A href="#regex_count">regex_count</A></TD><TD>正規表現にマッチする個数を数える</TD></TR>
+<TR><TD><A href="#regex_replace">regex_replace</A></TD><TD>マッチする全ての部分を正規表現で置き換える</TD></TR>
+<TR><TD><A href="#regex_replace_first">regex_replace_first</A></TD><TD>マッチする最初の部分だけを正規表現で置き換える</TD></TR>
+<TR><TD><A href="#regex_erase">regex_erase</A></TD><TD>マッチする全ての部分を削除する</TD></TR>
+<TR><TD><A href="#regex_erase_first">regex_erase_first</A></TD><TD>マッチする最初の部分だけを削除する</TD></TR>
+<TR><TD><A href="#regex_split">regex_split</A></TD><TD>正規表現にマッチする部分で文字列を分解する</TD></TR>
+<TR><TD><A href="#regex_escape">regex_escape</A></TD><TD>正規表現の特殊文字をエスケープする</TD></TR>
+
 <TR class="genre"><TD colspan="2">SAORI</TD></TR>
 <TR><TD><A href="#saoriregist">saoriregist</A></TD><TD>SAORIを登録する</TD></TR>
 <TR><TD><A href="#saorierase">saorierase</A></TD><TD>SAORIの登録を解除する</TD></TR>
@@ -3164,6 +3177,378 @@ TABLE.command CAPTION{
   =end
 </PRE>
 </TD></TR>
+</TABLE>
+
+<TABLE class="command" width="100%">
+<CAPTION>
+  正規表現コマンド共通の仕様<A name="regex"></A>
+</CAPTION>
+<TR>
+  <TD width="10%">対象</TD>
+  <TD>
+    regex_match, regex_find, regex_findall, regex_count, regex_replace, regex_replace_first,
+    regex_erase, regex_erase_first, regex_split, regex_escape
+  </TD>
+</TR>
+<TR>
+  <TD>パターン</TD>
+  <TD>
+    エンジンは uka_regexp (Unlicense)。構文と意味はPCRE2(Perl互換)に近い。
+    文字クラス、Unicodeプロパティ(\p{Hiragana} など)、最短・所有量指定子、先読み・後読み、
+    名前付きグループ、後方参照、再帰、条件分岐などが使える。
+    \d \w \s \b は常にASCIIのみが対象(全角数字には一致しない)。
+    <BR>
+    パターンは、辞書の単語としてもスクリプトの引数としても、
+    <B>括弧を含むときは "..." で囲む</B>こと。
+    括弧がそのままだと華和梨のスクリプトの構文として消えてしまう。
+    "..." の中の ${...} や $(...) は展開されないので、置換文字列の ${1} や ${name} も
+    同様に "..." で囲めばそのまま渡せる。
+    構文の詳細は uka_regexp の README.md を参照。
+  </TD>
+</TR>
+<TR>
+  <TD>オプション</TD>
+  <TD>
+    文字の並びで指定する(省略または空文字列でなし)。<BR>
+    i: 大文字小文字を区別しない / s: . が改行にも一致する /
+    m: ^ と $ が行頭・行末に一致する / x: パターン中の空白とコメント(#から行末)を無視する<BR>
+    パターンの中の (?i) (?s) (?m) (?x) でも指定できる。
+  </TD>
+</TR>
+<TR>
+  <TD>位置</TD>
+  <TD>
+    位置は0オリジンの文字数。負の値は末尾から数える(-1が最後の文字)。
+    Windowsでは、BMP外の文字(絵文字など)は2文字として数える。
+  </TD>
+</TR>
+<TR>
+  <TD>サブルーチン呼び出し</TD>
+  <TD>
+    パターンの中の (?&amp;名前) (?P&gt;名前) \g&lt;名前&gt; のようなサブルーチン呼び出しで、
+    パターン内に定義(?&lt;名前&gt;...)が無い名前は、<B>辞書のエントリ ${名前} の展開結果</B>が
+    その名前のグループの中身として取り込まれる。
+    エントリが存在しなければ、不正なパターンとして扱われる(エラーログが出て、空文字列が返る)。
+    取り込まれた文字列の中でさらに別の名前を呼んでもよい。<BR>
+    取り込まれたグループは結果(エントリに格納されるグループ)には現れず、
+    パターン自身の括弧のグループだけが数えられる。
+    名前に使えるのは英数字・_・日本語などで、. は使えない(名前空間の中のエントリは呼べない)。
+    エントリが複数の単語を持つときは、通常の参照と同じくランダムに1つが選ばれる。
+    <PRE>
+  # 辞書
+  year : [0-9]{4}
+  date : "(?&amp;year)-([0-9]{2})-([0-9]{2})"
+
+  =kis
+  regex_match "2026-10-18" "^(?&amp;date)$" "" m;
+  # ${m} は 2026-10-18 を含む。パターンに括弧が無いので、グループは全体の1つだけ
+  =end
+    </PRE>
+  </TD>
+</TR>
+<TR>
+  <TD>エラー</TD>
+  <TD>
+    オプションやパターンが不正なとき、マッチに時間がかかりすぎて打ち切ったとき
+    (パターンによっては指数時間かかるため、入力に応じた回数でバックトラックを止める)は、
+    ログにエラーを出し、空文字列を返す。
+  </TD>
+</TR>
+</TABLE>
+
+<TABLE class="command" width="100%">
+<CAPTION>
+  regex_match<A name="regex_match"></A>
+</CAPTION>
+<TR>
+  <TD width="10%">書式</TD>
+  <TD class="tt">
+    $(regex_match 文字列1 パターン [オプション [エントリ1]])
+  </TD>
+</TR>
+<TR>
+  <TD>戻り値</TD>
+  <TD>
+    文字列1のどこかにパターンがマッチすれば1、しなければ0。エラーのときは空文字列
+  </TD>
+</TR>
+<TR>
+  <TD>機能</TD>
+  <TD>
+    エントリ1を指定すると、その内容を置き換えて、マッチした部分全体、続いて括弧のグループ1、2、...を
+    順に格納する(マッチしなかったグループは空文字列。マッチしなければエントリは空になる)。
+    先頭からの完全一致を調べるには ^ と $ を使う。
+  </TD>
+</TR>
+<TR><TD colspan="2">
+<PRE>
+例
+  =kis
+  regex_match "key=42" "([a-z]+)=([0-9]+)" "" m;
+  # 1が返り、mは「key=42」「key」「42」の3単語になる
+  =end
+</PRE>
+</TD></TR>
+</TABLE>
+
+<TABLE class="command" width="100%">
+<CAPTION>
+  regex_find<A name="regex_find"></A>
+</CAPTION>
+<TR>
+  <TD width="10%">書式</TD>
+  <TD class="tt">
+    $(regex_find 文字列1 パターン [オプション [位置 [エントリ1]]])
+  </TD>
+</TR>
+<TR>
+  <TD>戻り値</TD>
+  <TD>
+    位置以降で最初にマッチした位置。マッチしない、または位置が範囲外なら-1。エラーのときは空文字列
+  </TD>
+</TR>
+<TR>
+  <TD>機能</TD>
+  <TD>
+    位置を省略または空文字列にすると0。エントリ1の扱いはregex_matchと同じ。
+  </TD>
+</TR>
+<TR><TD colspan="2">
+<PRE>
+例
+  =kis
+  regex_find "abc123def" "[0-9]+";
+  # 3が返る
+  =end
+</PRE>
+</TD></TR>
+</TABLE>
+
+<TABLE class="command" width="100%">
+<CAPTION>
+  regex_findall<A name="regex_findall"></A>
+</CAPTION>
+<TR>
+  <TD width="10%">書式</TD>
+  <TD class="tt">
+    $(regex_findall エントリ1 文字列1 パターン [オプション])
+  </TD>
+</TR>
+<TR>
+  <TD>戻り値</TD>
+  <TD>
+    マッチした個数。エラーのときは空文字列
+  </TD>
+</TR>
+<TR>
+  <TD>機能</TD>
+  <TD>
+    マッチした部分すべてを、エントリ1の内容を置き換えて順に格納する。
+  </TD>
+</TR>
+<TR><TD colspan="2">
+<PRE>
+例
+  =kis
+  regex_findall nums "a1b22c333" "[0-9]+";
+  # 3が返り、numsは「1」「22」「333」になる
+  =end
+</PRE>
+</TD></TR>
+</TABLE>
+
+<TABLE class="command" width="100%">
+<CAPTION>
+  regex_count<A name="regex_count"></A>
+</CAPTION>
+<TR>
+  <TD width="10%">書式</TD>
+  <TD class="tt">
+    $(regex_count 文字列1 パターン [オプション])
+  </TD>
+</TR>
+<TR>
+  <TD>戻り値</TD>
+  <TD>
+    マッチした個数。エラーのときは空文字列
+  </TD>
+</TR>
+<TR>
+  <TD>機能</TD>
+  <TD>
+    文字列1の中でパターンがマッチする個数を数える。
+  </TD>
+</TR>
+</TABLE>
+
+<TABLE class="command" width="100%">
+<CAPTION>
+  regex_replace<A name="regex_replace"></A>
+</CAPTION>
+<TR>
+  <TD width="10%">書式</TD>
+  <TD class="tt">
+    $(regex_replace 文字列1 パターン 置換文字列 [オプション])
+  </TD>
+</TR>
+<TR>
+  <TD>戻り値</TD>
+  <TD>
+    置換後の文字列(マッチしなければ文字列1のまま)。エラーのときは空文字列
+  </TD>
+</TR>
+<TR>
+  <TD>機能</TD>
+  <TD>
+    マッチした部分すべてを置換文字列で置き換える。置換文字列の中では次が使える。<BR>
+    $1 $2 ...: そのグループにマッチした文字列 / ${名前}, ${1}: 名前・番号で指定 /
+    $&amp;: マッチした全体 / $` $': マッチの前・後ろ / $$: $ という文字<BR>
+    $ を含む置換文字列は "..." で囲むこと。
+  </TD>
+</TR>
+<TR><TD colspan="2">
+<PRE>
+例
+  =kis
+  regex_replace "a1b22" "([a-z])([0-9]+)" "$2$1";
+  # 「1a22b」が返る
+  =end
+</PRE>
+</TD></TR>
+</TABLE>
+
+<TABLE class="command" width="100%">
+<CAPTION>
+  regex_replace_first<A name="regex_replace_first"></A>
+</CAPTION>
+<TR>
+  <TD width="10%">書式</TD>
+  <TD class="tt">
+    $(regex_replace_first 文字列1 パターン 置換文字列 [オプション])
+  </TD>
+</TR>
+<TR>
+  <TD>戻り値</TD>
+  <TD>
+    置換後の文字列。エラーのときは空文字列
+  </TD>
+</TR>
+<TR>
+  <TD>機能</TD>
+  <TD>
+    regex_replaceと同じだが、最初にマッチした部分だけを置き換える。
+  </TD>
+</TR>
+</TABLE>
+
+<TABLE class="command" width="100%">
+<CAPTION>
+  regex_erase<A name="regex_erase"></A>
+</CAPTION>
+<TR>
+  <TD width="10%">書式</TD>
+  <TD class="tt">
+    $(regex_erase 文字列1 パターン [オプション])
+  </TD>
+</TR>
+<TR>
+  <TD>戻り値</TD>
+  <TD>
+    マッチした部分を取り除いた文字列。エラーのときは空文字列
+  </TD>
+</TR>
+<TR>
+  <TD>機能</TD>
+  <TD>
+    マッチした部分すべてを削除する(空文字列での置換)。
+  </TD>
+</TR>
+</TABLE>
+
+<TABLE class="command" width="100%">
+<CAPTION>
+  regex_erase_first<A name="regex_erase_first"></A>
+</CAPTION>
+<TR>
+  <TD width="10%">書式</TD>
+  <TD class="tt">
+    $(regex_erase_first 文字列1 パターン [オプション])
+  </TD>
+</TR>
+<TR>
+  <TD>戻り値</TD>
+  <TD>
+    最初にマッチした部分を取り除いた文字列。エラーのときは空文字列
+  </TD>
+</TR>
+<TR>
+  <TD>機能</TD>
+  <TD>
+    最初にマッチした部分だけを削除する。
+  </TD>
+</TR>
+</TABLE>
+
+<TABLE class="command" width="100%">
+<CAPTION>
+  regex_split<A name="regex_split"></A>
+</CAPTION>
+<TR>
+  <TD width="10%">書式</TD>
+  <TD class="tt">
+    $(regex_split エントリ1 文字列1 パターン [オプション [最大個数]])
+  </TD>
+</TR>
+<TR>
+  <TD>戻り値</TD>
+  <TD>
+    分割した要素の個数。エラーのときは空文字列
+  </TD>
+</TR>
+<TR>
+  <TD>機能</TD>
+  <TD>
+    文字列1をパターンにマッチした部分で分割し、エントリ1の内容を置き換えて順に格納する
+    (splitと違い、以前の内容は消える)。
+    最大個数が正のとき、要素数はその個数までで、残りは最後の要素に入る。
+    先頭と末尾での空文字列へのマッチでは区切らない。
+    パターンが空文字列なら、文字ごとに分割する。
+  </TD>
+</TR>
+<TR><TD colspan="2">
+<PRE>
+例
+  =kis
+  regex_split items "a, b,c" ",\s*";
+  # 3が返り、itemsは「a」「b」「c」になる
+  =end
+</PRE>
+</TD></TR>
+</TABLE>
+
+<TABLE class="command" width="100%">
+<CAPTION>
+  regex_escape<A name="regex_escape"></A>
+</CAPTION>
+<TR>
+  <TD width="10%">書式</TD>
+  <TD class="tt">
+    $(regex_escape 文字列1)
+  </TD>
+</TR>
+<TR>
+  <TD>戻り値</TD>
+  <TD>
+    エスケープした文字列
+  </TD>
+</TR>
+<TR>
+  <TD>機能</TD>
+  <TD>
+    正規表現の特殊文字(\ ^ $ . | ? * + ( ) [ ] { } # と空白)の前に \ を付ける。
+    文字列1をそのままパターンの一部として使いたいときに使う。
+  </TD>
+</TR>
 </TABLE>
 
 <TABLE class="command" width="100%">

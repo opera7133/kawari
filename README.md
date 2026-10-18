@@ -1,6 +1,6 @@
 # 華和梨 (KAWARI)
 
-**プログラマブル準AI 華和梨 Phase 9.0.0 β3**
+**プログラマブル準AI 華和梨 Phase 9.0.0 β4**
 
 伺か用の SHIORI (擬似AI) モジュールです。
 
@@ -42,6 +42,19 @@ Phase 9 系は、オリジナルの華和梨をフォークし、[ponapalt](http
 新しい順に並べています。「非公開」とあるものは一般には公開されなかった版です。
 
 ### Phase 9
+
+#### 2026/10/18 Phase 9.0.0 β4 (Core 4.0.0)
+
+**正規表現**
+
+- 伺か共用の正規表現エンジン [uka_regexp](https://github.com/ukatech/uka_regexp) (Unlicense) を載せ、正規表現を使う KIS コマンドを追加
+  - `regex_match` / `regex_find` / `regex_findall` / `regex_count` / `regex_replace` / `regex_replace_first` / `regex_erase` / `regex_erase_first` / `regex_split` / `regex_escape`
+  - 構文は PCRE2 に近い (Unicode プロパティ、最短・所有量指定子、先読み・後読み、名前付きグループ、再帰など)。`\d` `\w` `\s` `\b` は ASCII のみが対象。オプションは `i` `s` `m` `x`
+  - マッチした部分やグループ、分割結果は、指定したエントリに入る
+- パターンの中のサブルーチン呼び出し `(?&名前)` `\g<名前>` で、パターン内に定義の無い名前を、辞書のエントリ `${名前}` の展開結果として取り込めるようにした。部品にした正規表現を辞書に置いて組み合わせられる
+- パターンに括弧を含むときは `"..."` で囲むこと (そのままだと華和梨の構文として括弧が消える)
+- uka_regexp は git のサブモジュール (`build/src/uka_regexp`)。取得は `git clone --recursive`、または clone 後に `git submodule update --init`
+- `makedepend.rb` が、同じフォルダのヘッダを `"foo.h"` と書いた `#include` を解決できるようにした (文字コードも CP932 から EUC-JP にそろえた)
 
 #### 2026/10/18 Phase 9.0.0 β3 (Core 4.0.0)
 
