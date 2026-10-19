@@ -427,5 +427,4 @@ Phase 9 系は、オリジナルの華和梨をフォークし、[ponapalt](http
 
 ### 9.0 (???)
 
-- (未定) lambda
 - (未定) namespace
