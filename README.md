@@ -408,14 +408,7 @@ Phase 9 系は、オリジナルの華和梨をフォークし、[ponapalt](http
 
 ## 今後の予定 (Future)
 
-### 8.2 (??)
-
-- i18n patch (Thanks: whoami)
-
 ### 9.0 (???)
 
-- boost regex
-- rexpr
 - (未定) lambda
-- (未定) SAORI/2.0
 - (未定) namespace
