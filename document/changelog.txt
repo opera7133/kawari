@@ -16,6 +16,10 @@ ChangeLog
      counted in wchar_t
    - a{,m} is accepted as a{0,m}, \K in a lookaround is rejected, and
      catastrophic backtracking now ends in polynomial time
+   - fixed the output string aliasing the subject or the template in Replace(),
+     and the capacity overflow of the internal buffers (it now throws
+     ERR_MEMORY); a start offset inside a surrogate pair is moved to the next
+     character boundary
  * removed the notes of the unimplemented "expr" and "test" from the manual,
    and the finished or abandoned items (boost regex, rexpr, SAORI/2.0, i18n
    patch) from the plan in README.md
