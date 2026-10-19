@@ -236,7 +236,14 @@ static iconv_t OpenSJIS(bool toSJIS)
 {
 	static const char* const names[]={"CP932", "SHIFT_JIS", "SJIS", NULL};
 	for(int i=0; names[i]!=NULL; i++) {
-		iconv_t cd=toSJIS ? iconv_open(names[i], "WCHAR_T") : iconv_open("WCHAR_T", names[i]);
+		// macOS libiconv does not expose WCHAR_T; select the native UTF-32 encoding.
+#if defined(__APPLE__)
+        const wchar_t endian=1;
+        const char *wide=*(const unsigned char*)&endian ? "UTF-32LE" : "UTF-32BE";
+#else
+        const char *wide="WCHAR_T";
+#endif
+        iconv_t cd=toSJIS ? iconv_open(names[i], wide) : iconv_open(wide, names[i]);
 		if(cd!=(iconv_t)-1) return cd;
 	}
 	return (iconv_t)-1;
