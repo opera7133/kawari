@@ -1,6 +1,6 @@
 # CLAUDE.md
 
-華和梨 (KAWARI) — 伺か用の SHIORI (擬似AI) モジュール。C++ 製、Phase 9.0.0 (Core 4.0.0)。
+華和梨 (KAWARI) — 伺か用の SHIORI (擬似AI) モジュール。C++ 製、Phase 9.1.0 (Core 4.1.0)。
 CI は無い。最低限のテストは `build/src/test/` (下記「テスト」)。
 旧 ACP (SJIS の std::string) 版のコードは `v8acp` ブランチに保存してある。
 

@@ -18,6 +18,7 @@
 //  2003.01.07  Phase 8.1.0   function定義の獲得、削除を追加
 //  2004.01.04  Phase 8.2.0   continue追加
 //  2026.10.18  Phase 9.0.0   wchar_t化
+//  2026.10.19  Phase 9.1.0   lambda追加
 //
 //---------------------------------------------------------------------------
 #include "config.h"
@@ -204,6 +205,29 @@ wstring TKVMCodeScriptStatement::Run(TKawariVM &vm){
 					TKVMCode_base *code=vm.Dictionary().GetWordFromID(wid);
 					retstr=code->DisCompile();
 				}
+			}
+		}else{
+			// エラー
+		}
+	}else if(arg0==L"lambda"){
+		if(list.size()==2){
+			// 確実なコピーは逆コンパイルしかない。
+			wstring funcdecl=list[1]->DisCompile();
+			if (funcdecl.size()){
+				// 既存の関数と重ならない名前を作る。
+				static int lambda_count=0;
+				wstring funcname;
+				do {
+					funcname=L"System.Lambda."+IntToString(++lambda_count);
+				} while (vm.Dictionary().GetEntry(
+					TKawariVM::SYSTEM_FUNCTION_PREFIX+funcname).Size());
+				TEntry entry=vm.Dictionary().CreateEntry(
+					TKawariVM::SYSTEM_FUNCTION_PREFIX+funcname);
+				TWordID id=vm.Dictionary().CreateWord(
+					TKawariCompiler::Compile(funcdecl, vm.GetLogger()));
+				entry.Clear();
+				entry.Push(id);
+				retstr=funcname;
 			}
 		}else{
 			// エラー

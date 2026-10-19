@@ -167,3 +167,22 @@ echo [$(regex_match "abc" "[")][$(regex_match "abc" "(?&nosuch)")][$(regex_match
 # a subroutine that calls itself on the left does not hang
 echo $(regex_match "xxx" "(?&re_loop)")
 = 0
+
+# lambda: an anonymous function named System.Lambda.<n>
+echo $(set f $(lambda $(echo [$@arg[1]])))${f}
+= System.Lambda.1
+
+echo $(set f $(lambda $(echo [$@arg[1]])))$(${f} hi)
+= [hi]
+
+# each lambda gets its own name
+echo $(set f $(lambda $(echo a)))$(set g $(lambda $(echo b)))$(${f})$(${g})
+= ab
+
+# a lambda is removed with "rmfunc" like any user function
+echo $(set f $(lambda $(echo a)))$(rmfunc ${f})[$(${f})]
+= []
+
+# (*UCP) is accepted by the engine; an unknown verb is still a syntax error
+echo [$(regex_match "abc" "(*UCP)^\w+$")][$(regex_match "abc" "(*NOSUCH)a")]
+= [1][]

@@ -1,5 +1,25 @@
 ChangeLog
 
+2026/10/19 Phase 9.1.0 (Core 4.1.0)
+ * add "lambda": defines an anonymous function and returns its name
+   (System.Lambda.<n>, never the same as a defined function). The body is
+   written like that of "function", and the returned name is used as a
+   command name ($(${f} args)) or passed to another function. It is not a
+   closure: the local entries (@arg etc.) of the place where it was defined
+   are not carried. Remove it with "rmfunc"
+ * updated uka_regexp (build/src/uka_regexp):
+   - (*UCP) at the head of a pattern makes \d \w \s \b and the POSIX classes
+     use the Unicode properties (the default is still ASCII only)
+   - where wchar_t is 16 bit (Windows), a surrogate pair is one character in
+     a pattern (. and [^a] match a whole emoji, and a match never starts or
+     ends in the middle of a pair). The positions given to KIS are still
+     counted in wchar_t
+   - a{,m} is accepted as a{0,m}, \K in a lookaround is rejected, and
+     catastrophic backtracking now ends in polynomial time
+ * removed the notes of the unimplemented "expr" and "test" from the manual,
+   and the finished or abandoned items (boost regex, rexpr, SAORI/2.0, i18n
+   patch) from the plan in README.md
+
 2026/10/18 Phase 9.0.0 beta4 (Core 4.0.0)
  * add the regular expression commands "regex_match", "regex_find",
    "regex_findall", "regex_count", "regex_replace", "regex_replace_first",

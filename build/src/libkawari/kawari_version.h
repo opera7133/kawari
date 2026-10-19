@@ -7,6 +7,7 @@
 //
 //  2002.04.13  Phase 8.0.0   移植
 //  2026.10.18  Phase 9.0.0   Phase 9.0.0 / Core 4.0.0 (マクロはnarrowのまま。wideで使うときは L"" KAWARI_NAME "/" ... のように連結する)
+//  2026.10.19  Phase 9.1.0   Phase 9.1.0 / Core 4.1.0
 //
 //---------------------------------------------------------------------------
 #ifndef KAWARI_VERSION_H
@@ -17,12 +18,12 @@
 #define KAWARI_NAME		"KAWARI.kdt"
 #define KAWARI_AUTHOR	"KawariDeveloperTeam"	// 著作者(英数字だけ)
 #define KAWARI_MAJOR	"9"		// メジャー番号(ピリオド無し、数字だけ)
-#define KAWARI_MINOR	"0"		// マイナー番号(ピリオド無し、数字だけ)
+#define KAWARI_MINOR	"1"		// マイナー番号(ピリオド無し、数字だけ)
 #define KAWARI_SUBMINOR	"0"		// バグフィックス(ピリオド無し、数字だけ)
 
 // Win32のバージョン情報リソース(kawari_version.rc)用。上の番号と揃えること
-#define KAWARI_VERSION_RC		9,0,0,0
-#define KAWARI_VERSION_RC_STR	"9.0.0.0"
+#define KAWARI_VERSION_RC		9,1,0,0
+#define KAWARI_VERSION_RC_STR	"9.1.0.0"
 
 //---------------------------------------------------------------------------
 // コア
@@ -41,7 +42,8 @@
 //   3.1.0 = Phase 8.1.0
 //   3.2.0 = Phase 8.2.0
 //   4.0.0 = Phase 9.0.0 (内部文字列をwchar_tに変更)
-#define KAWARI_CORE_VERSION	"4.0.0"
+//   4.1.0 = Phase 9.1.0 (lambda追加)
+#define KAWARI_CORE_VERSION	"4.1.0"
 
 // 華和梨コア・クレジット(適当に改行で区切って連名)
 #define KAWARI_CORE_CREDITS \

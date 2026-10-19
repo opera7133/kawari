@@ -170,6 +170,7 @@ TABLE.command CAPTION{
 <TR><TD><A href="#NULL">NULL</A></TD><TD>空文字列</TD></TR>
 <TR><TD><A href="#randomselect">?</A></TD><TD>ランダム選択</TD></TR>
 <TR><TD><A href="#function">function</A></TD><TD>関数定義</TD></TR>
+<TR><TD><A href="#lambda">lambda</A></TD><TD>無名関数の定義</TD></TR>
 <TR><TD><A href="#rmfunc">rmfunc</A></TD><TD>ユーザ定義関数の削除</TD></TR>
 <TR><TD><A href="#return">return</A></TD><TD>関数からの脱出</TD></TR>
 </TABLE>
@@ -450,6 +451,61 @@ TABLE.command CAPTION{
   # ユーザ定義関数tsetの定義を、funcdefエントリに格納
   set funcdef $(function tset);
   =end
+</PRE>
+</TD></TR>
+</TABLE>
+
+<TABLE class="command" width="100%">
+<CAPTION>
+	lambda<A name="lambda"></A>
+</CAPTION>
+<TR>
+	<TD width="10%">書式</TD>
+	<TD class="tt">
+		$(lambda 関数の定義)
+	</TD>
+</TR>
+<TR>
+	<TD>戻り値</TD>
+	<TD>
+		定義された関数の名前
+	</TD>
+</TR>
+<TR>
+	<TD>機能</TD>
+	<TD>
+	  <P>
+	    名前を付けずに関数コマンドを定義し、その名前を返す。
+	    名前は<SPAN class="tt">System.Lambda.<I>n</I></SPAN>の形で、
+	    定義済みの関数と重ならないように自動で付けられる。
+	    関数の定義の書き方と引数の渡され方は、<A href="#function">function</A>と同じである。
+	  </P><P>
+	    返された名前をエントリに入れておき、
+	    <SPAN class="tt">$(${エントリ} 引数)</SPAN>のようにコマンド名として使うと呼び出せる。
+	    関数の引数に名前を渡して、呼び出し先で使うこともできる。
+	  </P><P>
+	    定義の中から、lambdaを定義した場所の<SPAN class="tt">@</SPAN>で始まるローカルエントリ
+	    (外側の関数の<SPAN class="tt">@arg</SPAN>など)は参照できない(クロージャではない)。
+	    ローカルエントリは、呼び出されたときに作られるものだけが見える。
+	  </P><P>
+	    定義した関数は自動では消えない。不要になったら
+	    <A href="#rmfunc">rmfunc</A>で削除する。
+	  </P>
+	</TD>
+</TR>
+<TR><TD colspan="2">
+<PRE>
+例
+  =kis
+  # 引数を[ ]で囲んで返す無名関数。名前がfエントリに入る
+  set f $(lambda $(echo [$@arg[1]]));
+  # 関数に名前を渡して、呼び出し先で使う
+  function apply $(
+    echo $($@arg[1] $@arg[2]);
+  );
+  =end
+  $(${f} hi)        # 「[hi]」が返る
+  $(apply ${f} hi)  # 「[hi]」が返る
 </PRE>
 </TD></TR>
 </TABLE>
@@ -3191,7 +3247,8 @@ TABLE.command CAPTION{
     エンジンは uka_regexp (Unlicense)。構文と意味はPCRE2(Perl互換)に近い。
     文字クラス、Unicodeプロパティ(\p{Hiragana} など)、最短・所有量指定子、先読み・後読み、
     名前付きグループ、後方参照、再帰、条件分岐などが使える。
-    \d \w \s \b は常にASCIIのみが対象(全角数字には一致しない)。
+    \d \w \s \b とPOSIXクラス([[:alpha:]]など)は、既定ではASCIIのみが対象(全角数字には一致しない)。
+    パターンの先頭に (*UCP) を書くと、Unicodeのプロパティで判定される。
     <BR>
     パターンは、辞書の単語としてもスクリプトの引数としても、
     <B>括弧を含むときは "..." で囲む</B>こと。
@@ -3215,6 +3272,8 @@ TABLE.command CAPTION{
   <TD>
     位置は0オリジンの文字数。負の値は末尾から数える(-1が最後の文字)。
     Windowsでは、BMP外の文字(絵文字など)は2文字として数える。
+    ただしパターンの中では、サロゲートペアは1文字として扱われる(. や [^a] は絵文字全体に一致する)。
+    一致の開始位置・終了位置がペアの途中になることはない。
   </TD>
 </TR>
 <TR>

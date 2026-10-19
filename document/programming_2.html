@@ -560,18 +560,23 @@
 	    "System.Function.&lt;関数名&gt;"エントリの内容を削除する。
 	  </P>
 	</DD>
-<!--	<DT><SPAN class="tt">lambda</SPAN></DT>
+	<DT><SPAN class="tt">lambda</SPAN></DT>
 	<DD>
 	  <P>文法：</P>
 	  <DIV class="sample">
 	    lambda &lt;関数&gt;
 	  </DIV>
 	  <P>
-	    保護された名前空間にランダムに生成された関数名に対し、
+	    重ならないように自動で生成された関数名に対し、
 	    第一引数を内容として、関数を定義。
 	    関数名を返す。
+	  </P><P>
+	    リファレンス実装となる"KIU"では、
+	    関数名は"System.Lambda.&lt;連番&gt;"で、
+	    実体は"System.Function.&lt;関数名&gt;"エントリの第一要素として登録されている。
+	    定義した場所のローカルエントリは引き継がない(クロージャではない)。
 	  </P>
-	</DD>-->
+	</DD>
       </DL>
     </DD>
     <DT>その他</DT>
