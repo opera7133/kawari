@@ -274,7 +274,8 @@ Token TKawariLexer::next(Mode m){
 	if (!hasNext()) return (result.set(Token::T_EOF));
 
 	wchar_t ch;
-	pp->getch(ch);
+	// 最終行の読み込みでEOFになると、hasNext()が真でも読めないことがある
+	if (!pp->getch(ch)) return (result.set(Token::T_EOF));
 	if (IsLexChar((int)m, ch)){
 		// ベア文字列
 		pp->unget();

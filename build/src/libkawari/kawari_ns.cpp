@@ -36,7 +36,7 @@ TEntry TNameSpace::Create(const wstring& entry)
 	if(entryname_node.size()==0) return(TEntry(this,0));
 
 	wstring entryname;
-	TEntryID parent=0,id;
+	TEntryID parent=0,id=0;
 
 	for(unsigned int i=0, max=entryname_node.size();i<max;i++) {
 		entryname=entryname+entryname_node[i];

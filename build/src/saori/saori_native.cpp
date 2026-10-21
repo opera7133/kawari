@@ -141,7 +141,7 @@ SAORI_HANDLE load_library(const wstring &wfile){
 	    if (fallback_lib.length() == 0) {
 		// 無い
 		// Loggerを使うには、この関数がIModuleFactoryのメソッドでなければならない…
-		return NULL;
+		return 0;	// SAORI_HANDLEは整数型
 	    }
 	    else {
 		// あったので、これを使う。
