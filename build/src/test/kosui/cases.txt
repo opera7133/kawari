@@ -186,3 +186,36 @@ echo $(set f $(lambda $(echo a)))$(rmfunc ${f})[$(${f})]
 # (*UCP) is accepted by the engine; an unknown verb is still a syntax error
 echo [$(regex_match "abc" "(*UCP)^\w+$")][$(regex_match "abc" "(*NOSUCH)a")]
 = [1][]
+
+# textsave_charset / textload_charset: an ASCII text survives a round trip in every charset
+# (the multibyte round trips are not here because the cases are ASCII only)
+echo $(textsave_charset t.txt Shift_JIS greet)$(textload_charset r t.txt SJIS)[${r}]
+= [Hello]
+
+echo $(textsave_charset t.txt EUC-JP greet)$(textload_charset r t.txt euc-jp)[${r}]
+= [Hello]
+
+echo $(textsave_charset t.txt ISO-2022-JP greet)$(textload_charset r t.txt ISO-2022-JP)[${r}]
+= [Hello]
+
+echo $(textsave_charset t.txt EUC-KR greet)$(textload_charset r t.txt EUC-KR)[${r}]
+= [Hello]
+
+echo $(textsave_charset t.txt GB2312 greet)$(textload_charset r t.txt GB2312)[${r}]
+= [Hello]
+
+# several entries are written one line per word; "auto" detects the charset like textload
+echo $(textsave_charset t.txt UTF-8 greet name)$(textload_charset r t.txt auto)$(size r)$(join r "|")
+= 2Hello|world
+
+# textappend_charset keeps the old contents
+echo $(textsave_charset t.txt UTF-8 greet)$(textappend_charset t.txt GB2312 name)$(textload_charset r t.txt auto)$(size r)$(join r "|")
+= 2Hello|world
+
+# an unknown charset does nothing: the file is not overwritten and the entry is not changed
+echo $(textsave_charset t.txt UTF-8 greet)$(textsave_charset t.txt NOSUCH name)$(textappend_charset t.txt NOSUCH name)$(textload_charset r t.txt UTF-8)$(textload_charset q t.txt NOSUCH)$(size r)[${r}][${q}]
+= 1[Hello][]
+
+# textload / textsave keep their old forms
+echo $(textsave t.txt greet)$(textload r t.txt)[${r}]
+= [Hello]

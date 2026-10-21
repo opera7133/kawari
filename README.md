@@ -1,6 +1,6 @@
 # 華和梨 (KAWARI)
 
-**プログラマブル準AI 華和梨 Phase 9.1.0**
+**プログラマブル準AI 華和梨 Phase 9.1.1**
 
 伺か用の SHIORI (擬似AI) モジュールです。
 
@@ -42,6 +42,15 @@ Phase 9 系は、オリジナルの華和梨をフォークし、[ponapalt](http
 新しい順に並べています。「非公開」とあるものは一般には公開されなかった版です。
 
 ### Phase 9
+
+#### 2026/10/22 Phase 9.1.1 (Core 4.1.1)
+
+**文字コードを指定するテキストファイル操作**
+
+- `textload_charset エントリ ファイル 文字コード` / `textsave_charset ファイル 文字コード エントリ...` / `textappend_charset ファイル 文字コード エントリ...` を追加。`textload` / `textsave` / `textappend` と同じ動作で、ファイルの文字コードを指定できる。従来のコマンドは変わらない
+- 文字コードは Shift_JIS・UTF-8・EUC-JP・ISO-2022-JP・EUC-KR・GB2312。`textload_charset` は `auto` (UTF-8 / Shift_JIS の自動判定) も指定できる
+- Windows ではコードページ 20932 / 50220 / 949 / 936 を使う。そのため GB2312 は GBK、EUC-KR は UHC として扱う。POSIX は iconv を使う
+- 未知の文字コードや、実行環境が対応していない文字コードを指定するとエラーになり、`textload_charset` はエントリを変えず、`textsave_charset` / `textappend_charset` はファイルを書き換えない
 
 #### 2026/10/19 Phase 9.1.0 (Core 4.1.0)
 

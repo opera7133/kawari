@@ -1,5 +1,16 @@
 ChangeLog
 
+2026/10/22 Phase 9.1.1 (Core 4.1.1)
+ * add "textload_charset", "textsave_charset" and "textappend_charset": the
+   same as "textload", "textsave" and "textappend" with the charset of the
+   file as an argument (textload_charset Entry File Charset,
+   textsave_charset File Charset Entry...). The charsets are Shift_JIS,
+   UTF-8, EUC-JP, ISO-2022-JP, EUC-KR and GB2312 (Windows uses the code pages
+   20932, 50220, 949 and 936, so GB2312 is GBK and EUC-KR is UHC; POSIX uses
+   iconv). "auto" is also accepted by textload_charset. An unknown or
+   unsupported charset is an error: the entry is not changed and the file is
+   not overwritten. "textload", "textsave" and "textappend" are unchanged
+
 2026/10/19 Phase 9.1.0 (Core 4.1.0)
  * add "lambda": defines an anonymous function and returns its name
    (System.Lambda.<n>, never the same as a defined function). The body is

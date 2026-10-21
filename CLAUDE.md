@@ -1,6 +1,6 @@
 # CLAUDE.md
 
-華和梨 (KAWARI) — 伺か用の SHIORI (擬似AI) モジュール。C++ 製、Phase 9.1.0 (Core 4.1.0)。
+華和梨 (KAWARI) — 伺か用の SHIORI (擬似AI) モジュール。C++ 製、Phase 9.1.1 (Core 4.1.1)。
 CI は無い。最低限のテストは `build/src/test/` (下記「テスト」)。
 旧 ACP (SJIS の std::string) 版のコードは `v8acp` ブランチに保存してある。
 
@@ -9,7 +9,7 @@ CI は無い。最低限のテストは `build/src/test/` (下記「テスト」
 - 内部のテキストはすべて `std::wstring` / `wchar_t`。文字数は wchar_t 1 要素 = 1 文字 (Windows のサロゲートペアは 2 文字)。`std::string` は外部とのバイト列 (ファイルの生バイト、SHIORI/SAORI の生リクエスト、暗号化の中間データ) にだけ使う。
 - 変換は `misc/charset.h` (`SJIStoW` / `UTF8toW` / `ACPtoW` / `MBtoW(str, cs)` / `DetectCharset` / `CharsetFromName` 等。Windows は Win32 API、POSIX は iconv)。ファイル I/O とパスは `misc/wfile.h` (`kawari_wfopen` / `ReadTextFile` / `WriteTextFile` / `ListDirectory` / `PathStat` / `GetEnvironmentW`)。旧 `ctow` / `wtoc` / `iskanji1st` / `misc/_dirent.*` は廃止 (`misc/l10n.h` は互換スタブ)。
 - ロガーは `std::wostream`。バイト出力先へは `TWideOStream` (`ostream*` か `FILE*` + charset、CRLF 変換可) を挟む。
-- 文字コードの規則 (変更時は `document/changelog.txt` と整合させる): 辞書は BOM か UTF-8 として正当なら UTF-8、でなければ SJIS。暗号化行はファイルに BOM があれば UTF-8、なければ SJIS。save/savecrypt は UTF-8 BOM あり、textsave/textappend とログファイルは UTF-8 BOM なし、コンソールは ACP。SHIORI はリクエストの Charset (無ければ SJIS) で応答も返す。`loadu` (UTF-8 パス) もエクスポート。SAORI は satoriya 互換 (UTF-8 で開始、GET Version に Charset が無ければ以後 SJIS、応答の Charset を次回に引き継ぐ。`loadu` があれば UTF-8 パス)。
+- 文字コードの規則 (変更時は `document/changelog.txt` と整合させる): 辞書は BOM か UTF-8 として正当なら UTF-8、でなければ SJIS。暗号化行はファイルに BOM があれば UTF-8、なければ SJIS。save/savecrypt は UTF-8 BOM あり、textsave/textappend とログファイルは UTF-8 BOM なし、コンソールは ACP。SHIORI はリクエストの Charset (無ければ SJIS) で応答も返す。`loadu` (UTF-8 パス) もエクスポート。`textload_charset` / `textsave_charset` / `textappend_charset` は文字コードを引数で取り (`CharsetFromNameExt`)、Shift_JIS / UTF-8 / EUC-JP / ISO-2022-JP / EUC-KR / GB2312 を扱う (Windows のコードページは 20932 / 50220 / 949 / 936。51932 は `MultiByteToWideChar` が非対応)。SAORI は satoriya 互換 (UTF-8 で開始、GET Version に Charset が無ければ以後 SJIS、応答の Charset を次回に引き継ぐ。`loadu` があれば UTF-8 パス)。
 - Win32 API は W 版 (`UNICODE` / `_UNICODE`、`WINVER` / `_WIN32_WINNT` = 0x0500 を `config.h` と `gcc-mach.mak` で定義)。ただし i686-posix の MinGW 8.1.0 は winpthreads 由来で `AddVectoredExceptionHandler` 等 (XP 以降) を import するので、生成物は実際には Windows 2000 では動かない (8.2.9 のリリース版も同じ)。
 - コード中の文字列リテラルに非 ASCII を直書きしない (`L"\x3042"` 等を使う)。
 

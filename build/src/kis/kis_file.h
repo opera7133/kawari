@@ -23,6 +23,9 @@ INLINE_SCRIPT_REGIST(KIS_load);
 INLINE_SCRIPT_REGIST(KIS_textload);
 INLINE_SCRIPT_REGIST(KIS_textsave);
 INLINE_SCRIPT_REGIST(KIS_textappend);
+INLINE_SCRIPT_REGIST(KIS_textload_charset);
+INLINE_SCRIPT_REGIST(KIS_textsave_charset);
+INLINE_SCRIPT_REGIST(KIS_textappend_charset);
 INLINE_SCRIPT_REGIST(KIS_readdir);
 INLINE_SCRIPT_REGIST(KIS_cncpath);
 INLINE_SCRIPT_REGIST(KIS_dirname);
@@ -104,6 +107,9 @@ public:
 class KIS_textload : public TKisFunction_base {
 public:
 
+	// インタープリタの実体 (withcs: 文字コードの引数を取る)
+	wstring Function_(const vector<wstring>& args,bool withcs);
+
 	// Initで名前その他の情報を設定してください
 	virtual bool Init(void)
 	{
@@ -116,14 +122,38 @@ public:
 	}
 
 	// インタープリタ
-	virtual wstring Function(const vector<wstring>& args);
+	virtual wstring Function(const vector<wstring>& args)
+	{
+		return(Function_(args,false));
+	}
+};
+//---------------------------------------------------------------------------
+class KIS_textload_charset : public KIS_textload {
+public:
+
+	// Initで名前その他の情報を設定してください
+	virtual bool Init(void)
+	{
+		Name_=L"textload_charset";
+		Format_=L"textload_charset Entry1 File1 Charset";
+		Returnval_=L"(NULL)";
+		Information_=L"load textfile to Entry1 with Charset";
+
+		return(true);
+	}
+
+	// インタープリタ
+	virtual wstring Function(const vector<wstring>& args)
+	{
+		return(Function_(args,true));
+	}
 };
 //---------------------------------------------------------------------------
 class KIS_textsave : public TKisFunction_base {
 public:
 
-	// インタープリタの実体
-	wstring Function_(const vector<wstring>& args,bool flag);
+	// インタープリタの実体 (flag: 上書き, withcs: 文字コードの引数を取る)
+	wstring Function_(const vector<wstring>& args,bool flag,bool withcs=false);
 
 	// Initで名前その他の情報を設定してください
 	virtual bool Init(void)
@@ -161,6 +191,48 @@ public:
 	virtual wstring Function(const vector<wstring>& args)
 	{
 		return(Function_(args,false));
+	}
+};
+//---------------------------------------------------------------------------
+class KIS_textsave_charset : public KIS_textsave {
+public:
+
+	// Initで名前その他の情報を設定してください
+	virtual bool Init(void)
+	{
+		Name_=L"textsave_charset";
+		Format_=L"textsave_charset File1 Charset Entry1 [Entry2...]";
+		Returnval_=L"(NULL)";
+		Information_=L"save textfile by Entries with Charset";
+
+		return(true);
+	}
+
+	// インタープリタ
+	virtual wstring Function(const vector<wstring>& args)
+	{
+		return(Function_(args,true,true));
+	}
+};
+//---------------------------------------------------------------------------
+class KIS_textappend_charset : public KIS_textsave {
+public:
+
+	// Initで名前その他の情報を設定してください
+	virtual bool Init(void)
+	{
+		Name_=L"textappend_charset";
+		Format_=L"textappend_charset File1 Charset Entry1 [Entry2...]";
+		Returnval_=L"(NULL)";
+		Information_=L"append textfile by Entries with Charset";
+
+		return(true);
+	}
+
+	// インタープリタ
+	virtual wstring Function(const vector<wstring>& args)
+	{
+		return(Function_(args,false,true));
 	}
 };
 //---------------------------------------------------------------------------

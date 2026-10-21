@@ -220,6 +220,9 @@ TABLE.command CAPTION{
 <TR><TD><A href="#textload">textload</A></TD><TD>テキストファイルを読み込む</TD></TR>
 <TR><TD><A href="#textappend">textappend</A></TD><TD>テキストファイルを追記</TD></TR>
 <TR><TD><A href="#textsave">textsave</A></TD><TD>テキストファイルを保存</TD></TR>
+<TR><TD><A href="#textload_charset">textload_charset</A></TD><TD>文字コードを指定してテキストファイルを読み込む</TD></TR>
+<TR><TD><A href="#textappend_charset">textappend_charset</A></TD><TD>文字コードを指定してテキストファイルを追記</TD></TR>
+<TR><TD><A href="#textsave_charset">textsave_charset</A></TD><TD>文字コードを指定してテキストファイルを保存</TD></TR>
 <TR><TD><A href="#readdir">readdir</A></TD><TD>ディレクトリを読み込む</TD></TR>
 <TR><TD><A href="#cncpath">cncpath</A></TD><TD>パス名をシステムで使えるようにする</TD></TR>
 <TR><TD><A href="#dirname">dirname</A></TD><TD>パス名からディレクトリ名部分を切り出す</TD></TR>
@@ -2686,6 +2689,116 @@ TABLE.command CAPTION{
   =end
 </PRE>
 </TD></TR>
+</TABLE>
+
+<TABLE class="command" width="100%">
+<CAPTION>
+	textload_charset<A name="textload_charset"></A>
+</CAPTION>
+<TR>
+	<TD width="10%">書式</TD>
+	<TD class="tt">
+		$(textload_charset エントリ1 テキストファイル1 文字コード)
+	</TD>
+</TR>
+<TR>
+	<TD>戻り値</TD>
+	<TD>
+		なし
+	</TD>
+</TR>
+<TR>
+	<TD>機能</TD>
+	<TD>
+		<A href="#textload">textload</A>と同じだが、テキストファイル1の文字コードを指定して読み込む。<BR>
+		文字コードには次の名前を指定できる(大文字小文字は区別しない)。<BR>
+		<TABLE border="1">
+		<TR><TD>Shift_JIS</TD><TD>Shift_JIS(CP932)。SJIS、CP932も可</TD></TR>
+		<TR><TD>UTF-8</TD><TD>UTF-8。BOMがあれば取り除く</TD></TR>
+		<TR><TD>EUC-JP</TD><TD>EUC-JP</TD></TR>
+		<TR><TD>ISO-2022-JP</TD><TD>ISO-2022-JP(JIS)。JISも可</TD></TR>
+		<TR><TD>EUC-KR</TD><TD>EUC-KR(Windowsでは949)</TD></TR>
+		<TR><TD>GB2312</TD><TD>GB2312(Windowsでは936。GBKも可)</TD></TR>
+		<TR><TD>auto</TD><TD>UTF-8またはShift_JISを自動判定(textloadと同じ)</TD></TR>
+		</TABLE>
+		未知の文字コードを指定したときや、実行環境が対応していない文字コードのときは、
+		エラーになりエントリ1は変更されない。
+	</TD>
+</TR>
+<TR><TD colspan="2">
+<PRE>
+例
+  =kis
+  textload_charset poem mypoem.txt EUC-JP;
+  # poemエントリにEUC-JPのファイル'mypoem.txt'を読み込む
+  =end
+</PRE>
+</TD></TR>
+</TABLE>
+
+<TABLE class="command" width="100%">
+<CAPTION>
+	textsave_charset<A name="textsave_charset"></A>
+</CAPTION>
+<TR>
+	<TD width="10%">書式</TD>
+	<TD>
+		$(textsave_charset ファイル名 文字コード エントリ1 [エントリ2..])
+	</TD>
+</TR>
+<TR>
+	<TD>戻り値</TD>
+	<TD>
+		なし
+	</TD>
+</TR>
+<TR>
+	<TD>機能</TD>
+	<TD>
+		<A href="#textsave">textsave</A>と同じだが、書き出す文字コードを指定する。
+		文字コードの名前は<A href="#textload_charset">textload_charset</A>と同じ(autoは指定できない)。
+		BOMは付けない。<BR>
+		文字コードに無い文字は「?」になる。
+		未知の文字コードを指定したときや、実行環境が対応していない文字コードのときは、
+		エラーになりテキストファイル1は上書きされない。
+	</TD>
+</TR>
+<TR><TD colspan="2">
+<PRE>
+例
+  =kis
+  textsave_charset highscore.dat EUC-JP タイトル保持者名一覧;
+  # highscore.datに、「タイトル保持者名一覧」エントリの内容をEUC-JPで保存
+  =end
+</PRE>
+</TD></TR>
+</TABLE>
+
+<TABLE class="command" width="100%">
+<CAPTION>
+	textappend_charset<A name="textappend_charset"></A>
+</CAPTION>
+<TR>
+	<TD width="10%">書式</TD>
+	<TD>
+		$(textappend_charset ファイル名 文字コード エントリ1 [エントリ2..])
+	</TD>
+</TR>
+<TR>
+	<TD>戻り値</TD>
+	<TD>
+		なし
+	</TD>
+</TR>
+<TR>
+	<TD>機能</TD>
+	<TD>
+		<A href="#textappend">textappend</A>と同じだが、追記する文字コードを指定する。
+		それ以外は<A href="#textsave_charset">textsave_charset</A>と同じ。
+		既存のファイルの文字コードとは無関係に指定の文字コードで追記するので、
+		異なる文字コードを指定すると1つのファイル内に文字コードが混在する。
+	</TD>
+</TR>
 </TABLE>
 
 <A name="counter"></A>
