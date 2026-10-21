@@ -274,16 +274,21 @@ static std::string IconvRun(iconv_t cd, const char *in, size_t inlen, size_t inu
 		size_t oleft=sizeof(buf);
 		char *ip=const_cast<char*>(in);
 		size_t r=iconv(cd, &ip, &inlen, &op, &oleft);
+		int err=errno;	// append の確保で errno が変わらないうちに取っておく
 		in=ip;
 		ret.append(buf, sizeof(buf)-oleft);
 		if(r==(size_t)-1) {
-			if(errno==E2BIG) continue;
+			if(err==E2BIG) continue;
 			// EILSEQ / EINVAL : 1要素読み飛ばして代替文字
 			size_t skip=(inlen<inunit)?inlen:inunit;
 			in+=skip;
 			inlen-=skip;
+			// 初期状態に戻す。ISO-2022-JPなどではASCIIに戻すエスケープを出してから代替文字を置く
+			op=buf;
+			oleft=sizeof(buf);
+			iconv(cd, NULL, NULL, &op, &oleft);
+			ret.append(buf, sizeof(buf)-oleft);
 			ret+=repl;
-			iconv(cd, NULL, NULL, NULL, NULL);
 		}
 	}
 	// フラッシュ

@@ -70,7 +70,7 @@ make -f gcc.mak
 - ハーネスは環境変数 `HARNESS_LOADU` があると `load` の代わりに `loadu` (UTF-8 パス) を呼ぶ。`HARNESS_DIR_W` (UTF-16 の環境変数) と併用すると ACP 外の文字を含むフォルダも試せる (DLL もそのフォルダから読む)。`HARNESS_RELOAD=<n>` で `load`/`unload` の繰り返し、`<出力ファイル>` に `-` で標準入出力の対話モード。
 - 実在のゴーストの互換テストは `python build/src/test/ghost_compat.py --ghost <ghost>/ghost/master` (基準の DLL と `bin/shiori.dll` に同じ SSP 風のリクエスト列を流して応答・SAORI への送信・セーブデータの読み込みを比べる)。詳細は `build/src/test/README.md`。**実ゴーストの辞書は SAORI 経由で本物の exe を起動する**ので、ハーネスに直接読ませず必ずこのドライバ (コピーの exe を消し、SAORI を `harness/stub_saori.c` に差し替える) を通すこと。
 - 9.0.0 の互換性の確認結果 (kakera + OpenKEEPS、8.2.8 との比較): 応答・SAORI への送信・UTF-8・日本語/ACP 外のパス・`load`/`unload` の繰り返しは差分なし。意図した差は、`GET Version SHIORI/2.6` の応答に `Charset` が付くことと、SAORI の `GET Version` を UTF-8 で問い合わせること。新版が書いた `save`/`savecrypt` は旧版で読めない (UTF-8 BOM)。
-- kosui を手で使うときの注意: 入力の最後に `exit` が無いと EOF で無限ループする。非 ASCII を含む出力は未検証。KIS の要素数は `size <エントリ>`。辞書のカンマは単語の区切りで、複数単語のエントリはランダムに 1 つが選ばれる (期待値が揺れる原因)。
+- kosui を手で使うときの注意: 入力の最後に `exit` が無くても EOF で終わる (9.1.1 までは無限ループした)。非 ASCII を含む出力は未検証。KIS の要素数は `size <エントリ>`。辞書のカンマは単語の区切りで、複数単語のエントリはランダムに 1 つが選ばれる (期待値が揺れる原因)。
 - .NET Framework の `Process` は標準入力の先頭に UTF-8 BOM を付ける。kosui のような stdin を読むツールには、`cmd /c "exe < file"` で渡すこと (`run.ps1` はそうしている)。
 
 ## 本体との連携 (Direct SSTP、9.0.0 β2 以降)

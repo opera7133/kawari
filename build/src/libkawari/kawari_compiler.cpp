@@ -656,7 +656,9 @@ TKVMCode_base *TKawariCompiler::compileEntryWord(void){
 			TKVMCode_base *code=new TKVMCodeIDString(lexer->getLiteral(ID_MODE));
 			tmplist.push_back(code);
 		}else if (t==(int)L'$'){
-			tmplist.push_back(compileSubst());
+			// '$' の後ろが置換にならなければNULLが返る ('$' は読み進めてある)
+			TKVMCode_base *code=compileSubst();
+			if (code) tmplist.push_back(code);
 		}else{
 			break;
 		}
@@ -974,7 +976,9 @@ TKVMExprCode_base *TKawariCompiler::compileExprWord(void){
 			TKVMCode_base *code=new TKVMCodeString(s);
 			tmplist.push_back(code);
 		}else if (t==(int)L'$'){
-			tmplist.push_back(compileSubst());
+			// '$' の後ろが置換にならなければNULLが返る ('$' は読み進めてある)
+			TKVMCode_base *code=compileSubst();
+			if (code) tmplist.push_back(code);
 		}else{
 			break;
 		}
@@ -1111,7 +1115,9 @@ TKVMSetCode_base *TKawariCompiler::compileSetExprWord(void){
 			TKVMCode_base *code=new TKVMCodeIDString(lexer->getLiteral(ID_MODE));
 			tmplist.push_back(code);
 		}else if (t==(int)L'$'){
-			tmplist.push_back(compileSubst());
+			// '$' の後ろが置換にならなければNULLが返る ('$' は読み進めてある)
+			TKVMCode_base *code=compileSubst();
+			if (code) tmplist.push_back(code);
 		}else{
 			break;
 		}

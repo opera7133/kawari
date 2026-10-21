@@ -227,9 +227,10 @@ inline void TKawariLexer::warning(const std::wstring &message){
 }
 //---------------------------------------------------------------------------
 inline bool TKawariPreProcessor::peek(wchar_t &ch){
-	bool ret = getch(ch);
+	// EOFで読めなかったときに戻すと、最後の文字がまた読めてしまう
+	if (!getch(ch)) return false;
 	unget();
-	return ret;
+	return true;
 }
 //---------------------------------------------------------------------------
 inline bool TKawariPreProcessor::getch(wchar_t &ch){

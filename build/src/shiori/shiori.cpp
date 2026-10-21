@@ -34,53 +34,94 @@ namespace {
 	inline MEMORY_HANDLE string2memory(const string &s, long *len){
 		*len=s.length();
 		MEMORY_HANDLE reth=(MEMORY_HANDLE)SHIORI_MALLOC(*len);
+		if(!reth) {
+			*len=0;
+			return NULL;
+		}
 		memcpy(reth, s.c_str(), *len);
 		return reth;
+	}
+	// 例外をextern "C"の境界の外(ホスト)に出さないため、各エントリはこれで包む
+	inline unsigned int CreateInstanceSafe(const wstring &path){
+		try {
+			return TKawariShioriFactory::GetFactory().CreateInstance(path);
+		} catch(...) {
+			return 0;
+		}
 	}
 }
 //---------------------------------------------------------------------------
 // 偽AIモジュールのバージョン番号を返す (華和梨拡張)
 SHIORI_EXPORT MEMORY_HANDLE SHIORI_CALL getmoduleversion(long *len)
 {
-	string modver=TKawariShioriFactory::GetModuleVersion();
-	return string2memory(modver, len);
+	try {
+		string modver=TKawariShioriFactory::GetModuleVersion();
+		return string2memory(modver, len);
+	} catch(...) {
+		*len=0;
+		return NULL;
+	}
 }
 //---------------------------------------------------------------------------
 // モジュール読み込み直後に呼ばれる
 // パスはOSの既定コードページ(ACP)
 SHIORI_EXPORT BOOL SHIORI_CALL load(const MEMORY_HANDLE h,long len)
 {
-	handle=TKawariShioriFactory::GetFactory().CreateInstance(
-		ACPtoW(string((const char*)h, len)));
+	wstring path;
+	try {
+		path=ACPtoW(string((const char*)h, len));
+	} catch(...) {
+	}
 	SHIORI_FREE(h);
+	handle=CreateInstanceSafe(path);
 	return (handle!=0);
 }
 //---------------------------------------------------------------------------
 // モジュール読み込み直後に呼ばれる (パスがUTF-8)
 SHIORI_EXPORT BOOL SHIORI_CALL loadu(const MEMORY_HANDLE h,long len)
 {
-	handle=TKawariShioriFactory::GetFactory().CreateInstance(
-		UTF8toW(string((const char*)h, len)));
+	wstring path;
+	try {
+		path=UTF8toW(string((const char*)h, len));
+	} catch(...) {
+	}
 	SHIORI_FREE(h);
+	handle=CreateInstanceSafe(path);
 	return (handle!=0);
 }
 //---------------------------------------------------------------------------
 // モジュール切り離し直前に呼ばれる
 SHIORI_EXPORT BOOL SHIORI_CALL unload(void)
 {
-	TKawariShioriFactory::GetFactory().DisposeInstance(handle);
-	handle=0;
-	TKawariShioriFactory::DisposeFactory();
+	try {
+		TKawariShioriFactory::GetFactory().DisposeInstance(handle);
+		handle=0;
+		TKawariShioriFactory::DisposeFactory();
+	} catch(...) {
+		handle=0;
+		return FALSE;
+	}
 	return TRUE;
 }
 //---------------------------------------------------------------------------
 // 偽AIリクエスト
 SHIORI_EXPORT MEMORY_HANDLE SHIORI_CALL request(const MEMORY_HANDLE h,long *len)
 {
-	string resstr=TKawariShioriFactory::GetFactory().RequestInstance(
-		handle, string((const char*)h, *len));
+	string resstr;
+	try {
+		resstr=TKawariShioriFactory::GetFactory().RequestInstance(
+			handle, string((const char*)h, *len));
+	} catch(...) {
+		// 応答を作れなかった (不正なハンドルのときと同じく空で返す)
+		resstr="";
+	}
 
 	SHIORI_FREE(h);
-	return string2memory(resstr, len);
+	try {
+		return string2memory(resstr, len);
+	} catch(...) {
+		*len=0;
+		return NULL;
+	}
 }
 //---------------------------------------------------------------------------

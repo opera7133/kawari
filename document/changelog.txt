@@ -10,6 +10,53 @@ ChangeLog
    iconv). "auto" is also accepted by textload_charset. An unknown or
    unsupported charset is an error: the entry is not changed and the file is
    not overwritten. "textload", "textsave" and "textappend" are unchanged
+ * fixed crashes:
+   - a dictionary word with "$" not followed by a substitution (x : ${$})
+     put a NULL code into the word and crashed on evaluation or "save"
+   - "$[ (-2147483647-1) / -1 ]" (and "%") raised a division fault
+   - "date" with a time that localtime() cannot convert (a negative value)
+     dereferenced NULL
+   - an exception in "load", "request" or "unload" (and the so_* object
+     interface) went out of the module into the host; GlobalAlloc failure
+     is now checked
+ * fixed bugs in the interpreter:
+   - after a word of the form ${entry} was collected and its ID reused, the
+     new word was dropped from the set operations (${a+b}, size etc.)
+   - "char_at" on an empty string returned a NUL character
+   - "inc" / "dec" overflowed at the int limits; they now stop at the limit
+   - an integer value of INT_MIN was printed as garbage, and "-" alone was
+     taken as the integer 0
+   - numbers out of the int range are now clamped also where long is 64 bit
+   - "mktime" ignored daylight saving time (now the same as "date")
+   - "save" / "savecrypt" / "textsave" given an absolute path wrote the file
+     name into the current directory of the host; it is now written into the
+     ghost's directory, as with a relative path. "textsave" logged "load
+     failed" on a write error
+   - "$(if cond)" without a body leaked the condition
+   - the lexer could read the last character again at the end of a file
+   - the message table is built when the module is loaded, not on its first
+     use from possibly several threads
+ * fixed bugs in SAORI and the platform layer:
+   - loading the same SAORI DLL twice left an extra LoadLibrary reference,
+     so the DLL stayed loaded after the last unload
+   - a SAORI without "request" got "unload" without "load"; on POSIX,
+     dlclose(NULL) was called for a library that failed to open
+   - POSIX: an unencodable character in ISO-2022-JP output was written in
+     the kanji shift state and garbled the rest; errno was read too late
+   - POSIX: Direct SSTP to ninix could die by SIGPIPE, and failed when the
+     4-byte length header arrived in pieces
+   - Windows: environment variables are read with GetEnvironmentVariableW, so
+     the values set by the host after start are seen
+   - a base path at the root ("/" or "/a" with "../b") lost the root
+ * fixed bugs in the tools:
+   - kosui no longer loops forever at the end of its input without "exit"
+   - kosui (Direct SSTP mode) read past the WM_COPYDATA data, could keep the
+     mutex, and lost replies that came after SendMessageTimeout returned
+   - kawari_encode / kawari_encode2 / kawari_decode2 took a "." in a folder
+     name as the extension, and could overwrite the input file with the
+     output (such a file is now skipped)
+   - the ghost list of kosui read the FMO size with sign extension
+   - shiori/py_shiori.cpp passed the handle with a wrong format code
 
 2026/10/19 Phase 9.1.0 (Core 4.1.0)
  * add "lambda": defines an anonymous function and returns its name

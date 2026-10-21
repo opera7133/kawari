@@ -144,9 +144,14 @@ bool PathStat(const std::wstring &path, bool *isdir, bool *isfile)
 bool GetEnvironmentW(const std::wstring &name, std::wstring &value)
 {
 #ifdef KAWARI_WIN32
-	const wchar_t *p=_wgetenv(name.c_str());
-	if(!p) return false;
-	value=p;
+	// _wgetenv は CRT の複製を見るため、ホストが後から SetEnvironmentVariable した値が見えない
+	DWORD n=::GetEnvironmentVariableW(name.c_str(), NULL, 0);
+	if(n==0) return false;
+	std::vector<wchar_t> buf(n);
+	DWORD r=::GetEnvironmentVariableW(name.c_str(), &buf[0], n);
+	if((r==0)&&(::GetLastError()==ERROR_ENVVAR_NOT_FOUND)) return false;
+	if(r>=n) return false;	// 間に値が伸びた
+	value.assign(&buf[0], r);
 	return true;
 #else
 	const char *p=getenv(PathToNative(name).c_str());

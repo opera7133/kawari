@@ -151,7 +151,7 @@ int main(int argc,char *argv[])
 		 else cout << "echo-mode > " << flush;
 
 		string bytes;
-		getline(cin,bytes);
+		if(!getline(cin,bytes)) break;	// EOF
 		// 標準入力はACP
 		wstring buff=ACPtoW(bytes);
 

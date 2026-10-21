@@ -91,9 +91,12 @@ namespace resource{
 TResourceManager::TResourceManager(void){
 	initialized = false;
 	use_japanese = false;
+	// 複数のスレッドから初回のS()が同時に来ても競合しないよう、ここで作っておく
+	// (表は同じ翻訳単位の定数なので、この時点で使える)
+	Initialize();
 }
 //--------------------------------------------------------------------------
-// 静的初期化順序の問題を避けるため、初回利用時にwstring化する
+// 他の静的オブジェクトの初期化中に使われた場合に備え、S()からも初回にwstring化する
 void TResourceManager::Initialize(void)
 {
 	ascii.resize(ID__END);

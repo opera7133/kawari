@@ -29,6 +29,7 @@ bool IsInteger (const std::wstring &str){
 	unsigned int max=str.length();
 	if (!max) return false;
 	unsigned int i=(str[0]==L'-')? 1:0;
+	if (i>=max) return false;	// "-" だけ
 	for(; i<max; i++)
 		if (!_isdigit(str[i]))
 			return false;
@@ -42,15 +43,17 @@ wstring IntToString(int n)
 	wchar_t *bp=buff;
 	wstring ret;
 
+	// INT_MIN の符号反転があふれないよう unsigned で扱う
+	unsigned int u=(unsigned int)n;
 	if(n<0) {
 		ret+=L'-';
-		n*=-1;
+		u=0u-u;
 	}
 
 	do {
-		*(bp++)=(wchar_t)((n%10)+L'0');
-		n/=10;
-	} while(n>0);
+		*(bp++)=(wchar_t)((u%10)+L'0');
+		u/=10;
+	} while(u>0);
 
 	while(bp!=buff) {
 		bp--;
@@ -87,7 +90,8 @@ wstring CanonicalPath(const wstring &basepath, const wstring &path){
 		return path;
 	if (!p.size())
 		return basepath;
-	if (bp[bp.length()-1]==SEPARATOR)
+	// ルート ("/" や "\") の区切りは残す
+	if ((bp.length()>1)&&(bp[bp.length()-1]==SEPARATOR))
 		bp=bp.substr(0, bp.length()-1);
 	while (bp.size()){
 		if (p[0]!=L'.')
@@ -97,6 +101,8 @@ wstring CanonicalPath(const wstring &basepath, const wstring &path){
 			wstring::size_type pos=bp.rfind(SEPARATOR);
 			if (pos==wstring::npos){
 				bp=L"";
+			}else if (pos==0){
+				bp=bp.substr(0, 1);	// ルートより上には行かない
 			}else{
 				bp=bp.substr(0, pos);
 			}
@@ -108,7 +114,7 @@ wstring CanonicalPath(const wstring &basepath, const wstring &path){
 			break;
 		}
 	}
-	if (bp.size()) bp+=SEPARATOR;
+	if (bp.size()&&(bp[bp.length()-1]!=SEPARATOR)) bp+=SEPARATOR;
 	return bp+p;
 }
 //---------------------------------------------------------------------------

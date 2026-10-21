@@ -64,6 +64,8 @@ TWordID TNS_KawariDictionary::CreateWord(TKVMCode_base* word)
 		TKVMCodePVW *pvw=dynamic_cast<TKVMCodePVW *>(word);
 		if (pvw)
 			PVWSet.insert(id);
+		else
+			PVWSet.erase(id);	// 再利用されたIDに古い印が残っていても消す
 	}
 
 	return(id);
@@ -146,8 +148,11 @@ void TNS_KawariDictionary::DeleteContext(void){
 				TWordID id=(*it);
 				if (!GlobalNameSpace->ContainsWord(id)){
 					// 逆引きが存在しない。
-					TKVMCode_base *pword=*WordCollection.Find(id);
+					TKVMCode_base * const *pp=WordCollection.Find(id);
+					TKVMCode_base *pword=pp ? *pp : NULL;
 					WordCollection.Delete(id);
+					// IDは再利用されるので、純粋仮想単語の印も消す
+					PVWSet.erase(id);
 					if (pword){
 						logstream << RC.S(DUMP_DICT_DELETE_WORD1) <<id<< RC.S(DUMP_DICT_DELETE_WORD2) << (pword)->DisCompile() << endl;
 						delete (pword);
@@ -161,8 +166,11 @@ void TNS_KawariDictionary::DeleteContext(void){
 				TWordID id=(*it);
 				if (!GlobalNameSpace->ContainsWord(id)){
 					// 逆引きが存在しない。
-					TKVMCode_base *pword=*WordCollection.Find(id);
+					TKVMCode_base * const *pp=WordCollection.Find(id);
+					TKVMCode_base *pword=pp ? *pp : NULL;
 					WordCollection.Delete(id);
+					// IDは再利用されるので、純粋仮想単語の印も消す
+					PVWSet.erase(id);
 					if (pword){
 						delete (pword);
 					}else{

@@ -259,7 +259,8 @@ Token::Type TKawariLexer::peek(Mode m){
 		return (Token::T_EOF);
 
 	wchar_t ch;
-	pp->peek(ch);
+	if (!pp->peek(ch))
+		return (Token::T_EOF);
 	return checkType(m, ch);
 }
 
@@ -447,7 +448,8 @@ bool TKawariLexer::simpleSkipTo(wchar_t ch, bool noret){
 	static const wstring CRLF(L"\x0d\x0a");
 	while (hasNext()){
 		wchar_t c;
-		pp->peek(c);
+		if (!pp->peek(c))
+			break;
 		if (c==ch)
 			return true;
 		else if (noret && (CRLF.find(c)!=wstring::npos))

@@ -37,6 +37,8 @@ wstring KIS_date::Function(const vector<wstring>& args)
 		nowtt=time(NULL);
 	}
 	struct tm *now=localtime(&nowtt);
+	// 負の値などでは NULL が返る (msvcrt)
+	if(!now) return(L"");
 
 	wstring format=L"%y/%m/%d %H:%M:%S";
 	if(args.size()>=2) format=args[1];
@@ -119,7 +121,7 @@ wstring KIS_mktime::Function(const vector<wstring>& args)
 	tt.tm_hour =StringToInt(args[4]);
 	tt.tm_min  =StringToInt(args[5]);
 	tt.tm_sec  =StringToInt(args[6]);
-	tt.tm_isdst=0;
+	tt.tm_isdst=-1;	// 夏時間かどうかは mktime に判定させる (date の localtime と揃える)
 
 	// 最低限の数値の正当性を保証する
 	if(tt.tm_year<0)                    tt.tm_year=0;

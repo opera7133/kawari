@@ -45,10 +45,10 @@ void KIS_save::Run(const vector<wstring>& args, bool crypt)
 	vector<wstring> entry;
 	entry.insert(entry.end(),args.begin()+2,args.end());
 
-	// saveは相対パスのみ
+	// saveは相対パスのみ (絶対パスはファイル名だけを取り、データのフォルダに書く)
 	wstring filename;
 	if (IsAbsolutePath(CanonicalPath(args[1])))
-		filename=PathToFileName(args[1]);
+		filename=CanonicalPath(Engine->GetDataPath(), PathToFileName(args[1]));
 	else
 		filename=CanonicalPath(Engine->GetDataPath(), args[1]);
 
@@ -157,10 +157,10 @@ wstring KIS_textsave::Function_(const vector<wstring>& args,bool flag,bool withc
 		return(L"");
 	}
 
-	// saveは相対パスのみ
+	// saveは相対パスのみ (絶対パスはファイル名だけを取り、データのフォルダに書く)
 	wstring filename;
 	if (IsAbsolutePath(CanonicalPath(args[1])))
-		filename=PathToFileName(args[1]);
+		filename=CanonicalPath(Engine->GetDataPath(), PathToFileName(args[1]));
 	else
 		filename=CanonicalPath(Engine->GetDataPath(), args[1]);
 
@@ -190,7 +190,7 @@ wstring KIS_textsave::Function_(const vector<wstring>& args,bool flag,bool withc
 	// BOMなしで書き出す
 	if(!WriteWholeFile(filename, data, !flag)) {
 		// エラー
-		GetLogger().GetStream(LOG_ERROR) << args[0] << RC.S(ERR_KIS_FILE_LOAD_FAILED) << filename << endl;
+		GetLogger().GetStream(LOG_ERROR) << args[0] << RC.S(ERR_KIS_FILE_SAVE_FAILED) << filename << endl;
 		return(L"");
 	}
 

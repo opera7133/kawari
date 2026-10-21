@@ -73,7 +73,9 @@ int main(int argc,char *argv[])
 
 	for(int i=1;i<(int)args.size();i++) {
 		wstring infile=args[i];
-		wstring::size_type pos=infile.find_last_of(L".");
+		wstring::size_type pos=OutputBaseLength(infile);
+		// 入力を出力で上書きしない
+		if(HasExtension(infile, pos, L".kaw")) continue;
 		wstring outfile=infile.substr(0,pos)+L".kaw";
 
 		string data;

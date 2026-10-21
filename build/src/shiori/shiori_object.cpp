@@ -45,14 +45,23 @@ const char *so_getmoduleversion(long *length){
 //---------------------------------------------------------------------------
 // 新規インスタンスの生成
 SO_HANDLE so_create(const char *argument, long length){
-	return TKawariShioriFactory::GetFactory().CreateInstance(
-		ACPtoW(string(argument, length)));
+	// 例外を呼び出し側に出さない
+	try {
+		return TKawariShioriFactory::GetFactory().CreateInstance(
+			ACPtoW(string(argument, length)));
+	} catch(...) {
+		return 0;
+	}
 }
 //---------------------------------------------------------------------------
 // New instance (UTF-8 path)
 SO_HANDLE so_createu(const char *argument, long length){
-	return TKawariShioriFactory::GetFactory().CreateInstance(
-		UTF8toW(string(argument, length)));
+	try {
+		return TKawariShioriFactory::GetFactory().CreateInstance(
+			UTF8toW(string(argument, length)));
+	} catch(...) {
+		return 0;
+	}
 }
 //---------------------------------------------------------------------------
 // インスタンスの削除
@@ -68,10 +77,15 @@ int so_dispose(SO_HANDLE h){
 //   returns NULL if library is not ready.
 //
 const char *so_request(SO_HANDLE h, const char *reqstr, long *length){
-	string res=TKawariShioriFactory::GetFactory().RequestInstance(
-		(int)h, string(reqstr, *length));
+	try {
+		string res=TKawariShioriFactory::GetFactory().RequestInstance(
+			(int)h, string(reqstr, *length));
 
-	return string2cstr(res, length);
+		return string2cstr(res, length);
+	} catch(...) {
+		*length=0;
+		return NULL;
+	}
 }
 //---------------------------------------------------------------------------
 // Free Memory

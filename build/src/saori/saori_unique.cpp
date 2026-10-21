@@ -27,7 +27,8 @@ TModule *TUniqueModuleFactory::CreateModule(const wstring &path){
 	if (modules.count(handle)){
 		ret=modules[handle];
 		ret->loadcount++;
-		delete mod;
+		// 重複してLoadLibraryした分の参照カウントを戻す (Loadは呼んでいない)
+		parent->DeleteModule(mod);
 	}else{
 		ret=new TUniqueModule((*this), path, mod);
 		modules[handle]=ret;

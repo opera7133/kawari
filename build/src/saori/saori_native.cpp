@@ -131,8 +131,8 @@ SAORI_HANDLE load_library(const wstring &wfile){
 		if (sym_load != NULL && sym_unload != NULL && sym_request != NULL) {
 		    do_fallback = false;
 		}
+		::dlclose(handle);	// dlopenに失敗したNULLは閉じない
 	    }
-	    ::dlclose(handle);
 	}
 	
 	if (do_fallback) {
@@ -177,7 +177,7 @@ TModule *TModuleFactoryNative::CreateModule(const wstring &path){
 	if (ret->Initialize()){
 		return ret;
 	}else{
-		ret->Unload();
+		// Loadしていないのでunloadは呼ばない
 		DeleteModule(ret);
 		return NULL;
 	}
