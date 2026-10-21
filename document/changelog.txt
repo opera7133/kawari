@@ -57,6 +57,14 @@ ChangeLog
      output (such a file is now skipped)
    - the ghost list of kosui read the FMO size with sign extension
    - shiori/py_shiori.cpp passed the handle with a wrong format code
+ * merged the pull requests #7 and #8 of the upstream (Narazaka):
+   - MACH_TYPE = js exports the utility functions of Emscripten (ccall,
+     cwrap, intArrayFromString and intArrayToString), which newer Emscripten
+     does not export unless it is told to (and the build is -Os)
+   - add MACH_TYPE = wasm (WebAssembly, loaded asynchronously)
+   - the JavaScript API is changed: "Kawari" is replaced by "newKawari
+     (onRuntimeInitialized)", which calls the callback with { Module, FS,
+     PATH, ERRNO_CODES, NODEFS, IDBFS, WORKERFS } once the runtime is ready
 
 2026/10/19 Phase 9.1.0 (Core 4.1.0)
  * add "lambda": defines an anonymous function and returns its name

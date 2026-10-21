@@ -57,7 +57,7 @@ make -f gcc.mak
 - ソースファイルを追加・削除したら `build/src/files.mak` を編集し、`make depend` で `depend.mak` を作り直す。VC++ 用の `vc_kawari/*.sln|*.vcproj|*.dsp` は手動メンテで、gcc.mak と同期していない可能性が高い。
 - 任意機能は `gcc.mak` のフラグで切り替える: `SAORI_NATIVE` (デフォルト yes) / `SAORI_PYTHON` / `SAORI_JAVA` / `SHIORI_PYTHON` / `STLport`。Python 関連の記述は Python 2 構文 (`print sys.version[:3]`)。
 - mingw / cygwin で gcc3 系の `wstring` が通らない場合は STLport を使う (`STLport = yes`)。
-- `MACH_TYPE = js` は `em++` (Emscripten) でビルドし、`em-pre.js` / `em-post.js` で包んだ `Kawari` コンストラクタを `module.exports` する。公開する関数は `gcc-mach.mak` の `EXPORTED_FUNCTIONS`、JS 側へ露出するオブジェクトは `em-post.js` で管理している。
+- `MACH_TYPE = js` / `wasm` は `em++` (Emscripten) でビルドし、`em-pre.js` / `em-post.js` で包んだ `newKawari(onRuntimeInitialized)` を `module.exports` する (upstream の PR #7・#8 を取り込んだもの。旧 `Kawari` コンストラクタは廃止)。ランタイムの準備ができるとコールバックに `{ Module, FS, PATH, ERRNO_CODES, NODEFS, IDBFS, WORKERFS }` が渡る。公開する関数は `gcc-mach.mak` の `EXPORTED_FUNCTIONS`、JS 側へ露出するオブジェクトは `em-pre.js` で管理している。`wasm` は成果物を `build/mach/wasm` に出す (取り込みで `.keep` を追加)。Emscripten が無いので js / wasm のビルドは未検証。
 - bcc32 / VC++ でビルドするにはソースを SJIS に変換する必要がある (`build/conv.sh -c sjis src`、Ruby の `kconv` 前提で古い)。**ファイルをその場で書き換える**ので、作業ツリーではなくコピーに対して実行すること。
 
 ## テスト
