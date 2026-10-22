@@ -63,6 +63,7 @@ public:
 
 		// 辞書を読む前に、外へ影響する経路を全て止める
 		engine.SetSandbox(true);
+		engine.SetKeepZones(true);
 		TKawariLogger &logger=engine.GetLogger();
 		logger.SetStream(NULL);
 		logger.SetDiagSink(diagsink);
@@ -93,6 +94,12 @@ public:
 			"Version : " KAWARI_NAME "/" KAWARI_MAJOR "." KAWARI_MINOR "." KAWARI_SUBMINOR "\n"
 			"Kernel Version : " KAWARI_CORE_VERSION "  / " KAWARI_CORE_CODENAME "\n"
 			KAWARI_CORE_CREDITS));
+	}
+
+	// 読み込んだ辞書を静的に検査する (検査用のコンストラクタで作ったときだけ意味がある)
+	unsigned int Lint(void)
+	{
+		return engine.Lint();
 	}
 
 	// 与えられたスクリプトを解釈・実行する

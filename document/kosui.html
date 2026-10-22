@@ -85,7 +85,7 @@ TR.gb{ background: lightgrey; }
 
 <DIV class="syntax">
  kosui [--event|-e イベント名] [--norc] [--quiet] [&lt;rcfile&gt;]<BR>
- kosui --check [--format text|json] [--werror] [--decl] [--eval スクリプト]... [--seed 数] [&lt;rcfile&gt;]
+ kosui --check [--format text|json] [--werror] [--decl] [--no-lint] [--eval スクリプト]... [--seed 数] [&lt;rcfile&gt;]
 </DIV>
 
 <DIV style="margin: 1ex 10% 1ex 10%;">
@@ -212,6 +212,10 @@ check: 1 error(s), 0 warning(s)
    <TD>空のエントリの参照 (K-W0003) も報告する。</TD>
   </TR>
   <TR>
+   <TD>--no-lint</TD>
+   <TD>静的検査 (下記) をしない。</TD>
+  </TR>
+  <TR>
    <TD>--eval スクリプト</TD>
    <TD>読み込んだ後にスクリプトを評価する (何度でも指定できる)。イベントなど実行時の診断を見つけるのに使う。結果は出力しない。</TD>
   </TR>
@@ -225,6 +229,45 @@ check: 1 error(s), 0 warning(s)
 <P>
  終了コードは、0 = 問題なし、1 = 警告のみ、2 = エラーあり (<SPAN id="tt">--werror</SPAN>なら警告も)、
  3 = 実行できない (初期化ファイルを読めない)、です。
+</P>
+
+<P>
+ 読み込みが終わると、実行しなくても分かる疑わしい記述を<B>静的検査</B>で警告します (<SPAN id="tt">--eval</SPAN>より前に行います)。
+ 辞書の単語と<SPAN id="tt">=kis</SPAN>の中を全部調べますが、実行されない枝や、イベントで呼ばれるだけの単語も対象になります。
+</P>
+
+<DIV style="margin: 1ex 10% 1ex 10%;">
+ <TABLE border="0" cellpadding="0" cellspacing="0">
+  <TR>
+   <TD style="width: 12em">K-W2001</TD>
+   <TD>どこにも定義されていないエントリの参照 (<SPAN id="tt">${名前}</SPAN> / <SPAN id="tt">${a + 名前}</SPAN> / <SPAN id="tt">$名前[添字]</SPAN>)。未定義のエントリは実行時には黙って空になるので、書き間違いが見つかりにくい。</TD>
+  </TR>
+  <TR>
+   <TD>K-W2002</TD>
+   <TD>組み込みコマンドでも、<SPAN id="tt">function</SPAN>や<SPAN id="tt">System.Function.名前</SPAN>で定義された関数でもないコマンド名。</TD>
+  </TR>
+  <TR>
+   <TD>K-W2003</TD>
+   <TD><SPAN id="tt">regex_*</SPAN>の引数に、引用符で囲まれていない <SPAN id="tt">( )</SPAN> がある。素の括弧は華和梨の構文 (ブロック) として取り除かれるので、正規表現には届かない。<SPAN id="tt">regex_match "(a)" x</SPAN>のように引用符で囲む。</TD>
+  </TR>
+  <TR>
+   <TD>K-W2004</TD>
+   <TD><SPAN id="tt">regex_replace</SPAN> / <SPAN id="tt">regex_replace_first</SPAN>の置換文字列に、引用符で囲まれていない <SPAN id="tt">${N}</SPAN> がある。コマンドが動く前に履歴参照として展開されるので、<SPAN id="tt">"${1}"</SPAN>のように囲む。</TD>
+  </TR>
+ </TABLE>
+</DIV>
+
+<P>
+ 問題ないと分かっている警告は、その行の<B>前の行</B>に<SPAN id="tt"># lint:disable-next-line=K-W2001, K-W2003</SPAN>と書くと、次の行の分だけ抑制できます (コードは<SPAN id="tt">,</SPAN>か空白で区切る)。
+ 華和梨では行頭の<SPAN id="tt">#</SPAN>だけがコメントなので、行末には書けません。
+ 複数行の単語の警告は単語の先頭行の位置になるので、エントリ定義の前の行に書きます。
+</P>
+
+<P>
+ 偽陽性を減らすため、辞書に存在するエントリのほか、文の引数にリテラルで書かれた名前 (<SPAN id="tt">set</SPAN> / <SPAN id="tt">adddict</SPAN> / <SPAN id="tt">foreach</SPAN>の変数など)、
+ 文字列の中の<SPAN id="tt">$(...)</SPAN>に書かれた名前、先頭だけがリテラルで残りを実行時に組み立てる名前 (<SPAN id="tt">launch_a_${n}</SPAN>)、
+ <SPAN id="tt">System.</SPAN>で始まる名前、<SPAN id="tt">@</SPAN>で始まるローカルエントリは、定義されているものとして扱います。
+ <SPAN id="tt">${...}</SPAN>で組み立てた名前は調べません。警告なので、エラーにしたいときは<SPAN id="tt">--werror</SPAN>を指定します。
 </P>
 
 <P>

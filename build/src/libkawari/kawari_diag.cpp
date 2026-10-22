@@ -93,6 +93,43 @@ bool TSourceMap::FindEntry(unsigned int entry, Loc &loc) const
 	return true;
 }
 //---------------------------------------------------------------------------
+// 「lint:disable-next-line=K-W2001,K-W2003」 (区切りは ',' か空白)
+void TLintNotes::ReadComment(const wstring &file, unsigned int line, const wstring &comment)
+{
+	static const wstring key=L"lint:disable-next-line=";
+	wstring::size_type b=comment.find_first_not_of(L" \t");
+	if ((b==wstring::npos)||(comment.compare(b, key.size(), key)!=0)) return;
+
+	wstring::size_type pos=b+key.size();
+	while (pos<comment.size()) {
+		wstring::size_type s=comment.find_first_not_of(L", \t", pos);
+		if (s==wstring::npos) break;
+		wstring::size_type e=comment.find_first_of(L", \t", s);
+		if (e==wstring::npos) e=comment.size();
+		wstring tok=comment.substr(s, e-s);
+		pos=e;
+		// K-W<数字>
+		if ((tok.size()>3)&&(tok.compare(0, 3, L"K-W")==0)) {
+			unsigned int n=0;
+			bool ok=true;
+			for (wstring::size_type i=3; i<tok.size(); i++) {
+				if ((tok[i]<L'0')||(tok[i]>L'9')) { ok=false; break; }
+				n=n*10+(unsigned int)(tok[i]-L'0');
+			}
+			if (ok) suppress[file][line+1].insert(n);
+		}
+	}
+}
+//---------------------------------------------------------------------------
+bool TLintNotes::IsSuppressed(const wstring &file, unsigned int line, unsigned int code) const
+{
+	map<wstring, map<unsigned int, set<unsigned int> > >::const_iterator f=suppress.find(file);
+	if (f==suppress.end()) return false;
+	map<unsigned int, set<unsigned int> >::const_iterator l=f->second.find(line);
+	if (l==f->second.end()) return false;
+	return (l->second.count(code)!=0);
+}
+//---------------------------------------------------------------------------
 namespace kawari {
 namespace diag {
 //---------------------------------------------------------------------------
@@ -147,6 +184,12 @@ unsigned int NumberOf(kawari::resource::ID id)
 	case WARN_NS_READ_EMPTY_ENTRY2:					return W_READ_EMPTY_ENTRY;
 	case ERR_CODE_BREAK_OUTOF_LOOP:					return E_BREAK_OUTOF_LOOP;
 	case ERR_CODE_CONTINUE_OUTOF_LOOP:				return E_CONTINUE_OUTOF_LOOP;
+	case WARN_LINT_UNDEFINED_ENTRY1:
+	case WARN_LINT_UNDEFINED_ENTRY2:				return W_LINT_UNDEFINED_ENTRY;
+	case WARN_LINT_UNKNOWN_COMMAND1:
+	case WARN_LINT_UNKNOWN_COMMAND2:				return W_LINT_UNKNOWN_COMMAND;
+	case WARN_LINT_REGEX_PAREN:						return W_LINT_REGEX_PAREN;
+	case WARN_LINT_REGEX_HISTORY:					return W_LINT_REGEX_HISTORY;
 	default:										return 0;
 	}
 }

@@ -504,6 +504,7 @@ bool TKawariPreProcessor::processNextLine(void){
 					continue;
 				}else if (linebuf[i]==L'#'){
 					// comment
+					if (lintnotes) lintnotes->ReadComment(lintfile, ln, linebuf.substr(i+1));
 					linebuf=L"";
 				}
 				break;

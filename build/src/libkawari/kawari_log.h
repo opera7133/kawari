@@ -78,7 +78,12 @@ namespace kawari_log {
 		W_KIS_WARNING = 1000,		// 個別の番号を持たない KIS コマンドの警告
 		W_KIS_TOO_FEW_ARGUMENTS = 1001,
 		W_KIS_TOO_MANY_ARGUMENTS = 1002,
-		W_SAORI = 1200
+		W_SAORI = 1200,
+		// 静的検査 (kosui --check) : 2000-
+		W_LINT_UNDEFINED_ENTRY = 2001,	// どこにも定義されていないエントリの参照
+		W_LINT_UNKNOWN_COMMAND = 2002,	// 組み込みにも定義済みの関数にもないコマンド
+		W_LINT_REGEX_PAREN = 2003,		// regex_* の引数に引用符のない ( ) がある (括弧が消える)
+		W_LINT_REGEX_HISTORY = 2004		// regex_replace の置換文字列に引用符のない ${N} がある
 	};
 
 	enum LOGLEVEL {

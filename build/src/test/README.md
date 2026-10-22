@@ -40,7 +40,7 @@ cmd size npw       # command モード ($(size npw) として評価する)
 
 - 実行後に作業フォルダのファイルが増減していたら失敗にする (`--check` は何も書いてはいけない)。
 - 期待値は、出力を目で確かめてから作ること。フォルダごとの `expect` / `exit` は、手で書くか、`kosui --check` の出力を確認した上で保存する。
-- 入れてある観点: 複数行ブロックの 2 番目の単語の行 (`block_line`)、`=kis` の `function` と呼び出し連鎖 (`function_zone`)、`decl` が最も内側の 1 フレームだけを出すこと (`decl_innermost`)、`--werror` (`werror`)、GC で再利用された単語 ID に古い位置が残らないこと (`id_reuse`。`EraseWord` を外すと落ちる)、安全モード (`sandbox`。ファイル・SAORI・ログの出力先)、JSON (`json_block`)、読めない初期化ファイル (`missing_ini`)。
+- 入れてある観点: 複数行ブロックの 2 番目の単語の行 (`block_line`)、`=kis` の `function` と呼び出し連鎖 (`function_zone`)、`decl` が最も内側の 1 フレームだけを出すこと (`decl_innermost`)、`--werror` (`werror`)、GC で再利用された単語 ID に古い位置が残らないこと (`id_reuse`。`EraseWord` を外すと落ちる)、安全モード (`sandbox`。ファイル・SAORI・ログの出力先)、JSON (`json_block`)、読めない初期化ファイル (`missing_ini`)。静的検査 (Lint) は `lint_undefined` (K-W2001。定義済みと見なす名前の網羅)、`lint_command` (K-W2002)、`lint_clean` (警告ゼロ)、`lint_json`、`lint_off` (`--no-lint`)、`lint_regex` (K-W2003 / K-W2004)、`lint_suppress` (`# lint:disable-next-line=`)。実行時の診断を見るケースは、Lint の警告が混ざらないよう `--no-lint` を付けている。
 - ランダムに選ばれる単語で結果が揺れないよう、エラーを出す単語はエントリに 1 つだけ置くか、`--seed` を使う。
 
 ## shiori スイート (`shiori/`, `harness/`)

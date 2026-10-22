@@ -1,0 +1,6 @@
+kawarirc.kis(3): warning K-W2001: reference to undefined entry "zone_missing"
+kawarirc.kis(10): warning K-W2001: reference to undefined entry "word_missing"
+kawarirc.kis(12): warning K-W2001: reference to undefined entry "set_missing"
+kawarirc.kis(13): warning K-W2001: reference to undefined entry "index_missing"
+kawarirc.kis(14): warning K-W2001: reference to undefined entry "in_inline_missing"
+check: 0 error(s), 5 warning(s)

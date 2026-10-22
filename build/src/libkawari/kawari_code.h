@@ -50,6 +50,9 @@ public:
 	virtual std::wostream &DebugIndent(std::wostream& os, unsigned int level=0) const;
 	// デバッグ用ツリー表示
 	virtual std::wostream &Debug(std::wostream& os, unsigned int level=0) const=0;
+	// 子の中間コードを列挙する (静的検査 kosui --check 用。実行経路では使わない)
+	// 子を持つクラスは必ず上書きすること (漏れると検査が黙って素通りする)
+	virtual void GetChildren(std::vector<const TKVMCode_base *> &out) const {}
 	// 序列 同じクラスの場合のみ呼ばれる。
 	virtual bool Less(const TKVMCode_base& R_) const =0;
 	// デストラクタ
@@ -75,6 +78,10 @@ public:
 
 	virtual bool Less(const TKVMCode_base &R_) const;
 	virtual std::wostream &Debug(std::wostream& os, unsigned int level=0) const;
+	virtual void GetChildren(std::vector<const TKVMCode_base *> &out) const {
+		for (std::vector<TKVMCode_base *>::const_iterator it=list.begin(); it!=list.end(); ++it)
+			if (*it) out.push_back(*it);
+	}
 	virtual ~TKVMCodeList_base();
 	TKVMCodeList_base (const std::vector<TKVMCode_base *> &tmplist);
 protected:
@@ -170,6 +177,10 @@ public:
 	virtual std::wstring DisCompile(void) const;
 	virtual bool Less(const TKVMCode_base &R_) const;
 	virtual std::wostream &Debug(std::wostream& os, unsigned int level=0) const;
+	virtual void GetChildren(std::vector<const TKVMCode_base *> &out) const {
+		if (entry_id) out.push_back(entry_id);
+		if (expr) out.push_back(expr);
+	}
 	virtual ~TKVMCodeEntryIndex();
 	TKVMCodeEntryIndex(TKVMCode_base *eid, TKVMCode_base *e):entry_id(eid), expr(e) {}
 };

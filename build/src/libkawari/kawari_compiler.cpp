@@ -47,8 +47,14 @@ namespace {
 //-------------------------------------------------------------------------
 // コンストラクタ
 TKawariCompiler::TKawariCompiler(wistream &is, TKawariLogger &lgr, const wstring &filename, bool pp, TKawariCharset cryptcharset)
-	 : logger(lgr) {
+	 : logger(lgr), lintnotes(NULL), lastwordblock(false) {
 	lexer=new TKawariLexer(is, logger, filename, pp, 0, cryptcharset);
+}
+//-------------------------------------------------------------------------
+// 静的検査用の受け取り先を取り付ける
+void TKawariCompiler::SetLintNotes(TLintNotes *notes){
+	lintnotes=notes;
+	lexer->SetLintNotes(notes);
 }
 //-------------------------------------------------------------------------
 // デストラクタ
@@ -431,17 +437,37 @@ TKVMCode_base *TKawariCompiler::compileScriptStatement(void){
 		}
 	}
 
+	// 静的検査 : 引用符のない括弧を持つ単語の行 (最初の 1 つ)
+	unsigned int blockline=0;
+
 	// 改行を許す
 	while (lexer->hasNext()){
 		lexer->skipWS();
+		unsigned int wordline=lexer->getLineNo();
 		TKVMCode_base *code=compileWord(SCRIPT_MODE);
 		if (code){
+			// 最初の単語 (コマンド名) の括弧は対象外
+			if (lintnotes && lastwordblock && tmplist.size() && !blockline)
+				blockline=wordline;
 			tmplist.push_back(code);
 		}else{
 			break;
 		}
 	}
 	if (!tmplist.size()) return NULL;
+
+	// regex_* の引数に引用符のない '(' ')' があると、括弧は取り除かれて正規表現に届かない
+	if (lintnotes && blockline){
+		const TKVMCodeString *cmd=dynamic_cast<const TKVMCodeString *>(tmplist[0]);
+		if (cmd && (cmd->s.compare(0, 6, L"regex_")==0)){
+			TLintNotes::Note note;
+			note.file=lexer->getFileName();
+			note.line=blockline;
+			note.code=W_LINT_REGEX_PAREN;
+			note.name=cmd->s;
+			lintnotes->notes.push_back(note);
+		}
+	}
 	return new TKVMCodeScriptStatement(tmplist);
 }
 //-------------------------------------------------------------------------
@@ -505,6 +531,7 @@ TKVMCode_base *TKawariCompiler::compileWord(int m){
 	TKawariLexer::Mode mode=(TKawariLexer::Mode)m;
 	vector<TKVMCode_base *> tmplist;
 	bool escape=false;	// ループ脱出フラグ
+	bool hadblock=false;	// スクリプト中で括弧のブロックを読んだか (静的検査用)
 	while (lexer->hasNext()&&(!escape)){
 		Token::Type t=lexer->peek(mode);
 		TKVMCode_base *code=NULL;
@@ -534,6 +561,7 @@ TKVMCode_base *TKawariCompiler::compileWord(int m){
 				break;	// 無限ループ避け
 		}else if(t==(int)L'('){
 			// Block
+			if (mode==SCRIPT_MODE) hadblock=true;
 			code=compileBlock();
 		}else if(t==(int)L'$'){
 			// Subst
@@ -544,6 +572,8 @@ TKVMCode_base *TKawariCompiler::compileWord(int m){
 		if (code)
 			tmplist.push_back(code);
 	}
+	// 入れ子の単語の後に外側が上書きするよう、終わるときに設定する
+	lastwordblock=hadblock;
 	if (tmplist.size()==0){
 		return NULL;
 	}else if(tmplist.size()==1){

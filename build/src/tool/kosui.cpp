@@ -172,6 +172,7 @@ int main(int argc,char *argv[])
 	bool checkwerror=false;
 	bool checkdecl=false;
 	bool checkseed=false;
+	bool checklint=true;
 	unsigned int seedvalue=0;
 	vector<wstring> evals;
 
@@ -184,6 +185,8 @@ int main(int argc,char *argv[])
 				checkwerror=true;
 			}else if (param==L"--decl"){
 				checkdecl=true;
+			}else if (param==L"--no-lint"){
+				checklint=false;
 			}else if ((param==L"--format")||(param.compare(0, 9, L"--format=")==0)){
 				wstring fmt;
 				if (param.size()>9) fmt=param.substr(9);
@@ -226,6 +229,8 @@ int main(int argc,char *argv[])
 				TKawariKosuiAdapter adapter(datapath, inifile, checkjson ? NULL : &textout, &collector,
 											level, checkseed, seedvalue, loaded);
 				if (loaded) {
+					// 静的検査は --eval の前に行う (--eval が作るエントリで定義済みと見なさないため)
+					if (checklint) adapter.Lint();
 					for (vector<wstring>::const_iterator it=evals.begin(); it!=evals.end(); ++it)
 						adapter.Parse(*it);
 				}

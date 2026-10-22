@@ -37,6 +37,7 @@ CORESRC =  libkawari/kawari_engine.cpp \
            libkawari/kawari_compiler.cpp \
            libkawari/kawari_log.cpp \
            libkawari/kawari_diag.cpp \
+           libkawari/kawari_lint.cpp \
            libkawari/kawari_rc.cpp \
            misc/misc.cpp \
            misc/mt19937ar.cpp \

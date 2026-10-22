@@ -151,6 +151,9 @@ public:
 	// コンパイル警告
 	void warning(kawari::resource::ID id, const std::wstring &suffix=L"");
 
+	// 静的検査用の情報の受け取り先 (NULL で何もしない)。コメント行の抑制指定を拾う。
+	void SetLintNotes(TLintNotes *notes);
+
 private:
 	// 文字からトークンタイプを得る
 	Token::Type checkType(Mode m, wchar_t ch) const;
@@ -167,7 +170,8 @@ class TKawariPreProcessor {
 public:
 	TKawariPreProcessor(std::wistream &input, int lineno=0, bool preprocess=true,
 						TKawariCharset cryptcharset=KC_SJIS)
-		: is(input), pp(preprocess), mc(false), isMS(false), ln(lineno), pos(0), cryptcs(cryptcharset) {}
+		: is(input), pp(preprocess), mc(false), isMS(false), ln(lineno), pos(0), cryptcs(cryptcharset),
+	  lintnotes(NULL) {}
 	bool peek(wchar_t &ch);
 	bool getch(wchar_t &ch);
 	bool eof(void);
@@ -188,6 +192,9 @@ public:
 	// モードフラグのリセット
 	void ResetModeSwitch(void){ isMS=false; }
 
+	// 静的検査用 : コメント行の抑制指定を notes に渡す (file はその所属ファイル名)
+	void SetLintNotes(TLintNotes *notes, const std::wstring &file){ lintnotes=notes; lintfile=file; }
+
 private:
 	bool processNextLine(void);
 	// 入力ストリーム
@@ -207,7 +214,14 @@ private:
 	TKawariCharset cryptcs;
 	// 出力バッファ
 	std::wstring linebuf;
+	// 静的検査用の受け取り先 (無ければ NULL)
+	TLintNotes *lintnotes;
+	std::wstring lintfile;
 };
+//---------------------------------------------------------------------------
+inline void TKawariLexer::SetLintNotes(TLintNotes *notes){
+	pp->SetLintNotes(notes, fn);
+}
 //---------------------------------------------------------------------------
 // 次のトークンがあるか
 inline bool TKawariLexer::hasNext(void){

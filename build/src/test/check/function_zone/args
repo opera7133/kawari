@@ -1,1 +1,1 @@
---eval '${top}' kawarirc.kis
+--no-lint --eval '${top}' kawarirc.kis

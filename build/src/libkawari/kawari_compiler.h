@@ -22,6 +22,7 @@
 class TKVMCode_base;		// 中間コード
 class TKVMExprCode_base;	// 式中間コード
 class TKVMSetCode_base;		// 集合演算式中間コード
+class TLintNotes;			// 静的検査用の受け取り先
 //-------------------------------------------------------------------------
 //
 // コンパイラ特集
@@ -67,6 +68,10 @@ public:
 	// 読み込み位置の行番号
 	int GetLineNo(void) const;
 
+	// 静的検査用の受け取り先を取り付ける (kosui --check)。NULL なら何もしない (既定)。
+	// 木には残らない記述の癖 (regex_* の引数の引用符のない括弧) と、抑制コメントを集める。
+	void SetLintNotes(TLintNotes *notes);
+
 
 	// 文字列をStatementとして中間コードへコンパイル
 	static TKVMCode_base *Compile(const std::wstring &src, class TKawariLogger &logger);
@@ -86,6 +91,13 @@ private:
 
 	// ロガー
 	class TKawariLogger &logger;
+
+	// 静的検査用の受け取り先 (無ければ NULL)
+	class TLintNotes *lintnotes;
+
+	// 直前に終わった compileWord() が、スクリプト中の単語として '(' ブロックを読んだか
+	// (ブロックは中身だけが残り、括弧は木に残らない)
+	bool lastwordblock;
 
 	//=====================================================================
 	// 非公開メソッド

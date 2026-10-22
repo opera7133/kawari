@@ -1,1 +1,1 @@
---decl --eval '${outer}' kawarirc.kis
+--no-lint --decl --eval '${outer}' kawarirc.kis

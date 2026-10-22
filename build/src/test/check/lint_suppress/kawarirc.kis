@@ -1,0 +1,13 @@
+a : value
+# lint:disable-next-line=K-W2001
+muted : ${nobody_defines_this}
+loud : ${nobody_defines_that}
+# lint:disable-next-line=K-W2002
+muted_cmd : $(bogus_muted 1)
+# lint:disable-next-line=K-W2002
+wrong_code : ${bogus_entry_ref}
+# lint:disable-next-line=K-W2001, K-W2002
+both : ${nobody_either} $(bogus_either)
+
+# lint:disable-next-line=K-W2001
+gap : ${nobody_after_gap}

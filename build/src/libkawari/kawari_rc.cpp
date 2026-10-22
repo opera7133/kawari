@@ -80,6 +80,13 @@ namespace {
 		"'break' is used out of loop",
 		"'continue' is used out of loop",
 
+		"reference to undefined entry \"",
+		"\"",
+		"unknown command \"",
+		"\" (neither a built-in command nor a defined function)",
+		" has an unquoted ( ) in its arguments; the parentheses are removed. Quote the argument (\"...\") if they belong to the regular expression.",
+		" has an unquoted ${N} in its replacement; it is expanded as a history reference before the regex runs. Quote it (\"...\").",
+
 //		""
 	};
 

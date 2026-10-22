@@ -16,6 +16,7 @@
 #include <string>
 #include <vector>
 #include <map>
+#include <set>
 //---------------------------------------------------------------------------
 // 辞書ファイルから読み込んだ単語・エントリの定義位置を覚えておく
 //
@@ -70,6 +71,32 @@ private:
 	std::multimap<unsigned int, Rec> extra;
 	// エントリ ID で引く。最初の定義
 	std::vector<Rec> entryfirst;
+};
+//---------------------------------------------------------------------------
+// 静的検査 (kosui --check) のために、読み込み中に集めておく情報
+//  - コンパイラだけが気づける問題 (木には残らない記述の癖) の所見
+//  - 「# lint:disable-next-line=K-W2001,K-W2003」の抑制コメント
+// 検査用のときだけエンジンが持ち、コンパイラ・字句解析器に渡す。通常は NULL で何もしない。
+class TLintNotes {
+public:
+	struct Note {
+		std::wstring file;
+		unsigned int line;
+		unsigned int code;		// 警告の番号部分 (kawari_log::DiagCode)
+		std::wstring name;		// 問題のあるコマンド名など
+		Note(void) : line(0), code(0) {}
+	};
+	std::vector<Note> notes;
+
+	// 抑制コメントを覚える。comment はコメント行の「#」より後ろ (前後の空白は問わない)。
+	// line はコメントのある行で、効くのはその次の行。抑制コメントでなければ何もしない。
+	void ReadComment(const std::wstring &file, unsigned int line, const std::wstring &comment);
+
+	// file の line 行を code について抑制しているか
+	bool IsSuppressed(const std::wstring &file, unsigned int line, unsigned int code) const;
+
+private:
+	std::map<std::wstring, std::map<unsigned int, std::set<unsigned int> > > suppress;
 };
 //---------------------------------------------------------------------------
 namespace kawari {

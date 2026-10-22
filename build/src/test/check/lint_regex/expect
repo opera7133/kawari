@@ -1,0 +1,6 @@
+kawarirc.kis(2): warning K-W2003: regex_match has an unquoted ( ) in its arguments; the parentheses are removed. Quote the argument ("...") if they belong to the regular expression.
+kawarirc.kis(6): warning K-W2004: regex_replace has an unquoted ${N} in its replacement; it is expanded as a history reference before the regex runs. Quote it ("...").
+kawarirc.kis(8): warning K-W2004: regex_replace_first has an unquoted ${N} in its replacement; it is expanded as a history reference before the regex runs. Quote it ("...").
+kawarirc.kis(9): warning K-W2003: regex_count has an unquoted ( ) in its arguments; the parentheses are removed. Quote the argument ("...") if they belong to the regular expression.
+kawarirc.kis(12): warning K-W2003: regex_find has an unquoted ( ) in its arguments; the parentheses are removed. Quote the argument ("...") if they belong to the regular expression.
+check: 0 error(s), 5 warning(s)

@@ -61,6 +61,19 @@ TKawariEngine::TKawariEngine(void)
 	Baseware=new dsstp::TBasewareLink();
 	SaoriPark=new saori::TSaoriPark((*logger), Baseware);
 	Sandbox=false;
+	KeepZones=false;
+}
+//---------------------------------------------------------------------------
+// 静的検査のために =kis ゾーンの中間コードを残すか
+void TKawariEngine::SetKeepZones(bool enable)
+{
+	KeepZones=enable;
+}
+//---------------------------------------------------------------------------
+// 静的検査 (kosui --check)
+unsigned int TKawariEngine::Lint(void)
+{
+	return TKawariLint::Check(*Dictionary, *KawariVM, *logger, Zones, &LintNotes);
 }
 //---------------------------------------------------------------------------
 // 安全モードの切り替え
@@ -75,6 +88,8 @@ void TKawariEngine::SetSandbox(bool enable)
 TKawariEngine::~TKawariEngine()
 {
 	if (Sandbox) SetFileWritesDisabled(false);
+	for (vector<TKawariLint::Zone>::iterator it=Zones.begin(); it!=Zones.end(); ++it)
+		delete const_cast<TKVMCode_base *>(it->code);
 	delete SaoriPark;
 	delete Baseware;
 	delete KawariVM;
@@ -273,6 +288,7 @@ bool TKawariEngine::LoadKawariDictStream(wistream &ifs, const wstring &filename,
 	mode.push_back(TKawariCompiler::M_DICT);
 
 	TKawariCompiler compiler(ifs, (*logger), filename, true, cryptcs);
+	if (KeepZones) compiler.SetLintNotes(&LintNotes);
 
 	// 診断用 : 単語の定義位置を覚える
 	TSourceMap &srcmap=Dictionary->SourceMap();
@@ -319,7 +335,15 @@ bool TKawariEngine::LoadKawariDictStream(wistream &ifs, const wstring &filename,
 			}
 			if (outstr.size())
 				logger->GetStream(kawari_log::LOG_INFO) << L"KIS zone output:" << outstr << endl;
-			delete code;
+			if (KeepZones && code) {
+				// 静的検査のために、読み込みが終わるまで残しておく
+				TKawariLint::Zone zone;
+				zone.file=fileidx;
+				zone.code=code;
+				Zones.push_back(zone);
+			} else {
+				delete code;
+			}
 		}else{
 			// ??
 		}

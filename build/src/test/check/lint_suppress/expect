@@ -1,0 +1,3 @@
+kawarirc.kis(4): warning K-W2001: reference to undefined entry "nobody_defines_that"
+kawarirc.kis(8): warning K-W2001: reference to undefined entry "bogus_entry_ref"
+check: 0 error(s), 2 warning(s)

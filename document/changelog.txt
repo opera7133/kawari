@@ -52,6 +52,39 @@ ChangeLog
      internal_* module answers Result: 0), and the baseware is not reached
      (Direct SSTP). It is for static checking only: "=kis" is really run, so
      a loop that never ends hangs --check
+ * add the static check (lint) to "kosui --check": after the load (and before
+   --eval) it walks every word of the dictionary and every "=kis" zone, and
+   warns about what is wrong without running it. "--no-lint" turns it off
+   - K-W2001: a reference to an entry that is defined nowhere (${x},
+     ${a + x}, $x[0]), which is silently empty at run time
+   - K-W2002: a command that is neither built in, nor defined by "function"
+     (or as System.Function.<name>), nor a forced built-in call (".name")
+   - K-W2003: a regex_* command with an unquoted ( ) in an argument. The
+     parentheses of a bare word are the block syntax of Kawari and are
+     removed, so the regular expression never sees them: regex_match (a) x
+     matches "a" without a group. Quote the pattern: regex_match "(a)" x.
+     This one is found by the compiler (the tree keeps no trace of the
+     parentheses) while it loads the dictionary, only when checking
+   - K-W2004: regex_replace / regex_replace_first with an unquoted ${N} in the
+     replacement string. It is expanded as a history reference before the
+     command runs, so the back reference never reaches the regex
+   - a comment line "# lint:disable-next-line=K-W2001, K-W2003" suppresses
+     the listed lint warnings (K-W2xxx) on the next line of the file. Only a
+     whole-line "#" is a comment in Kawari, so there is no end-of-line form.
+     A warning in a multi-line word is located at the first line of the
+     word, so the comment goes above the entry
+   - to keep false positives down, these names count as defined: entries that
+     exist after the load, any literal given as an argument of a statement
+     (set / adddict / foreach variables...) or written in a "$(...)" inside a
+     string, a name whose head is a literal and whose tail is built at run
+     time (launch_a_${n}), System.* and @local. Names built by ${...} are not
+     checked at all. These are warnings: --werror makes them errors
+   - the entries of the warnings are sorted by file and line. A multi-line
+     word is located at its first line
+   - the compiled "=kis" zones are kept (engine->SetKeepZones) until the check
+     is done; they are freed right after the run as before otherwise
+   - TKVMCode_base::GetChildren() lists the children of a code node, for the
+     walk. It is not used when running
  * add the check suite to test/run.ps1 and test/run_posix.py (test/check/*)
 
 2026/10/22 Phase 9.1.1 (Core 4.1.1)

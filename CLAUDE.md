@@ -88,17 +88,24 @@ make -f gcc.mak
 - 位置: 単語は内容が同じなら 1 つに共有される (`TWordCollection::Insert`) ので、位置は中間コードのノードではなく **(エントリ, 単語 ID)** に付けて `TNS_KawariDictionary::SourceMap()` (`TSourceMap`, `kawari_diag.h`) が持つ。辞書ファイルの読み込み (`LoadKawariDictStream`) と `function` / `lambda` だけが記録する。単語を GC で消すときは必ず `EraseWord` する (ID が再利用されるため。`test/check/id_reuse` が見張っている)。
 - 実行フレーム: 単語を実行する箇所は `TKawariVM::TWordFrame` で囲む (`TKVMCodePVW::Run`、`TKVMSetCode_base::Run`、`TKVMCodeEntryIndex::Run`、ユーザ関数、`foreach`、`TKawariEngine::Parse(TWordID)`)。`=kis` ゾーンは `TZoneFrame` で、文ごとの行は `TKVMCodeInlineScript::lines`。**新しく「辞書の単語を実行する」コードを足したらフレームを積むこと**。フレームは loglevel に依存しない (途中で変わっても積み降ろしが崩れないため)。
 - 安全モード `TKawariEngine::SetSandbox(true)`: ファイル書き込み (`misc/wfile.cpp` の `WriteWholeFile` は書かずに成功を返し、`kawari_wfopen` は書き込みモードを拒否)、SAORI の実体 (`TSaoriPark::RegisterModule` が実体を作らない。登録済みと `internal_*` の呼び出しは `Result: 0`)、本体との通信 (`Baseware->SetAllowed(false)`)、`logfile` を止める。**外へ影響する新しい経路 (プロセス起動、ネットワーク、ファイル書き込み) を足すときは、ここで止まることを確かめる**。辞書を読む前に呼ぶこと (`TKawariKosuiAdapter` の検査用コンストラクタがそうしている)。
-- `kosui --check [--format text|json] [--werror] [--decl] [--eval 式]... [--seed n] [rcfile]`: 終了コード 0 = なし / 1 = 警告のみ / 2 = エラー / 3 = 実行できない。出力は診断だけ (`echo` と `loglevel` / `logfile` は出力に影響しない)。JSON は常に UTF-8。`=kis` は実際に実行するので、終わらない繰り返しがあると終わらない。`AttachTarget` は通さない (稼動中のゴーストに繋がってしまう)。
+- `kosui --check [--format text|json] [--werror] [--decl] [--no-lint] [--eval 式]... [--seed n] [rcfile]`: 終了コード 0 = なし / 1 = 警告のみ / 2 = エラー / 3 = 実行できない。出力は診断だけ (`echo` と `loglevel` / `logfile` は出力に影響しない)。JSON は常に UTF-8。`=kis` は実際に実行するので、終わらない繰り返しがあると終わらない。`AttachTarget` は通さない (稼動中のゴーストに繋がってしまう)。
 - `make depend` (ruby) が書く `depend.mak` は CRLF なので、`tr -d '\r'` で LF に戻してからコミットする。
 - Bash ツールで python のコードをヒアドキュメントで渡すと `\\` が潰れる。Write ツールでファイルにして実行する。
-- **今後 (Phase C)**: 静的 Lint (未定義エントリの参照、括弧を `"..."` で囲まない `regex_*`、カンマによる意図しない単語分割、`$(...)` 間の空白漏れ、`${N}` の引用符漏れ、未知の KIS コマンド名、辞書の文字コード)。コンパイル済みツリーを走査する。偽陽性が出るので警告止まりにして、抑制コメント (`# lint:disable=K-W...`) を用意する。
+- 静的 Lint (`libkawari/kawari_lint.*`、`--check` が既定で実行。`--no-lint` で止める): 辞書の全単語と、読み込み時に残しておいた `=kis` ゾーン (`TKawariEngine::SetKeepZones(true)`、検査用コンストラクタが呼ぶ。通常は従来通り実行後に `delete`) の中間コードの木を `TKVMCode_base::GetChildren()` で歩く。コードは **K-W2001** (どこにも定義されていないエントリの参照) と **K-W2002** (組み込み・`function`・`System.Function.*` のどれでもないコマンド名)。実行時のコストは無い (`--check` からだけ呼ぶ)。
+  - **子を持つ中間コードのクラスを足したら `GetChildren()` を上書きすること**。漏れると検査が黙って素通りする (`test/check/lint_undefined` は `TKVMCodeEntryCall` の上書きを外すと落ちる)。
+  - 1 周目で「定義されているもの」を集め、2 周目で検査する。定義済み扱いは、辞書に存在するエントリ、文の引数にリテラルで書かれた名前、文字列に埋め込まれた `$(...)` の中の単語、先頭だけリテラルで後ろを組み立てる名前 (`launch_a_${n}` の `launch_a_` を接頭辞として覚える)、`System.`・`@`。`${...}` で組み立てた名前は調べない。kakera (OpenKEEPS 入り) で 82 件 → 58 件に絞った。残りは本物の書き間違い (`serstr`、定義の無い `RandomTalkOn`、どこでも設定されない `status`) が多く、偽陽性があるとすれば動的に作られる名前。
+  - 警告は (ファイル, 行) の順にそろえて出す。複数行の単語は先頭行の位置になる (単語の中の行は中間コードに無い)。`=kis` ゾーンの文は `lines` から個別の行が付く。
+  - `kawari_lint.h` の `TKawariLint` は `Check()` (静的関数) 経由で使う。呼び出し側のスタックにクラスの実体を置くと、`depend.mak` がヘッダの変更を拾わないために `.o` の大きさが食い違ってクラッシュした。
+  - コンパイラで拾うもの (木には残らない): **K-W2003** (`regex_*` の引数に引用符のない `( )`。素の括弧は `compileBlock` が中身だけを残して消すので、`(a)` と `a` が同じ木になる)。`TKawariCompiler::SetLintNotes(TLintNotes *)` で受け取り先を付けたときだけ、`compileWord` が「スクリプト中にブロックを読んだ」旗 (`lastwordblock`) を立て、`compileScriptStatement` が所見を `TLintNotes` に積む。受け取り先は `TKawariEngine` が持ち (`LoadKawariDictStream` が `KeepZones` のときだけ付ける)、通常の読み込みでは NULL で何もしない。`compileWord` の旗は終わるときに設定するので、入れ子の単語の旗は外側が上書きする。木で拾うもの: **K-W2004** (`regex_replace(_first)` の置換文字列に引用符のない `${N}` = `TKVMCodeHistoryCall`)。
+  - 抑制は `# lint:disable-next-line=K-W2001, K-W2003` (次の行だけ。ユーザーが決めた)。`TKawariPreProcessor` がコメント行を捨てる所で `TLintNotes::ReadComment` に渡し、`TKawariLint::Run` が出力前に `IsSuppressed` で捨てる。K-W2xxx にだけ効き、実行時の診断は抑制しない。複数行の単語の所見は単語の先頭行なので、エントリ定義の前の行に書く。
+  - **まだ無い**: カンマによる意図しない単語分割 (「意図しない」を判定できず偽陽性が出るので見送り)。
 
 ## 正規表現 (KIS の regex_*)
 
 - `kis/kis_regex.*` が `regex_match` / `find` / `findall` / `count` / `replace(_first)` / `erase(_first)` / `split` / `escape`。仕様は `document/kis_reference.html` の「正規表現」。複数の結果は引数のエントリに入れる (`split` と違い、中身を置き換える)。
 - サブルーチン呼び出し: パターン内に定義の無い `(?&名前)` / `\g<名前>` は、`CRegexpW::Compile` のリゾルバ (`TRegex::Resolve`) が辞書の `${名前}` の展開結果に解決する。エントリが無ければ構文エラー (名前入り)。入れ子の展開は深さ 16 で打ち切る。
 - 取り込まれたサブルーチンのグループは、パターン自身のグループの**後ろ**に (サブルーチン内の括弧も含めて) 番号が振られ、`GetGroupCount()` にも数えられる。結果に出すのはパターン自身の分だけなので、`TRegex::GroupCount` は「最初に取り込まれた名前の番号 - 1」で数える (satoriya の実装は取り込み数を引いており、サブルーチン内に括弧があるとずれる)。
-- **辞書やスクリプトに書くパターンは、括弧を含むなら `"..."` で囲む**。素の `( )` は華和梨の構文 (グループ) として消える。`"..."` の中は `${}` `$()` が展開されないので、置換文字列の `${1}` も同様。`\n` は改行にならない。
+- **辞書やスクリプトに書くパターンは、括弧を含むなら `"..."` で囲む**。素の `( )` は華和梨の構文 (グループ) として消える (`kosui --check` が K-W2003 で、置換文字列の素の `${N}` を K-W2004 で警告する)。`"..."` の中は `${}` `$()` が展開されないので、置換文字列の `${1}` も同様。`\n` は改行にならない。
 - テストは `test/kosui/cases.txt` (フィクスチャは `kosui/kawarirc.kis` の `re_*`)。
 
 ## 華和梨スクリプト (KIS) の勘所

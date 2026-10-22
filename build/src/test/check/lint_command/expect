@@ -1,0 +1,10 @@
+kawarirc.kis(5): error K-E0028: undefined function "bogus_zone" called.
+    in <kis zone> at kawarirc.kis(5)
+kawarirc.kis(8): error K-E0028: undefined function ".bogus_forced" called.
+    in <kis zone> at kawarirc.kis(8)
+kawarirc.kis(5): warning K-W2002: unknown command "bogus_zone" (neither a built-in command nor a defined function)
+kawarirc.kis(8): warning K-W2002: unknown command ".bogus_forced" (neither a built-in command nor a defined function)
+kawarirc.kis(10): warning K-W2002: unknown command "bogus_else" (neither a built-in command nor a defined function)
+kawarirc.kis(17): warning K-W2002: unknown command "bogus_word" (neither a built-in command nor a defined function)
+kawarirc.kis(18): warning K-W2002: unknown command "bogus_nested" (neither a built-in command nor a defined function)
+check: 2 error(s), 5 warning(s)

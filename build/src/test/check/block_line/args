@@ -1,1 +1,1 @@
---eval '${mid}' kawarirc.kis
+--no-lint --eval '${mid}' kawarirc.kis

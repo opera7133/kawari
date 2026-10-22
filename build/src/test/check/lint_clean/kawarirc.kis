@@ -1,0 +1,13 @@
+=kis
+set counter 0;
+function bump $(
+    set counter $[ ${counter} + 1 ];
+    echo ${counter};
+);
+foreach name names $(echo ${name});
+loop 2 $(bump);
+=end
+names : alpha
+greeting : Hello ${names} $(bump) ${@arg} ${System.Request.ID}
+dyn : ${pre_${names}}
+pre_alpha : ok

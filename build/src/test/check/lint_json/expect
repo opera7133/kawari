@@ -1,0 +1,3 @@
+{"diagnostics":[
+{"severity":"warning","code":"K-W2001","file":"kawarirc.kis","line":2,"message":"reference to undefined entry \"missing_in_json\"","chain":[]}
+],"errors":0,"warnings":1}

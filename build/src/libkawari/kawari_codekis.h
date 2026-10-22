@@ -24,6 +24,13 @@ public:
 	virtual std::wstring DisCompile(void) const;
 	// デバッグ用ツリー表示
 	virtual std::wostream &Debug(std::wostream& os, unsigned int level=0) const;
+	// 子の列挙 (静的検査用)
+	virtual void GetChildren(std::vector<const TKVMCode_base *> &out) const {
+		for (std::vector<TKVMCode_base *>::const_iterator it=condlist.begin(); it!=condlist.end(); ++it)
+			if (*it) out.push_back(*it);
+		for (std::vector<TKVMCode_base *>::const_iterator it=list.begin(); it!=list.end(); ++it)
+			if (*it) out.push_back(*it);
+	}
 	// 序列 同じクラスの場合のみ呼ばれる。
 	virtual bool Less(const TKVMCode_base& R_) const;
 	// コンストラクタ
