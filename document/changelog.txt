@@ -1,7 +1,20 @@
 ChangeLog
 
-2026/10/22 Phase 9.2.0 (Core 4.2.0), in development (the version number in
-           the source is not raised yet)
+2026/10/23 Phase 9.2.0 (Core 4.2.0)
+ * Phase 9 can replace Phase 8 (8.2.x) as it is: the dictionaries, the SAORI
+   modules and the baseware link of a Phase 8 ghost work by only replacing
+   shiori.dll. There is no incompatible change like the one from Phase 7 to
+   8. The intended differences are the UTF-8 (BOM) files written by
+   "save"/"savecrypt" (8.2.9 and earlier cannot read them), the Charset
+   header, and the Unicode code point order (see 9.0.0 below)
+ * "date" and "mktime" use 64 bit seconds (the year 2038 problem). The
+   32-bit mingw-w64 (msvcrt) has a 32 bit time_t, so the 64 bit CRT functions
+   (_time64, _localtime64, _mktime64) are called directly. "date %s 4102444800"
+   and "mktime 2100 1 1 0 0 0" work. The limits of the C runtime remain: a time
+   before 1970 ("date" gives an empty string, "mktime" gives -1) and beyond
+   the year 3000. The integers of the expressions ($[ ]) are still 32 bit, so
+   a calculation with seconds of 2038 or later (a difference of two
+   $(date %s)) is not correct yet. (misc: Int64ToString / StringToInt64)
  * diagnostics: every error and warning of the compiler, the interpreter, the
    dictionary and the KIS commands/SAORI now has a code and a location, in
    one format:

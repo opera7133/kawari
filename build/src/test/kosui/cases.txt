@@ -219,3 +219,25 @@ echo $(textsave_charset t.txt UTF-8 greet)$(textsave_charset t.txt NOSUCH name)$
 # textload / textsave keep their old forms
 echo $(textsave t.txt greet)$(textload r t.txt)[${r}]
 = [Hello]
+
+# date / mktime use 64bit seconds, so the year 2038 and later work (%s does not depend on the time zone)
+echo $(date %s 2147483647)/$(date %s 2147483648)/$(date %s 4102444800)
+= 2147483647/2147483648/4102444800
+
+# mktime and date are inverse of each other whatever the time zone is
+echo $(date "%Y-%m-%d %H:%M:%S" $(mktime 2038 1 19 12 14 8))
+= 2038-01-19 12:14:08
+
+echo $(date "%Y-%m-%d %H:%M:%S" $(mktime 2100 12 31 23 59 59))
+= 2100-12-31 23:59:59
+
+echo $(date "%Y-%m-%d %H:%M:%S" $(mktime 2000 2 29 0 0 0))
+= 2000-02-29 00:00:00
+
+# the C runtime stops at the year 3000: a time beyond it is an empty string, not a clamped one
+echo [$(date %s 99999999999)]
+= []
+
+# a time before 1970 cannot be converted: empty string, not a crash
+echo [$(date %s -1)]
+= []

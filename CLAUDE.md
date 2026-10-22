@@ -1,6 +1,6 @@
 # CLAUDE.md
 
-華和梨 (KAWARI) — 伺か用の SHIORI (擬似AI) モジュール。C++ 製、Phase 9.1.1 (Core 4.1.1)。
+華和梨 (KAWARI) — 伺か用の SHIORI (擬似AI) モジュール。C++ 製、Phase 9.2.0 (Core 4.2.0)。
 CI は無い。最低限のテストは `build/src/test/` (下記「テスト」)。
 旧 ACP (SJIS の std::string) 版のコードは `v8acp` ブランチに保存してある。
 
@@ -81,7 +81,7 @@ make -f gcc.mak
 - リクエストの SecurityLevel が local 以外なら `TBasewareLink::IsAllowed` が偽になり、上のどれも送らない (Direct SSTP は常に Local 扱いになるため)。
 - テストは `-Suite baseware` (`test/baseware/`)。ハーネスの `HARNESS_BASEWARE` が本体の代役の窓 (スタブ baseware) を同じプロセスに作り、リクエスト中の `%HWND%` を窓ハンドルに置き換える。POSIX 側 (ninix) と実際の SSP は未検証。
 
-## 診断 (エラー・警告) と `kosui --check` (Phase 9.2.0 開発中)
+## 診断 (エラー・警告) と `kosui --check` (Phase 9.2.0)
 
 - 書式は 1 つ: `ファイル(行): error K-E0028: 本文` に、呼び出し連鎖の `    in ${entry} at ファイル(行)` が続く。診断の出力は `logger.Diag(LOG_ERROR, kawari_log::E_XXX) << ...;` (`TDiagStream`。末尾の `endl` は不要)。コンパイラの診断は `lexer->error(ERR_ID, 後ろに足す文字列)`。**`GetStream()` に直接書くのは INFO・ダンプ・`echo` だけ**にする (コードも位置も付かず、`--check` の出力に混ざらない)。
 - 診断コードは `kawari_log.h` の `enum DiagCode` (`K-E<番号>` / `K-W<番号>` の番号部分)。**追記専用で、番号を変えない・再利用しない**。リソース ID との対応は `kawari_diag.cpp` の `NumberOf()`。メッセージ文を足すときは `kawari_rc.sjis` と `kawari_rc.cpp` の英語表と `kawari_rc.h` の enum を同じ順で更新し、`ruby sjis2ascii.rb libkawari/kawari_rc.sjis | tr -d '\r' > libkawari/kawari_rc_sjis_encoded.h` で再生成する (現状のファイルがこの手順でバイト単位で再現できることを確認済み)。
@@ -89,6 +89,7 @@ make -f gcc.mak
 - 実行フレーム: 単語を実行する箇所は `TKawariVM::TWordFrame` で囲む (`TKVMCodePVW::Run`、`TKVMSetCode_base::Run`、`TKVMCodeEntryIndex::Run`、ユーザ関数、`foreach`、`TKawariEngine::Parse(TWordID)`)。`=kis` ゾーンは `TZoneFrame` で、文ごとの行は `TKVMCodeInlineScript::lines`。**新しく「辞書の単語を実行する」コードを足したらフレームを積むこと**。フレームは loglevel に依存しない (途中で変わっても積み降ろしが崩れないため)。
 - 安全モード `TKawariEngine::SetSandbox(true)`: ファイル書き込み (`misc/wfile.cpp` の `WriteWholeFile` は書かずに成功を返し、`kawari_wfopen` は書き込みモードを拒否)、SAORI の実体 (`TSaoriPark::RegisterModule` が実体を作らない。登録済みと `internal_*` の呼び出しは `Result: 0`)、本体との通信 (`Baseware->SetAllowed(false)`)、`logfile` を止める。**外へ影響する新しい経路 (プロセス起動、ネットワーク、ファイル書き込み) を足すときは、ここで止まることを確かめる**。辞書を読む前に呼ぶこと (`TKawariKosuiAdapter` の検査用コンストラクタがそうしている)。
 - `kosui --check [--format text|json] [--werror] [--decl] [--no-lint] [--eval 式]... [--seed n] [rcfile]`: 終了コード 0 = なし / 1 = 警告のみ / 2 = エラー / 3 = 実行できない。出力は診断だけ (`echo` と `loglevel` / `logfile` は出力に影響しない)。JSON は常に UTF-8。`=kis` は実際に実行するので、終わらない繰り返しがあると終わらない。`AttachTarget` は通さない (稼動中のゴーストに繋がってしまう)。
+- `date` / `mktime` (`kis/kis_date.cpp`) は 64bit の通算秒数。32bit の mingw-w64 (msvcrt) は `__MINGW_USE_VC2005_COMPAT` が無いと `time_t` が 32bit なので、`_time64` / `_localtime64` / `_mktime64` を直接呼ぶ (`misc` の `Int64ToString` / `StringToInt64` を使う)。C ランタイムの限界で、1970 年より前 (`date` は空文字、`mktime` は -1) と 3000 年より後は変換できない。**式 (`$[ ]`、`TValue`) の整数は 32bit のまま**なので、2038 年以降の通算秒数どうしの計算はまだ壊れる (64bit 化は未着手。`StringToInt` / `IntToString` の使用は libkawari・kis・saori・shiori に約 100 か所)。
 - `make depend` (ruby) が書く `depend.mak` は CRLF なので、`tr -d '\r'` で LF に戻してからコミットする。
 - Bash ツールで python のコードをヒアドキュメントで渡すと `\\` が潰れる。Write ツールでファイルにして実行する。
 - 静的 Lint (`libkawari/kawari_lint.*`、`--check` が既定で実行。`--no-lint` で止める): 辞書の全単語と、読み込み時に残しておいた `=kis` ゾーン (`TKawariEngine::SetKeepZones(true)`、検査用コンストラクタが呼ぶ。通常は従来通り実行後に `delete`) の中間コードの木を `TKVMCode_base::GetChildren()` で歩く。コードは **K-W2001** (どこにも定義されていないエントリの参照) と **K-W2002** (組み込み・`function`・`System.Function.*` のどれでもないコマンド名)。実行時のコストは無い (`--check` からだけ呼ぶ)。

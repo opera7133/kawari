@@ -63,6 +63,62 @@ wstring IntToString(int n)
 	return(ret);
 }
 //---------------------------------------------------------------------------
+// 64bit整数値から文字列を得る
+wstring Int64ToString(long long n)
+{
+	wchar_t buff[64];
+	wchar_t *bp=buff;
+	wstring ret;
+
+	// 最小値の符号反転があふれないよう unsigned で扱う
+	unsigned long long u=(unsigned long long)n;
+	if(n<0) {
+		ret+=L'-';
+		u=0ull-u;
+	}
+
+	do {
+		*(bp++)=(wchar_t)((u%10)+L'0');
+		u/=10;
+	} while(u>0);
+
+	while(bp!=buff) {
+		bp--;
+		ret+=*bp;
+	}
+
+	return(ret);
+}
+//---------------------------------------------------------------------------
+// 文字列から64bit整数値を得る (先頭の空白と符号を許し、数字でなくなるまで読む)
+long long StringToInt64(const std::wstring &str)
+{
+	std::wstring::size_type i=0, max=str.length();
+	while((i<max)&&((str[i]==L' ')||(str[i]==L'\t')||(str[i]==L'\r')||(str[i]==L'\n'))) i++;
+
+	bool neg=false;
+	if((i<max)&&((str[i]==L'-')||(str[i]==L'+'))) {
+		neg=(str[i]==L'-');
+		i++;
+	}
+
+	// 絶対値は負の側の限界まで持てるよう unsigned で数え、範囲外は飽和させる
+	const unsigned long long limit=neg ? 9223372036854775808ull : 9223372036854775807ull;
+	unsigned long long v=0;
+	for(; (i<max)&&_isdigit(str[i]); i++) {
+		unsigned int d=(unsigned int)(str[i]-L'0');
+		if(v>(limit-d)/10) {
+			v=limit;
+			// 残りの桁は読み捨てる
+			while((i<max)&&_isdigit(str[i])) i++;
+			break;
+		}
+		v=v*10+d;
+	}
+	if(neg) return (long long)(0ull-v);
+	return (long long)v;
+}
+//---------------------------------------------------------------------------
 // パス表現の正規化
 #if defined(KAWARI_MS)
 #	define SEPARATOR L'\\'

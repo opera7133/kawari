@@ -63,6 +63,11 @@ inline int StringToInt(const std::wstring &str)
 }
 
 //---------------------------------------------------------------------------
+// 64bit整数版 (時刻の通算秒数用。式の評価は int のまま)
+wstring Int64ToString(long long n);
+// 文字列から64bit整数値を得る (StringToInt と同じ規則。範囲外は飽和)
+long long StringToInt64(const std::wstring &str);
+//---------------------------------------------------------------------------
 // 整数値判定
 bool IsInteger (const std::wstring &str);
 //---------------------------------------------------------------------------

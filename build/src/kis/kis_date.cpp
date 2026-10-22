@@ -13,6 +13,7 @@
 //  2003.11.17  Phase 8.2.0   epocからの経過秒数をフォーマット出力可能に
 //  2005.06.21  Phase 8.2.3   gcc3.xのwarning対応 (suikyo)
 //                            mktime追加 (さとー)
+//  2026.10.23  Phase 9.2.0   時刻を64bitの通算秒数で扱う (2038年問題の回避)
 //
 //---------------------------------------------------------------------------
 #include "config.h"
@@ -28,15 +29,51 @@
 #include <iomanip>
 using namespace std;
 //---------------------------------------------------------------------------
+// 時刻は 64bit の通算秒数で扱う (2038年問題の回避)。
+// 32bit の mingw-w64 (msvcrt) は time_t が 32bit なので、64bit 版の CRT 関数を直接呼ぶ。
+// localtime は 1970年より前では NULL を返し、mktime は 3000年を超えると -1 を返す。
+#if defined(__MINGW32__)
+static long long NowTime(void)
+{
+	return (long long)_time64(NULL);
+}
+static struct tm *LocalTime(long long t)
+{
+	__time64_t v=(__time64_t)t;
+	return _localtime64(&v);
+}
+static long long MakeTime(struct tm *tt)
+{
+	return (long long)_mktime64(tt);
+}
+#else
+// 64bit の time_t を持つ環境 (LP64 の POSIX など)ではそのまま 64bit。
+// time_t が 32bit の環境では、範囲外の値は localtime が NULL を返して空文字になる。
+static long long NowTime(void)
+{
+	return (long long)time(NULL);
+}
+static struct tm *LocalTime(long long t)
+{
+	time_t v=(time_t)t;
+	if((long long)v!=t) return NULL;
+	return localtime(&v);
+}
+static long long MakeTime(struct tm *tt)
+{
+	return (long long)mktime(tt);
+}
+#endif
+//---------------------------------------------------------------------------
 wstring KIS_date::Function(const vector<wstring>& args)
 {
-	time_t nowtt;
+	long long nowtt;
 	if(args.size()>=3) {
-		nowtt=(time_t)StringToInt(args[2]);
+		nowtt=StringToInt64(args[2]);
 	} else {
-		nowtt=time(NULL);
+		nowtt=NowTime();
 	}
-	struct tm *now=localtime(&nowtt);
+	struct tm *now=LocalTime(nowtt);
 	// 負の値などでは NULL が返る (msvcrt)
 	if(!now) return(L"");
 
@@ -131,7 +168,7 @@ wstring KIS_mktime::Function(const vector<wstring>& args)
 	if((tt.tm_min>59)||(tt.tm_min<0))   tt.tm_min=0;
 	if((tt.tm_sec>59)||(tt.tm_sec<0))   tt.tm_sec=0;
 
-	return(IntToString((int)mktime(&tt)));
+	return(Int64ToString(MakeTime(&tt)));
 
 }
 //---------------------------------------------------------------------------
