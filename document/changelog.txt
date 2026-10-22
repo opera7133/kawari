@@ -10,9 +10,12 @@ ChangeLog
  * "date" and "mktime" use 64 bit seconds (the year 2038 problem). The
    32-bit mingw-w64 (msvcrt) has a 32 bit time_t, so the 64 bit CRT functions
    (_time64, _localtime64, _mktime64) are called directly. "date %s 4102444800"
-   and "mktime 2100 1 1 0 0 0" work. The limits of the C runtime remain: a time
-   before 1970 ("date" gives an empty string, "mktime" gives -1) and beyond
-   the year 3000. The integers of the expressions ($[ ]) are still 32 bit, so
+   and "mktime 2100 1 1 0 0 0" work. The limits of the C runtime of the
+   Windows build (msvcrt) remain: a time before 1970 and a time after about
+   the end of the year 3000 ("date" gives an empty string, "mktime" gives -1;
+   measured: "date" up to 3001/01/01 00:00:00 UTC, "mktime" up to 3001 but not
+   3100). The POSIX build follows the time_t of the OS. The integers of the
+   expressions ($[ ]) are still 32 bit, so
    a calculation with seconds of 2038 or later (a difference of two
    $(date %s)) is not correct yet. (misc: Int64ToString / StringToInt64)
  * diagnostics: every error and warning of the compiler, the interpreter, the
