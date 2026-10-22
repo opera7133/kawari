@@ -149,7 +149,11 @@ def test_check(bin_dir, work, timeout):
         except subprocess.TimeoutExpired:
             result(False, "check:" + name, ["kosui did not finish within %d seconds" % timeout])
             continue
-        out = run.stdout.decode("latin-1").replace("\r\n", "\n").replace(d + "/", "")
+        # kosui prints the folder as getcwd() gives it. On macOS the temporary folder is a
+        # symbolic link (/var -> /private/var), so remove the real path as well
+        out = run.stdout.decode("latin-1").replace("\r\n", "\n")
+        for prefix in (d, os.path.realpath(d)):
+            out = out.replace(prefix + "/", "")
         with open(os.path.join(src, "expect"), encoding="latin-1", newline="") as f:
             expected = f.read().replace("\r\n", "\n")
         with open(os.path.join(src, "exit"), encoding="latin-1") as f:
