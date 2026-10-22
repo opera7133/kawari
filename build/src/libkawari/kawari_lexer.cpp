@@ -160,7 +160,7 @@ wstring TKawariLexer::getQuotedLiteral(void){
 				pp->unget();
 		}else if(0x0a==ch){
 			// 改行
-			error(RC.S(ERR_LEXER_EOL_IN_QUOTED_STRING));
+			error(ERR_LEXER_EOL_IN_QUOTED_STRING);
 			closed=true;
 			break;
 		}else{
@@ -169,7 +169,7 @@ wstring TKawariLexer::getQuotedLiteral(void){
 	}
 	if (!closed)
 		// 解析中にEOFに達してしまった
-		error(RC.S(ERR_LEXER_EOL_IN_QUOTED_STRING));
+		error(ERR_LEXER_EOF_IN_QUOTED_STRING);
 	return result;
 }
 //---------------------------------------------------------------------------

@@ -1,0 +1,10 @@
+e : $(undefined_fn_old)
+=kis
+clear e;
+=end
+=kis
+adddict e "$(undefined_fn_new)";
+=end
+=kis
+echo ${e};
+=end

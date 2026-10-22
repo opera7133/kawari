@@ -67,6 +67,9 @@ private:
 	// 本体(SSP, ninixなど)への接続 (Direct SSTP)
 	dsstp::TBasewareLink *Baseware;
 
+	// 安全モード
+	bool Sandbox;
+
 public:
 	// 範囲外のインデックス
 	static const unsigned int NPos;
@@ -257,6 +260,18 @@ public:
 
 	// 本体への接続を得る
 	dsstp::TBasewareLink &GetBaseware(void) { return *Baseware; }
+
+
+	// 安全モード API (kosui --check 用)
+
+	// 安全モードにする。辞書を読み込む前に呼ぶこと。
+	// 有効の間は、辞書の =kis や KIS が外へ影響を及ぼさない。
+	//  - ファイルを書かない (save / textsave / logfile など。書いたことにして成功を返す)
+	//  - SAORI の実体を作らない (DLL も exe も起動しない。呼び出しは Result: 0 で成功する)
+	//  - 本体への通信 (Direct SSTP) をしない
+	// ファイルを書き込めないのは、このプロセス全体に及ぶ (misc/wfile.h)。
+	void SetSandbox(bool enable);
+	bool IsSandbox(void) const { return Sandbox; }
 
 
 	// コンテキスト関係 API

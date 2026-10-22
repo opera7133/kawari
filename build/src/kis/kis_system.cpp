@@ -26,7 +26,7 @@ using namespace std;
 wstring KIS_securitylevel::Function(const vector<wstring>& args){
 	if(!AssertArgument(args, 2, 2)) return (L"");
 	if (initialized){
-		GetLogger().GetStream(LOG_ERROR) << L"SecurityLevel is already fixed." << endl;
+		GetLogger().Diag(LOG_ERROR, kawari_log::E_KIS_ERROR) << L"SecurityLevel is already fixed.";
 		return (L"");
 	}
 
@@ -62,6 +62,9 @@ wstring KIS_securitylevel::Function(const vector<wstring>& args){
 //---------------------------------------------------------------------------
 wstring KIS_logfile::Function(const vector<wstring>& args)
 {
+	// 安全モード (kosui --check) では、ログの出力先を変えさせない
+	if (Engine->IsSandbox()) return (L"");
+
 	if (args.size()==1){
 		// ロギング中止
 		GetLogger().SetStream(NULL);

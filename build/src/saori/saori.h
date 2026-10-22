@@ -83,6 +83,15 @@ public:
 	// 登録済みモジュール名のリストを得る
 	int ListModule(std::vector<std::wstring> &list);
 
+	// 安全モード (kosui --check 用)
+	// 有効の間は、モジュールの実体 (DLL・exe・本体への接続) を一切作らない。
+	// 登録された名前と本体の内蔵モジュール(internal_*)は「あるもの」として扱う。
+	void SetSandbox(bool enable) { sandbox=enable; }
+	bool IsSandbox(void) const { return sandbox; }
+
+	// 安全モード中に、aliasが実体を作らずに受け付けるモジュールか
+	bool IsSandboxStub(const std::wstring &alias) const;
+
 	// コンストラクタ
 	// link : 本体への接続 (SAORI over DirectSSTPで使う)
 	TSaoriPark(TKawariLogger &logger, dsstp::TBasewareLink *link);
@@ -97,6 +106,11 @@ private:
 
 	// alias -> Module
 	std::map<std::wstring, TBind *> aliasmap;
+
+	// 安全モード
+	bool sandbox;
+	// 安全モード中に登録された名前 (実体は無い)
+	std::set<std::wstring> stubs;
 
 	// 本体の内蔵モジュールの一覧 (internal_systemのListModulesで得る)
 	enum TInternalModules {

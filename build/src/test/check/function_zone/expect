@@ -1,0 +1,4 @@
+kawarirc.kis(2): error K-E0028: undefined function "undefined_fn_b" called.
+    in $(foo) at kawarirc.kis(2)
+    in ${top} at kawarirc.kis(6)
+check: 1 error(s), 0 warning(s)

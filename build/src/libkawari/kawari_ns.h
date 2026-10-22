@@ -184,6 +184,9 @@ public:
 	// IDを得る
 	TEntryID GetID(void) const { return entry; }
 
+	// 属する名前空間を得る (同じ名前空間かを比べるためだけに使う)
+	const TNameSpace *GetNameSpace(void) const { return ns; }
+
 
 	// [ 辞書追加・削除系API ]
 
@@ -326,9 +329,9 @@ inline wstring TEntry::GetName(void) const
 inline bool TEntry::AssertIfProtected(void)
 {
 	if(IsValid()&&ns->ProtectedEntry.count(entry)){
-		ns->gc->GetLogger().GetStream(kawari_log::LOG_ERROR)
+		ns->gc->GetLogger().Diag(kawari_log::LOG_ERROR, kawari_log::E_PROTECTED_ENTRY)
 			<< RC.S(kawari::resource::ERR_NS_ASSERT_PROTECTED_ENTRY1) << GetName()
-			<< RC.S(kawari::resource::ERR_NS_ASSERT_PROTECTED_ENTRY2) << endl;
+			<< RC.S(kawari::resource::ERR_NS_ASSERT_PROTECTED_ENTRY2);
 		return true;
 	}else{
 		return false;
@@ -355,7 +358,9 @@ inline void TEntry::WriteProtect(void)
 inline bool TEntry::AssertIfEmpty(const wstring& name)
 {
 	if(((!IsValid())||(!Size()))&&ns->gc->GetLogger().Check(kawari_log::LOG_DECL)){
-		ns->gc->GetLogger().GetStream() << RC.S(kawari::resource::WARN_NS_READ_EMPTY_ENTRY1) << name << RC.S(kawari::resource::WARN_NS_READ_EMPTY_ENTRY2) << endl;
+		// 頻繁に出うるので、呼び出し連鎖は付けず最も内側の 1 行だけにする
+		ns->gc->GetLogger().Diag(kawari_log::LOG_DECL, kawari_log::W_READ_EMPTY_ENTRY, 1)
+			<< RC.S(kawari::resource::WARN_NS_READ_EMPTY_ENTRY1) << name << RC.S(kawari::resource::WARN_NS_READ_EMPTY_ENTRY2);
 		return true;
 	}else{
 		return false;

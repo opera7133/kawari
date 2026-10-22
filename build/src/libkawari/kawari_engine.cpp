@@ -40,6 +40,7 @@
 #include "libkawari/kawari_codeset.h"
 #include "libkawari/kawari_rc.h"
 #include "misc/misc.h"
+#include "misc/wfile.h"
 #include "saori/saori.h"
 using namespace kawari::resource;
 //---------------------------------------------------------------------------
@@ -59,10 +60,21 @@ TKawariEngine::TKawariEngine(void)
 	KawariVM=new TKawariVM(*this, *Dictionary, (*logger));
 	Baseware=new dsstp::TBasewareLink();
 	SaoriPark=new saori::TSaoriPark((*logger), Baseware);
+	Sandbox=false;
+}
+//---------------------------------------------------------------------------
+// 安全モードの切り替え
+void TKawariEngine::SetSandbox(bool enable)
+{
+	Sandbox=enable;
+	SaoriPark->SetSandbox(enable);
+	Baseware->SetAllowed(!enable);
+	SetFileWritesDisabled(enable);
 }
 //---------------------------------------------------------------------------
 TKawariEngine::~TKawariEngine()
 {
+	if (Sandbox) SetFileWritesDisabled(false);
 	delete SaoriPark;
 	delete Baseware;
 	delete KawariVM;
@@ -212,6 +224,8 @@ wstring TKawariEngine::Parse(TWordID id)
 	TKVMCode_base *code=Dictionary->GetWordFromID(id);
 	if(!code) return(L"");
 
+	// どのエントリの単語かは分からない
+	TKawariVM::TWordFrame frame(*KawariVM, TEntry(NULL, 0), id);
 	return(KawariVM->RunWithNewContext(code));
 }
 //---------------------------------------------------------------------------
@@ -260,13 +274,18 @@ bool TKawariEngine::LoadKawariDictStream(wistream &ifs, const wstring &filename,
 
 	TKawariCompiler compiler(ifs, (*logger), filename, true, cryptcs);
 
+	// 診断用 : 単語の定義位置を覚える
+	TSourceMap &srcmap=Dictionary->SourceMap();
+	const unsigned int fileidx=srcmap.FileIndex(filename);
+
 	while(true) {
 		if(mode.back()==TKawariCompiler::M_DICT){
 			// 一定義ずつ辞書読み込み
 			while(true){
 				vector<wstring> entrynames;
 				vector<TKVMCode_base *> sentence_list;
-				if (!compiler.LoadEntryDefinition(entrynames, sentence_list))
+				vector<unsigned int> sentence_lines;
+				if (!compiler.LoadEntryDefinition(entrynames, sentence_list, &sentence_lines))
 					break;
 
 				vector <TEntry> entrylist;
@@ -276,11 +295,15 @@ bool TKawariEngine::LoadKawariDictStream(wistream &ifs, const wstring &filename,
 						entrylist.push_back(entry);
 				}
 
-				for (vector<TKVMCode_base *>::iterator it=sentence_list.begin(); it!=sentence_list.end(); it++){
+				unsigned int sentence_index=0;
+				for (vector<TKVMCode_base *>::iterator it=sentence_list.begin(); it!=sentence_list.end(); it++, sentence_index++){
 					TWordID wid=Dictionary->CreateWord(*it);
+					unsigned int sentence_line=(sentence_index<sentence_lines.size()) ? sentence_lines[sentence_index] : 0;
 					if (wid)
-						for (vector<TEntry>::iterator eit=entrylist.begin(); eit!=entrylist.end(); eit++)
+						for (vector<TEntry>::iterator eit=entrylist.begin(); eit!=entrylist.end(); eit++){
 							eit->Push(wid);
+							srcmap.RecordWord(eit->GetID(), wid, fileidx, sentence_line);
+						}
 				}
 			}
 
@@ -288,7 +311,12 @@ bool TKawariEngine::LoadKawariDictStream(wistream &ifs, const wstring &filename,
 			// KIS読み込み
 			TKVMCode_base *code=compiler.LoadInlineScript();
 
-			wstring outstr=KawariVM->RunWithNewContext(code);
+			wstring outstr;
+			{
+				// 実行中の文の行は TKVMCodeInlineScript が更新する
+				TKawariVM::TZoneFrame zoneframe(*KawariVM, fileidx, 0);
+				outstr=KawariVM->RunWithNewContext(code);
+			}
 			if (outstr.size())
 				logger->GetStream(kawari_log::LOG_INFO) << L"KIS zone output:" << outstr << endl;
 			delete code;
@@ -307,7 +335,8 @@ bool TKawariEngine::LoadKawariDictStream(wistream &ifs, const wstring &filename,
 			if(mode.size()>1) mode.pop_back();
 		}else if (m==TKawariCompiler::M_UNKNOWN){
 			// 知らないモード
-			logger->GetStream(kawari_log::LOG_ERROR) << RC.S(ERR_ENGINE_UNKNOWN_MODE) << endl;
+			logger->Diag(kawari_log::LOG_ERROR, kawari_log::E_ENGINE_UNKNOWN_MODE).At(filename, compiler.GetLineNo())
+				<< RC.S(ERR_ENGINE_UNKNOWN_MODE);
 		}else if (m==TKawariCompiler::M_EOF){
 			break;
 		}
@@ -373,6 +402,12 @@ bool TKawariEngine::RequestToSAORIModule(
 	const wstring &aliasname,
 	const TPHMessage &request, TPHMessage &response)
 {
+	if (SaoriPark->IsSandboxStub(aliasname)){
+		// 安全モード : 実体は無いので、何もせずに成功した(Result: 0)ことにする
+		response.SetStartline(L"SAORI/1.0 200 OK");
+		response[L"Result"]=L"0";
+		return true;
+	}
 	saori::TBind *bind=SaoriPark->GetModule(aliasname);
 	if (!bind)
 		return false;

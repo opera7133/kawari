@@ -151,13 +151,15 @@ void TNS_KawariDictionary::DeleteContext(void){
 					TKVMCode_base * const *pp=WordCollection.Find(id);
 					TKVMCode_base *pword=pp ? *pp : NULL;
 					WordCollection.Delete(id);
+					// 定義位置の記録も消す (IDは再利用されるので、残すと別の単語の位置になる)
+					srcmap.EraseWord(id);
 					// IDは再利用されるので、純粋仮想単語の印も消す
 					PVWSet.erase(id);
 					if (pword){
 						logstream << RC.S(DUMP_DICT_DELETE_WORD1) <<id<< RC.S(DUMP_DICT_DELETE_WORD2) << (pword)->DisCompile() << endl;
 						delete (pword);
 					}else{
-						logger.GetStream(LOG_ERROR) << RC.S(ERR_DICT_CAN_NOT_DELETE_WORD1) << id << RC.S(ERR_DICT_CAN_NOT_DELETE_WORD2) << endl;
+						logger.Diag(LOG_ERROR, E_CAN_NOT_DELETE_WORD) << RC.S(ERR_DICT_CAN_NOT_DELETE_WORD1) << id << RC.S(ERR_DICT_CAN_NOT_DELETE_WORD2);
 					}
 				}
 			}
@@ -169,12 +171,14 @@ void TNS_KawariDictionary::DeleteContext(void){
 					TKVMCode_base * const *pp=WordCollection.Find(id);
 					TKVMCode_base *pword=pp ? *pp : NULL;
 					WordCollection.Delete(id);
+					// 定義位置の記録も消す (IDは再利用されるので、残すと別の単語の位置になる)
+					srcmap.EraseWord(id);
 					// IDは再利用されるので、純粋仮想単語の印も消す
 					PVWSet.erase(id);
 					if (pword){
 						delete (pword);
 					}else{
-						logger.GetStream(LOG_ERROR) << RC.S(ERR_DICT_CAN_NOT_DELETE_WORD1) << id << RC.S(ERR_DICT_CAN_NOT_DELETE_WORD2) << endl;
+						logger.Diag(LOG_ERROR, E_CAN_NOT_DELETE_WORD) << RC.S(ERR_DICT_CAN_NOT_DELETE_WORD1) << id << RC.S(ERR_DICT_CAN_NOT_DELETE_WORD2);
 					}
 				}
 			}

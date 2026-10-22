@@ -1,0 +1,3 @@
+kawarirc.kis(1): warning K-W0003: read access to empty entry 'nosuch'
+    in ${outer} at kawarirc.kis(1)
+check: 0 error(s), 1 warning(s)

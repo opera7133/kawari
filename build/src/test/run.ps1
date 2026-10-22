@@ -2,7 +2,10 @@
 .SYNOPSIS
     Minimal tests for the built KAWARI binaries (kosui.exe and shiori.dll).
 .DESCRIPTION
-    Two suites, both driven by a plain text case file:
+    Suites driven by plain text case files:
+
+    check   Runs "kosui --check" (sandbox mode, diagnostics with locations and exit codes) on the
+            dictionary of every folder of test/check and compares the output and the exit code.
 
     kosui   Feeds one line to kosui.exe (echo mode or command mode) and compares the output with the
             expected text. This tests the dictionary / KIS engine. Every case runs in a fresh copy of
@@ -26,7 +29,7 @@
 .PARAMETER BinDir
     Folder with kosui.exe and shiori.dll (default: build/mach/mingw).
 .PARAMETER Suite
-    all (default), kosui, shiori or baseware.
+    all (default), kosui, check, shiori or baseware.
 .PARAMETER CC
     C compiler for the harness (default: gcc). Put the 32bit MinGW first in PATH or give its full path.
 .PARAMETER KeepWork
@@ -39,7 +42,7 @@
 [CmdletBinding()]
 param(
     [string]$BinDir,
-    [ValidateSet('all', 'kosui', 'shiori', 'baseware')]
+    [ValidateSet('all', 'kosui', 'check', 'shiori', 'baseware')]
     [string]$Suite = 'all',
     [string]$CC = 'gcc',
     [int]$TimeoutSeconds = 30,
@@ -212,6 +215,62 @@ function Test-Kosui([string]$Work) {
     }
 }
 
+# ---- check ----------------------------------------------------------------------------------
+
+# Splits a line of arguments; 'single' and "double" quotes group words (nothing is expanded).
+function Split-Args([string]$Text) {
+    $tokens = New-Object System.Collections.Generic.List[string]
+    foreach ($m in [regex]::Matches($Text, '''([^'']*)''|"([^"]*)"|(\S+)')) {
+        if ($m.Groups[1].Success) { $tokens.Add($m.Groups[1].Value) }
+        elseif ($m.Groups[2].Success) { $tokens.Add($m.Groups[2].Value) }
+        else { $tokens.Add($m.Groups[3].Value) }
+    }
+    return $tokens
+}
+
+# kosui --check: every folder of test/check is one case.
+#   kawarirc.kis (and other dictionary files)  copied to a work folder as they are
+#   args    the arguments after "--check"
+#   expect  the whole standard output (the work folder path is removed from it)
+#   exit    the exit code
+# The folder must have the same files after the run: --check must not write anything.
+function Test-Check([string]$Work) {
+    $exe = Join-Path $BinDir 'kosui.exe'
+    if (-not (Test-Path -LiteralPath $exe)) { Stop-Setup "kosui.exe was not found in $BinDir" }
+    $root = Join-Path $PSScriptRoot 'check'
+    $cases = @(Get-ChildItem -LiteralPath $root -Directory | Sort-Object Name)
+
+    Write-Host "== check ($($cases.Count) cases)"
+    foreach ($case in $cases) {
+        $name = "check:$($case.Name)"
+        $dir = Join-Path $Work ('check_' + $case.Name)
+        New-Item -ItemType Directory -Path $dir | Out-Null
+        foreach ($f in Get-ChildItem -LiteralPath $case.FullName -File) {
+            if (@('args', 'expect', 'exit') -notcontains $f.Name) { Copy-Item -LiteralPath $f.FullName -Destination $dir }
+        }
+        $before = (@(Get-ChildItem -LiteralPath $dir -File | ForEach-Object { $_.Name }) | Sort-Object) -join ','
+
+        $argText = ([IO.File]::ReadAllText((Join-Path $case.FullName 'args'), $Latin1)).Trim()
+        $argList = @('--check') + @(Split-Args $argText | ForEach-Object { Quote-Arg $_ })
+        $run = Invoke-Program $exe $argList $dir ''
+
+        $out = ($run.StdOut -replace "`r`n", "`n").Replace($dir + '\', '')
+        $expected = [IO.File]::ReadAllText((Join-Path $case.FullName 'expect'), $Latin1) -replace "`r`n", "`n"
+        $expectedExit = [int](([IO.File]::ReadAllText((Join-Path $case.FullName 'exit'), $Latin1)).Trim())
+        $after = (@(Get-ChildItem -LiteralPath $dir -File | ForEach-Object { $_.Name }) | Sort-Object) -join ','
+
+        if ($run.TimedOut) {
+            Write-Result $false $name @("kosui did not finish within $TimeoutSeconds seconds")
+            continue
+        }
+        $detail = @()
+        if ($run.ExitCode -ne $expectedExit) { $detail += "exit code: expected $expectedExit, actual $($run.ExitCode)" }
+        if ($out -cne $expected) { $detail += "expected: $(Show-Text $expected)"; $detail += "actual:   $(Show-Text $out)" }
+        if ($before -ne $after) { $detail += "files changed: [$before] -> [$after]" }
+        Write-Result ($detail.Count -eq 0) $name $detail
+    }
+}
+
 # ---- shiori ---------------------------------------------------------------------------------
 
 function Test-Shiori([string]$Work, [string]$Name) {
@@ -306,6 +365,7 @@ $work = Join-Path ([IO.Path]::GetTempPath()) ('kawari-test-' + [guid]::NewGuid()
 New-Item -ItemType Directory -Path $work | Out-Null
 try {
     if ($Suite -eq 'all' -or $Suite -eq 'kosui') { Test-Kosui $work }
+    if ($Suite -eq 'all' -or $Suite -eq 'check') { Test-Check $work }
     if ($Suite -eq 'all' -or $Suite -eq 'shiori') { Test-Shiori $work 'shiori' }
     if ($Suite -eq 'all' -or $Suite -eq 'baseware') { Test-Shiori $work 'baseware' }
 } finally {

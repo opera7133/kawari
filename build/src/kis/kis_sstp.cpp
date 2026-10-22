@@ -34,19 +34,19 @@ int KIS_executesstp::Execute(const wstring& name, const wstring& command,
 		valid=!dsstp::HasForbiddenChar(refs[i]);
 
 	if (!valid){
-		GetLogger().GetStream(LOG_ERROR) << L"KIS[" << name
-			<< L"] error : the command is empty, or the command or a reference contains a line break." << endl;
+		GetLogger().Diag(LOG_ERROR, kawari_log::E_KIS_ERROR) << L"KIS[" << name
+			<< L"] error : the command is empty, or the command or a reference contains a line break.";
 	}else if (!link.IsAllowed()){
-		GetLogger().GetStream(LOG_WARNING) << L"KIS[" << name
-			<< L"] refused : the request is not from local." << endl;
+		GetLogger().Diag(LOG_WARNING, kawari_log::W_KIS_WARNING) << L"KIS[" << name
+			<< L"] refused : the request is not from local.";
 	}else if (!link.IsReady()){
-		GetLogger().GetStream(LOG_WARNING) << L"KIS[" << name
-			<< L"] the window of the baseware is unknown yet (NOTIFY hwnd is not received)." << endl;
+		GetLogger().Diag(LOG_WARNING, kawari_log::W_KIS_WARNING) << L"KIS[" << name
+			<< L"] the window of the baseware is unknown yet (NOTIFY hwnd is not received).";
 	}else{
 		string response;
 		if (!link.Send(dsstp::BuildExecuteRequest(command, refs), response, 5000)){
-			GetLogger().GetStream(LOG_WARNING) << L"KIS[" << name
-				<< L"] no response from baseware." << endl;
+			GetLogger().Diag(LOG_WARNING, kawari_log::W_KIS_WARNING) << L"KIS[" << name
+				<< L"] no response from baseware.";
 		}else{
 			code=dsstp::ParseExecuteResponse(response, lines);
 		}

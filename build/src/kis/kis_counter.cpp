@@ -45,13 +45,13 @@ wstring KIS_inc::Function_(const vector<wstring>& args,bool flag_dec)
 		if(st<0) st=size+st;
 		if(st<0) {
 			// エラー
-			GetLogger().GetStream(kawari_log::LOG_ERROR) << args[0] << RC.S(ERR_KIS_DICT_INVALID_INDEX) << endl;
+			GetLogger().Diag(LOG_ERROR, kawari_log::E_KIS_INVALID_INDEX) << args[0] << RC.S(ERR_KIS_DICT_INVALID_INDEX);
 			return(L"");
 		}
 		break;
 	case 2:		// 範囲指定
 		// エラー
-		GetLogger().GetStream(kawari_log::LOG_ERROR) << args[0] << RC.S(ERR_KIS_DICT_INVALID_INDEX) << endl;
+		GetLogger().Diag(LOG_ERROR, kawari_log::E_KIS_INVALID_INDEX) << args[0] << RC.S(ERR_KIS_DICT_INVALID_INDEX);
 		return(L"");
 	}
 
@@ -71,8 +71,7 @@ wstring KIS_inc::Function_(const vector<wstring>& args,bool flag_dec)
 #else
 	TEntryRange range=Engine->GetEntryRange(args[1]);
 	if(range.Start==TKawariEngine::NPos){
-		GetLogger().GetStream(LOG_ERROR) << args[0]
-			<< RC.S(ERR_KIS_DICT_INVALID_INDEX) << endl;
+		GetLogger().Diag(LOG_ERROR, kawari_log::E_KIS_INVALID_INDEX) << args[0] << RC.S(ERR_KIS_DICT_INVALID_INDEX);
 		return(L"");
 	}
 

@@ -15,6 +15,8 @@
 #include "config.h"
 //--------------------------------------------------------------------------
 #include "libkawari/kawari_log.h"
+#include "libkawari/kawari_rc.h"
+#include "libkawari/kawari_diag.h"
 #include "misc/charset.h"
 //--------------------------------------------------------------------------
 #include <iostream>
@@ -143,11 +145,11 @@ public:
 
 	~TKawariLexer ();
 
-	// コンパイルエラー
-	void error(const std::wstring &message);
+	// コンパイルエラー (メッセージはリソース ID。suffix は末尾に続ける)
+	void error(kawari::resource::ID id, const std::wstring &suffix=L"");
 
-	// コンパイルエラー
-	void warning(const std::wstring &message);
+	// コンパイル警告
+	void warning(kawari::resource::ID id, const std::wstring &suffix=L"");
 
 private:
 	// 文字からトークンタイプを得る
@@ -216,14 +218,18 @@ inline void TKawariLexer::ResetModeSwitch(void){
 	pp->ResetModeSwitch();
 }
 //---------------------------------------------------------------------------
-inline void TKawariLexer::error(const std::wstring &message){
-	logger.GetStream(kawari_log::LOG_ERROR) << getFileName() << " " << getLineNo()
-		<< ": error: " << message << std::endl;
+// ファイル名が無い (実行時に文字列をコンパイルしている) ときは、
+// 字句解析器の行ではなく実行中の位置を使う。
+inline void TKawariLexer::error(kawari::resource::ID id, const std::wstring &suffix){
+	TDiagStream ds=logger.Diag(kawari_log::LOG_ERROR, kawari::diag::NumberOf(id));
+	if (getFileName()!=L"<unknown>") ds.At(getFileName(), getLineNo());
+	ds << RC.S(id) << suffix;
 }
 //---------------------------------------------------------------------------
-inline void TKawariLexer::warning(const std::wstring &message){
-	logger.GetStream(kawari_log::LOG_WARNING) << getFileName() << " " << getLineNo()
-		<< ": warning: " << message << std::endl;
+inline void TKawariLexer::warning(kawari::resource::ID id, const std::wstring &suffix){
+	TDiagStream ds=logger.Diag(kawari_log::LOG_WARNING, kawari::diag::NumberOf(id));
+	if (getFileName()!=L"<unknown>") ds.At(getFileName(), getLineNo());
+	ds << RC.S(id) << suffix;
 }
 //---------------------------------------------------------------------------
 inline bool TKawariPreProcessor::peek(wchar_t &ch){

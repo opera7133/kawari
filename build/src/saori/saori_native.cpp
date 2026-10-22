@@ -170,7 +170,7 @@ TModule *TModuleFactoryNative::CreateModule(const wstring &path){
 
 	SAORI_HANDLE handle=load_library(fn);
 	if (!handle){
-		GetLogger().GetStream(LOG_ERROR) << L"[SAORI Native] Library ("+fn+L") load failed." << endl;
+		GetLogger().Diag(LOG_ERROR, kawari_log::E_SAORI) << L"[SAORI Native] Library ("+fn+L") load failed.";
 		return NULL;
 	}
 	TModuleNative *ret=new TModuleNative((*this), fn, handle);
@@ -209,7 +209,7 @@ bool TModuleNative::Initialize(void){
 	func_request=(MEMORY_HANDLE (SHIORI_CALL *)(MEMORY_HANDLE, long *))get_symbol(handle, "request");
 
 	if (func_request==NULL){
-		GetFactory().GetLogger().GetStream(LOG_ERROR) << L"[SAORI Native] importing 'request' from ("+path+L") failed." << endl;
+		GetFactory().GetLogger().Diag(LOG_ERROR, kawari_log::E_SAORI) << L"[SAORI Native] importing 'request' from ("+path+L") failed.";
 		return false;
 	}
 	return true;

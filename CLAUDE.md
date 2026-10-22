@@ -62,7 +62,7 @@ make -f gcc.mak
 
 ## テスト
 
-ビルド後に `powershell -NoProfile -ExecutionPolicy Bypass -File build/src/test/run.ps1` (詳細は `build/src/test/README.md`)。`kosui.exe` に 1 行ずつ評価させる kosui スイートと、`shiori.dll` を直接 `load` / `request` / `unload` する shiori スイート、本体の代役の窓を使う baseware スイート (Windows のみ) があり、ケースは `kosui/cases.txt` / `shiori/cases.txt` に足す。
+ビルド後に `powershell -NoProfile -ExecutionPolicy Bypass -File build/src/test/run.ps1` (詳細は `build/src/test/README.md`)。`kosui.exe` に 1 行ずつ評価させる kosui スイートと、`kosui --check` の診断・終了コードを 1 フォルダ 1 ケースで見る check スイート (`check/<名前>/{kawarirc.kis,args,expect,exit}`)、`shiori.dll` を直接 `load` / `request` / `unload` する shiori スイート、本体の代役の窓を使う baseware スイート (Windows のみ) があり、ケースは `kosui/cases.txt` / `shiori/cases.txt` / `check/` に足す。
 
 - POSIX (linux / darwin) では `python3 build/src/test/run_posix.py --bin-dir build/mach/linux` (同じ cases.txt を使い、SHIORI は ctypes で直接呼ぶ。UTF-8 の往復も見る)。GitHub Actions の `posix-build` (手動実行) がこれを走らせる。
 - shiori スイートは C のハーネスをその場でビルドするので、**DLL と同じ 32bit の gcc** が `PATH` の先頭に必要 (ビット数が違うとランナーが止まる)。
@@ -80,6 +80,18 @@ make -f gcc.mak
 - SAORI over DirectSSTP は `saori/saori_dsstp.*`。`TModuleFactoryDirectSSTP` が `TModuleFactoryMaster` の先頭にあり、DLL の実体が無い `internal_*` と互換名 (houchi など) のパスを引き受ける。`TModule::RequestMessage` はシリアライズ前のメッセージを直接受けるための口 (空の `ArgumentN` を位置として残すため)。未登録の `internal_*` は `TSaoriPark::GetModule` が `ListModules` を問い合わせて自動登録する。
 - リクエストの SecurityLevel が local 以外なら `TBasewareLink::IsAllowed` が偽になり、上のどれも送らない (Direct SSTP は常に Local 扱いになるため)。
 - テストは `-Suite baseware` (`test/baseware/`)。ハーネスの `HARNESS_BASEWARE` が本体の代役の窓 (スタブ baseware) を同じプロセスに作り、リクエスト中の `%HWND%` を窓ハンドルに置き換える。POSIX 側 (ninix) と実際の SSP は未検証。
+
+## 診断 (エラー・警告) と `kosui --check` (Phase 9.2.0 開発中)
+
+- 書式は 1 つ: `ファイル(行): error K-E0028: 本文` に、呼び出し連鎖の `    in ${entry} at ファイル(行)` が続く。診断の出力は `logger.Diag(LOG_ERROR, kawari_log::E_XXX) << ...;` (`TDiagStream`。末尾の `endl` は不要)。コンパイラの診断は `lexer->error(ERR_ID, 後ろに足す文字列)`。**`GetStream()` に直接書くのは INFO・ダンプ・`echo` だけ**にする (コードも位置も付かず、`--check` の出力に混ざらない)。
+- 診断コードは `kawari_log.h` の `enum DiagCode` (`K-E<番号>` / `K-W<番号>` の番号部分)。**追記専用で、番号を変えない・再利用しない**。リソース ID との対応は `kawari_diag.cpp` の `NumberOf()`。メッセージ文を足すときは `kawari_rc.sjis` と `kawari_rc.cpp` の英語表と `kawari_rc.h` の enum を同じ順で更新し、`ruby sjis2ascii.rb libkawari/kawari_rc.sjis | tr -d '\r' > libkawari/kawari_rc_sjis_encoded.h` で再生成する (現状のファイルがこの手順でバイト単位で再現できることを確認済み)。
+- 位置: 単語は内容が同じなら 1 つに共有される (`TWordCollection::Insert`) ので、位置は中間コードのノードではなく **(エントリ, 単語 ID)** に付けて `TNS_KawariDictionary::SourceMap()` (`TSourceMap`, `kawari_diag.h`) が持つ。辞書ファイルの読み込み (`LoadKawariDictStream`) と `function` / `lambda` だけが記録する。単語を GC で消すときは必ず `EraseWord` する (ID が再利用されるため。`test/check/id_reuse` が見張っている)。
+- 実行フレーム: 単語を実行する箇所は `TKawariVM::TWordFrame` で囲む (`TKVMCodePVW::Run`、`TKVMSetCode_base::Run`、`TKVMCodeEntryIndex::Run`、ユーザ関数、`foreach`、`TKawariEngine::Parse(TWordID)`)。`=kis` ゾーンは `TZoneFrame` で、文ごとの行は `TKVMCodeInlineScript::lines`。**新しく「辞書の単語を実行する」コードを足したらフレームを積むこと**。フレームは loglevel に依存しない (途中で変わっても積み降ろしが崩れないため)。
+- 安全モード `TKawariEngine::SetSandbox(true)`: ファイル書き込み (`misc/wfile.cpp` の `WriteWholeFile` は書かずに成功を返し、`kawari_wfopen` は書き込みモードを拒否)、SAORI の実体 (`TSaoriPark::RegisterModule` が実体を作らない。登録済みと `internal_*` の呼び出しは `Result: 0`)、本体との通信 (`Baseware->SetAllowed(false)`)、`logfile` を止める。**外へ影響する新しい経路 (プロセス起動、ネットワーク、ファイル書き込み) を足すときは、ここで止まることを確かめる**。辞書を読む前に呼ぶこと (`TKawariKosuiAdapter` の検査用コンストラクタがそうしている)。
+- `kosui --check [--format text|json] [--werror] [--decl] [--eval 式]... [--seed n] [rcfile]`: 終了コード 0 = なし / 1 = 警告のみ / 2 = エラー / 3 = 実行できない。出力は診断だけ (`echo` と `loglevel` / `logfile` は出力に影響しない)。JSON は常に UTF-8。`=kis` は実際に実行するので、終わらない繰り返しがあると終わらない。`AttachTarget` は通さない (稼動中のゴーストに繋がってしまう)。
+- `make depend` (ruby) が書く `depend.mak` は CRLF なので、`tr -d '\r'` で LF に戻してからコミットする。
+- Bash ツールで python のコードをヒアドキュメントで渡すと `\\` が潰れる。Write ツールでファイルにして実行する。
+- **今後 (Phase C)**: 静的 Lint (未定義エントリの参照、括弧を `"..."` で囲まない `regex_*`、カンマによる意図しない単語分割、`$(...)` 間の空白漏れ、`${N}` の引用符漏れ、未知の KIS コマンド名、辞書の文字コード)。コンパイル済みツリーを走査する。偽陽性が出るので警告止まりにして、抑制コメント (`# lint:disable=K-W...`) を用意する。
 
 ## 正規表現 (KIS の regex_*)
 

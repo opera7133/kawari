@@ -1,0 +1,4 @@
+kawarirc.kis(9): error K-E0028: undefined function "undefined_fn_new" called.
+    in ${e}
+    in <kis zone> at kawarirc.kis(9)
+check: 1 error(s), 0 warning(s)

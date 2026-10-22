@@ -146,6 +146,10 @@ protected:
 // インラインスクリプト ( '$(' ScriptStatementSeq ') )
 class TKVMCodeInlineScript : public TKVMCodeList_base {
 public:
+	// 各文が始まった行 (辞書ファイルの =kis 〜 =end の中身だけ。他は空)
+	// 診断で位置を示すためだけに使い、実行結果にも比較にも影響しない。
+	std::vector<unsigned int> lines;
+
 	virtual std::wstring Run(class TKawariVM &vm);
 	virtual std::wstring DisCompile(void) const;
 	virtual ~TKVMCodeInlineScript() {}

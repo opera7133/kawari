@@ -1,5 +1,56 @@
 ChangeLog
 
+2026/10/22 Phase 9.2.0 (Core 4.2.0), in development (the version number in
+           the source is not raised yet)
+ * diagnostics: every error and warning of the compiler, the interpreter, the
+   dictionary and the KIS commands/SAORI now has a code and a location, in
+   one format:
+       file(line): error K-E0028: undefined function "foo" called.
+           in $(foo) at file(line)
+           in ${OnBoot} at file(line)
+   - the codes are K-E<number> / K-W<number>; the numbers are listed in
+     kawari_log.h (enum DiagCode) and are never changed or reused
+   - the compile errors used to be "file line: error: message" (the format
+     changed; the text of the messages is the same). The location of a
+     runtime diagnostic is the dictionary file and the line of the word being
+     run, found by (entry, word): a word that is shared by several entries
+     has one location per entry. Words made at run time (adddict, set) have no
+     location, and the location of a word that was freed is forgotten (IDs
+     are reused). The statements of "=kis" zones have their own lines, and a
+     "function" / "lambda" made there is located at its statement
+   - the call chain (up to 8 frames) is printed under the diagnostic: "in
+     ${entry}" for a word, "in $(name)" for a user function, "in <kis zone>"
+     for the =kis zone being loaded. "decl" warnings print only the innermost
+     frame
+   - nothing is printed or recorded for a level that "loglevel" does not
+     enable (quiet is still the default), and the meaning of a dictionary is
+     not changed: an undefined entry is still empty. Running cost: a push and
+     a pop of a small frame per word run, not measurable in the hot path
+   - "too few/many arguments" of KIS commands are K-W1001 / K-W1002; the
+     errors of regex_* are K-E1100..1102; other KIS errors are K-E1000 and
+     SAORI errors are K-E1200 (the same text as before)
+   - the message of a quoted string that reaches the end of the file is now
+     the EOF one (K-E0002), and "load/save failed" has a space before the path
+ * add "kosui --check": loads the dictionary in the sandbox, reports the
+   diagnostics and quits, without reading the standard input
+       kosui --check [--format text|json] [--werror] [--decl]
+             [--eval <script>]... [--seed <n>] [<rcfile>]
+   - exit code: 0 = nothing, 1 = warnings only, 2 = errors (--werror makes
+     warnings errors), 3 = could not run (the rcfile cannot be read)
+   - the output is only diagnostics (a line "check: N error(s), M warning(s)"
+     at the end); the "echo" of KIS and "loglevel" / "logfile" do not change
+     it. json prints one JSON document in UTF-8 whatever the console is
+   - --eval runs a script after the load (as typed in kosui), so the
+     diagnostics of the events can be found; it samples random choices, use
+     --seed to repeat. --decl also reports reads of empty entries (K-W0003)
+   - the sandbox (engine->SetSandbox) stops everything that reaches out of the
+     dictionary: files are not written (save, textsave, logfile... succeed
+     without writing), SAORI modules are not loaded (a call to a registered or
+     internal_* module answers Result: 0), and the baseware is not reached
+     (Direct SSTP). It is for static checking only: "=kis" is really run, so
+     a loop that never ends hangs --check
+ * add the check suite to test/run.ps1 and test/run_posix.py (test/check/*)
+
 2026/10/22 Phase 9.1.1 (Core 4.1.1)
  * add "textload_charset", "textsave_charset" and "textappend_charset": the
    same as "textload", "textsave" and "textappend" with the charset of the

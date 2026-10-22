@@ -1,0 +1,3 @@
+{"diagnostics":[
+{"severity":"error","code":"K-E0028","file":"kawarirc.kis","line":3,"message":"undefined function \"undefined_fn_a\" called.","chain":["in ${mid} at kawarirc.kis(3)"]}
+],"errors":1,"warnings":0}

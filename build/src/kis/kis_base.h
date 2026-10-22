@@ -99,8 +99,7 @@ public:
 		using namespace kawari_log;
 		bool ret=true;
 		if(args.size()<min){
-			if(GetLogger().Check(LOG_WARNING))
-				GetLogger().GetStream() << L"KIS[" << args[0] << L"] error : too few arguments." << endl;
+			GetLogger().Diag(LOG_WARNING, W_KIS_TOO_FEW_ARGUMENTS) << L"KIS[" << args[0] << L"] too few arguments.";
 			ret=false;
 		}
 		if ((!ret)&&(GetLogger().Check(LOG_INFO)))
@@ -113,12 +112,10 @@ public:
 		using namespace kawari_log;
 		bool ret=true;
 		if(args.size()<min){
-			if(GetLogger().Check(LOG_WARNING))
-				GetLogger().GetStream() << L"KIS[" << args[0] << L"] error : too few arguments." << endl;
+			GetLogger().Diag(LOG_WARNING, W_KIS_TOO_FEW_ARGUMENTS) << L"KIS[" << args[0] << L"] too few arguments.";
 			ret=false;
 		}else if(args.size()>max){
-			if(GetLogger().Check(LOG_WARNING))
-				GetLogger().GetStream() << L"KIS[" << args[0] << L"] error : too many arguments." << endl;
+			GetLogger().Diag(LOG_WARNING, W_KIS_TOO_MANY_ARGUMENTS) << L"KIS[" << args[0] << L"] too many arguments.";
 			ret=false;
 		}
 		if ((!ret)&&(GetLogger().Check(LOG_INFO)))

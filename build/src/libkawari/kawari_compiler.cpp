@@ -72,7 +72,7 @@ TKawariCompiler::Mode TKawariCompiler::GetNextMode(void){
 		else if (line==L"=end")
 			return M_END;
 		else{
-			logger.GetStream(LOG_ERROR) << RC.S(ERR_COMPILER_UNKNOWN_MODE) << line << endl;
+			lexer->error(ERR_COMPILER_UNKNOWN_MODE, L" "+line);
 			return M_UNKNOWN;
 		}
 	}else if (t==Token::T_EOF){
@@ -84,7 +84,7 @@ TKawariCompiler::Mode TKawariCompiler::GetNextMode(void){
 }
 //-------------------------------------------------------------------------
 // エントリ定義を読む
-bool TKawariCompiler::LoadEntryDefinition(vector<wstring> &entries, vector<TKVMCode_base *> &sentences){
+bool TKawariCompiler::LoadEntryDefinition(vector<wstring> &entries, vector<TKVMCode_base *> &sentences, vector<unsigned int> *lines){
 
 	Token::Type t=lexer->skipWS(ID_MODE);
 	if ((t==Token::T_EOF)||(t==Token::T_MODESWITCH)){
@@ -96,7 +96,7 @@ bool TKawariCompiler::LoadEntryDefinition(vector<wstring> &entries, vector<TKVMC
 		// エントリ名リストを得る。
 		if(!compileEntryIdList(entries)){
 			// エントリ名指定が無い(何故)
-			lexer->error(RC.S(ERR_COMPILER_NO_ENTRYNAMES));
+			lexer->error(ERR_COMPILER_NO_ENTRYNAMES);
 			lexer->getRestOfLine();
 			return true;
 		}
@@ -107,22 +107,22 @@ bool TKawariCompiler::LoadEntryDefinition(vector<wstring> &entries, vector<TKVMC
 			lexer->skip();
 			lexer->skipS();
 			// 改行不可文並びを得る。
-			if (!compileNRStatementList(sentences))
-				lexer->warning(RC.S(WARN_COMPILER_BLANK_DEFINITION));
+			if (!compileNRStatementList(sentences, lines))
+				lexer->warning(WARN_COMPILER_BLANK_DEFINITION);
 		}else if (t==(int)L'('){
 			lexer->skip();
 			lexer->skipS();
 			// 文並びを得る。
-			if (!compileStatementList(sentences))
-				lexer->warning(RC.S(WARN_COMPILER_BLANK_DEFINITION));
+			if (!compileStatementList(sentences, lines))
+				lexer->warning(WARN_COMPILER_BLANK_DEFINITION);
 			t=lexer->skipWS(ID_MODE);
 			if (t==(int)L')'){
 				lexer->skip();
 			}else{
-				lexer->error(RC.S(ERR_COMPILER_MLENTRYDEF_NOT_CLOSED));
+				lexer->error(ERR_COMPILER_MLENTRYDEF_NOT_CLOSED);
 			}
 		}else{
-			lexer->error(RC.S(ERR_COMPILER_INVALID_ENTRYDEF));
+			lexer->error(ERR_COMPILER_INVALID_ENTRYDEF);
 		}
 
 		if (logger.Check(LOG_DUMP)){
@@ -147,31 +147,54 @@ bool TKawariCompiler::LoadEntryDefinition(vector<wstring> &entries, vector<TKVMC
 // KIS定義を読む
 TKVMCode_base *TKawariCompiler::LoadInlineScript(void){
 	vector<TKVMCode_base *> tmplist;
+	// 各文が始まった行 (診断用)
+	vector<unsigned int> tmplines;
 
 	// 最初の行を読む
+	lexer->skipWS(SCRIPT_MODE);
+	unsigned int stmtline=lexer->getLineNo();
 	TKVMCode_base *code = compileScriptStatement();
-	if (code)
+	if (code){
 		tmplist.push_back(code);
+		tmplines.push_back(stmtline);
+	}
 
 	while (lexer->hasNext()){
 		Token::Type t=lexer->skipWS(SCRIPT_MODE);
 		if (t==(int)L';'){
 			// 次の行
 			lexer->skip();
+			lexer->skipWS(SCRIPT_MODE);
+			unsigned int stmtline=lexer->getLineNo();
 			TKVMCode_base *code = compileScriptStatement();
-			if (code)
+			if (code){
 				tmplist.push_back(code);
+				tmplines.push_back(stmtline);
+			}
 		}else if ((t==Token::T_EOF)||(t==Token::T_MODESWITCH)){
 			break;
 		}else{
-			lexer->error(RC.S(ERR_COMPILER_ILLCHAR_IN_SCRIPT));
+			lexer->error(ERR_COMPILER_ILLCHAR_IN_SCRIPT);
 			break;
 		}
 	}
-	if (tmplist.size())
-		return new TKVMCodeInlineScript(tmplist);
-	else
+	if (tmplist.size()){
+		TKVMCodeInlineScript *script=new TKVMCodeInlineScript(tmplist);
+		script->lines=tmplines;
+		return script;
+	}else{
 		return new TKVMCodeString(L"");
+	}
+}
+//-------------------------------------------------------------------------
+// 読み込み中のファイル名
+const wstring &TKawariCompiler::GetFileName(void) const{
+	return lexer->getFileName();
+}
+//-------------------------------------------------------------------------
+// 読み込み位置の行番号
+int TKawariCompiler::GetLineNo(void) const{
+	return lexer->getLineNo();
 }
 //-------------------------------------------------------------------------
 // 文字列をStatementとして中間コードへコンパイル
@@ -219,7 +242,7 @@ int TKawariCompiler::compileEntryIdList(vector<wstring> &list){
 		tmplist.push_back(lexer->getLiteral(ID_MODE));
 	}else{
 		// それは許されないだろう
-		lexer->error(RC.S(ERR_COMPILER_ENTRYID_NOT_FOUND));
+		lexer->error(ERR_COMPILER_ENTRYID_NOT_FOUND);
 		return 0;
 	}
 	while (lexer->hasNext()){
@@ -230,7 +253,7 @@ int TKawariCompiler::compileEntryIdList(vector<wstring> &list){
 				tmplist.push_back(lexer->getLiteral(ID_MODE));
 			}else{
 				// おかしい。','で終わっているんじゃないかな。
-				lexer->warning(RC.S(WARN_COMPILER_ENTRYIDLIST_ENDS_WITH_COMMA));
+				lexer->warning(WARN_COMPILER_ENTRYIDLIST_ENDS_WITH_COMMA);
 				break;
 			}
 		}else{
@@ -244,8 +267,9 @@ int TKawariCompiler::compileEntryIdList(vector<wstring> &list){
 //-------------------------------------------------------------------------
 // 改行不可文並び。(注意)改行コードを読み込んで終了。
 // return : 得られた文の数
-int TKawariCompiler::compileNRStatementList(vector<TKVMCode_base *> &list){
+int TKawariCompiler::compileNRStatementList(vector<TKVMCode_base *> &list, vector<unsigned int> *lines){
 	vector<TKVMCode_base *> tmplist;
+	vector<unsigned int> tmplines;
 	if (!lexer->hasNext())
 		return 0;
 	Token::Type t=lexer->skipS();
@@ -255,11 +279,13 @@ int TKawariCompiler::compileNRStatementList(vector<TKVMCode_base *> &list){
 		return 0;
 	}else if (t!=(int)L','){
 		// 最初の文を読む
+		unsigned int stmtline=lexer->getLineNo();
 		TKVMCode_base *stmt=compileStatement(true);
 		if (stmt){
 			tmplist.push_back(stmt);
+			tmplines.push_back(stmtline);
 		}else{
-			lexer->error(RC.S(ERR_COMPILER_FIRST_STATEMENT_NOT_FOUND));
+			lexer->error(ERR_COMPILER_FIRST_STATEMENT_NOT_FOUND);
 			lexer->getRestOfLine();
 			return 0;
 		}
@@ -269,16 +295,19 @@ int TKawariCompiler::compileNRStatementList(vector<TKVMCode_base *> &list){
 		if (t==(int)L','){
 			lexer->skip();
 			lexer->skipS();
+			unsigned int stmtline=lexer->getLineNo();
 			TKVMCode_base *stmt=compileStatement(true);
-			if (stmt)
+			if (stmt){
 				tmplist.push_back(stmt);
+				tmplines.push_back(stmtline);
+			}
 			// else ','で行が終わっている？ もしくは ', ,'みたいになってる？
 			// ここで「NULL文字列」を入れるわけにはいかない。
 		}else if (t==Token::T_EOL){
 			// 終了
 			break;
 		}else{
-			lexer->error(RC.S(ERR_COMPILER_STATEMENTLIST_SEPARATOR_NOT_FOUND));
+			lexer->error(ERR_COMPILER_STATEMENTLIST_SEPARATOR_NOT_FOUND);
 			lexer->simpleSkipTo(L',');
 			if (lexer->peek()!=(int)L',')
 				break;
@@ -287,14 +316,17 @@ int TKawariCompiler::compileNRStatementList(vector<TKVMCode_base *> &list){
 	// この行を全て読み込む
 	lexer->getRestOfLine();
 	list.insert(list.end(), tmplist.begin(), tmplist.end());
+	if (lines)
+		lines->insert(lines->end(), tmplines.begin(), tmplines.end());
 	return tmplist.size();
 }
 
 //-------------------------------------------------------------------------
 // 文並び。')'で終了
 // return : 得られた文の数
-int TKawariCompiler::compileStatementList(vector<TKVMCode_base *> &list){
+int TKawariCompiler::compileStatementList(vector<TKVMCode_base *> &list, vector<unsigned int> *lines){
 	vector<TKVMCode_base *> tmplist;
+	vector<unsigned int> tmplines;
 	if (!lexer->hasNext())
 		return 0;
 	Token::Type t=lexer->skipWS(ID_MODE);
@@ -303,11 +335,13 @@ int TKawariCompiler::compileStatementList(vector<TKVMCode_base *> &list){
 		return 0;
 	}else if (t!=(int)L','){
 		// 最初の文を読む
+		unsigned int stmtline=lexer->getLineNo();
 		TKVMCode_base *stmt=compileStatement(false);
 		if (stmt){
 			tmplist.push_back(stmt);
+			tmplines.push_back(stmtline);
 		}else{
-			lexer->error(RC.S(ERR_COMPILER_FIRST_STATEMENT_NOT_FOUND));
+			lexer->error(ERR_COMPILER_FIRST_STATEMENT_NOT_FOUND);
 			lexer->getRestOfLine();
 			return 0;
 		}
@@ -317,22 +351,29 @@ int TKawariCompiler::compileStatementList(vector<TKVMCode_base *> &list){
 		if (t==(int)L','){
 			lexer->skip();
 			lexer->skipS();
+			// ')' ブロックでは文の前に改行が来うるので、行を取る前に空白と改行を読み飛ばす
+			lexer->skipWS(ID_MODE);
+			unsigned int stmtline=lexer->getLineNo();
 			TKVMCode_base *stmt=compileStatement(false);
-			if (stmt)
+			if (stmt){
 				tmplist.push_back(stmt);
+				tmplines.push_back(stmtline);
+			}
 			// else ','で行が終わっている？ もしくは ', ,'みたいになってる？
 			// ここで「NULL文字列」を入れるわけにはいかない。
 		}else if (t==L')'){
 			// 終了
 			break;
 		}else{
-			lexer->error(RC.S(ERR_COMPILER_STATEMENTLIST_SEPARATOR_NOT_FOUND));
+			lexer->error(ERR_COMPILER_STATEMENTLIST_SEPARATOR_NOT_FOUND);
 			lexer->simpleSkipTo(L',');
 			if (lexer->peek()!=(int)L',')
 				break;
 		}
 	}
 	list.insert(list.end(), tmplist.begin(), tmplist.end());
+	if (lines)
+		lines->insert(lines->end(), tmplines.begin(), tmplines.end());
 	return tmplist.size();
 }
 
@@ -516,7 +557,7 @@ TKVMCode_base *TKawariCompiler::compileWord(int m){
 // NULLを返す
 TKVMCode_base *TKawariCompiler::compileSubst(void){
 	if (lexer->peek(ID_MODE)!=(int)L'$'){
-		lexer->error(RC.S(ERR_COMPILER_INTERNAL_SUBST));
+		lexer->error(ERR_COMPILER_INTERNAL_SUBST);
 		lexer->getRestOfLine();
 		return NULL;
 	}
@@ -544,7 +585,7 @@ TKVMCode_base *TKawariCompiler::compileSubst(void){
 // NULLは返さない
 TKVMCode_base *TKawariCompiler::compileInlineScriptSubst(void) {
 	if (lexer->peek(ID_MODE)!=(int)L'('){
-		lexer->error(RC.S(ERR_COMPILER_INTERNAL_INLINE_SCRIPT));
+		lexer->error(ERR_COMPILER_INTERNAL_INLINE_SCRIPT);
 		lexer->getRestOfLine();
 		return NULL;
 	}
@@ -577,7 +618,7 @@ TKVMCode_base *TKawariCompiler::compileInlineScriptSubst(void) {
 		}
 	}
 	if (!closed)
-		lexer->error(RC.S(ERR_COMPILER_SCRIPT_SUBST_NOT_CLOSED));
+		lexer->error(ERR_COMPILER_SCRIPT_SUBST_NOT_CLOSED);
 
 	return new TKVMCodeInlineScript(tmplist);
 }
@@ -588,7 +629,7 @@ TKVMCode_base *TKawariCompiler::compileInlineScriptSubst(void) {
 // NULLを返すことがある。
 TKVMCode_base *TKawariCompiler::compileBlock(void) {
 	if (lexer->peek(ID_MODE)!=(int)L'('){
-		lexer->error(RC.S(ERR_COMPILER_INTERNAL_BLOCK));
+		lexer->error(ERR_COMPILER_INTERNAL_BLOCK);
 		lexer->getRestOfLine();
 		return NULL;
 	}
@@ -608,7 +649,7 @@ TKVMCode_base *TKawariCompiler::compileBlock(void) {
 		// 終了
 		lexer->skip();
 	}else{
-		lexer->error(RC.S(ERR_COMPILER_BLOCK_NOT_CLOSED));
+		lexer->error(ERR_COMPILER_BLOCK_NOT_CLOSED);
 	}
 	return code;
 }
@@ -623,20 +664,20 @@ TKVMCode_base *TKawariCompiler::compileEntryIndexSubst(void){
 
 	TKVMCode_base *tmp_id=compileEntryWord();
 	if (!tmp_id){
-		lexer->error(RC.S(ERR_COMPILER_INTERNAL_INDEX));
+		lexer->error(ERR_COMPILER_INTERNAL_INDEX);
 		return NULL;
 	}
 
 	Token::Type t=lexer->skipWS(ID_MODE);
 	if (t!=(int)L'['){
-		lexer->error(RC.S(ERR_COMPILER_INDEX_BRACKET_NOT_FOUND));
+		lexer->error(ERR_COMPILER_INDEX_BRACKET_NOT_FOUND);
 		delete tmp_id;
 		return NULL;
 	}
 
 	TKVMCode_base *tmp_expr=compileExprSubst();
 	if (!tmp_expr){
-		lexer->error(RC.S(ERR_COMPILER_INDEX_EXPR_NOT_FOUND));
+		lexer->error(ERR_COMPILER_INDEX_EXPR_NOT_FOUND);
 		delete tmp_id;
 		return NULL;
 	}
@@ -680,7 +721,7 @@ TKVMCode_base *TKawariCompiler::compileEntryWord(void){
 // NULLが返るかも。
 TKVMCode_base *TKawariCompiler::compileExprSubst(void){
 	if (lexer->peek(ID_MODE)!=(int)L'['){
-		lexer->error(RC.S(ERR_COMPILER_INTERNAL_EXPR));
+		lexer->error(ERR_COMPILER_INTERNAL_EXPR);
 		lexer->getRestOfLine();
 		return NULL;
 	}
@@ -695,7 +736,7 @@ TKVMCode_base *TKawariCompiler::compileExprSubst(void){
 	TKVMCodeExpression *ret=new TKVMCodeExpression(code);
 
 	if (lexer->peek(ID_MODE)!=(int)L']'){
-		lexer->error(RC.S(ERR_COMPILER_EXPR_NOT_CLOSED));
+		lexer->error(ERR_COMPILER_EXPR_NOT_CLOSED);
 	}else{
 		lexer->skip();
 	}
@@ -711,7 +752,7 @@ TKVMExprCode_base *TKawariCompiler::compileExpr0(void){
 		Token token=lexer->next(ID_MODE);
 		if (token.str==L"||"){
 			TKVMExprCode_base *r=compileExpr1();
-			if (!r) { lexer->error(RC.S(ERR_COMPILER_PARSE_ERROR_AFTER)+L"'||'"); return l; }
+			if (!r) { lexer->error(ERR_COMPILER_PARSE_ERROR_AFTER, L"'||'"); return l; }
 			l=new TKVMExprCodeLOR(l, r);
 		}else{
 			lexer->UngetChars(token.str.size());
@@ -729,7 +770,7 @@ TKVMExprCode_base *TKawariCompiler::compileExpr1(void){
 		Token token=lexer->next(ID_MODE);
 		if (token.str==L"&&"){
 			TKVMExprCode_base *r=compileExpr2();
-			if (!r) { lexer->error(RC.S(ERR_COMPILER_PARSE_ERROR_AFTER)+L"'&&'"); return l; }
+			if (!r) { lexer->error(ERR_COMPILER_PARSE_ERROR_AFTER, L"'&&'"); return l; }
 			l=new TKVMExprCodeLAND(l, r);
 		}else{
 			lexer->UngetChars(token.str.size());
@@ -746,19 +787,19 @@ TKVMExprCode_base *TKawariCompiler::compileExpr2(void){
 	Token token=lexer->next(ID_MODE);
 	if ((token.str==L"=")||(token.str==L"==")){
 		TKVMExprCode_base *r=compileExpr3();
-		if (!r) { lexer->error(RC.S(ERR_COMPILER_PARSE_ERROR_AFTER)+L"'=='"); return l; }
+		if (!r) { lexer->error(ERR_COMPILER_PARSE_ERROR_AFTER, L"'=='"); return l; }
 		return new TKVMExprCodeEQ(l, r);
 	}else if (token.str==L"!="){
 		TKVMExprCode_base *r=compileExpr3();
-		if (!r) { lexer->error(RC.S(ERR_COMPILER_PARSE_ERROR_AFTER)+L"'!='"); return l; }
+		if (!r) { lexer->error(ERR_COMPILER_PARSE_ERROR_AFTER, L"'!='"); return l; }
 		return new TKVMExprCodeNEQ(l, r);
 	}else if (token.str==L"=~"){
 		TKVMExprCode_base *r=compileExpr3();
-		if (!r) { lexer->error(RC.S(ERR_COMPILER_PARSE_ERROR_AFTER)+L"'=~'"); return l; }
+		if (!r) { lexer->error(ERR_COMPILER_PARSE_ERROR_AFTER, L"'=~'"); return l; }
 		return new TKVMExprCodeMATCH(l, r);
 	}else if (token.str==L"!~"){
 		TKVMExprCode_base *r=compileExpr3();
-		if (!r) { lexer->error(RC.S(ERR_COMPILER_PARSE_ERROR_AFTER)+L"'!~'"); return l; }
+		if (!r) { lexer->error(ERR_COMPILER_PARSE_ERROR_AFTER, L"'!~'"); return l; }
 		return new TKVMExprCodeNMATCH(l, r);
 	}else{
 		lexer->UngetChars(token.str.size());
@@ -775,19 +816,19 @@ TKVMExprCode_base *TKawariCompiler::compileExpr3(void){
 	Token token=lexer->next(ID_MODE);
 	if (token.str==L"<"){
 		TKVMExprCode_base *r=compileExpr4();
-		if (!r) { lexer->error(RC.S(ERR_COMPILER_PARSE_ERROR_AFTER)+L"'<'"); return l; }
+		if (!r) { lexer->error(ERR_COMPILER_PARSE_ERROR_AFTER, L"'<'"); return l; }
 		return new TKVMExprCodeLT(l, r);
 	}else if (token.str==L"<="){
 		TKVMExprCode_base *r=compileExpr4();
-		if (!r) { lexer->error(RC.S(ERR_COMPILER_PARSE_ERROR_AFTER)+L"'<='"); return l; }
+		if (!r) { lexer->error(ERR_COMPILER_PARSE_ERROR_AFTER, L"'<='"); return l; }
 		return new TKVMExprCodeLTE(l, r);
 	}else if (token.str==L">"){
 		TKVMExprCode_base *r=compileExpr4();
-		if (!r) { lexer->error(RC.S(ERR_COMPILER_PARSE_ERROR_AFTER)+L"'>'"); return l; }
+		if (!r) { lexer->error(ERR_COMPILER_PARSE_ERROR_AFTER, L"'>'"); return l; }
 		return new TKVMExprCodeGT(l, r);
 	}else if (token.str==L">="){
 		TKVMExprCode_base *r=compileExpr4();
-		if (!r) { lexer->error(RC.S(ERR_COMPILER_PARSE_ERROR_AFTER)+L"'>='"); return l; }
+		if (!r) { lexer->error(ERR_COMPILER_PARSE_ERROR_AFTER, L"'>='"); return l; }
 		return new TKVMExprCodeGTE(l, r);
 	}else{
 		lexer->UngetChars(token.str.size());
@@ -804,11 +845,11 @@ TKVMExprCode_base *TKawariCompiler::compileExpr4(void){
 		Token token=lexer->next(ID_MODE);
 		if (token.str==L"|"){
 			TKVMExprCode_base *r=compileExpr5();
-			if (!r) { lexer->error(RC.S(ERR_COMPILER_PARSE_ERROR_AFTER)+L"'|'"); return l; }
+			if (!r) { lexer->error(ERR_COMPILER_PARSE_ERROR_AFTER, L"'|'"); return l; }
 			l=new TKVMExprCodeBOR(l, r);
 		}else if (token.str==L"^"){
 			TKVMExprCode_base *r=compileExpr5();
-			if (!r) { lexer->error(RC.S(ERR_COMPILER_PARSE_ERROR_AFTER)+L"'~'"); return l; }
+			if (!r) { lexer->error(ERR_COMPILER_PARSE_ERROR_AFTER, L"'~'"); return l; }
 			l=new TKVMExprCodeBXOR(l, r);
 		}else{
 			lexer->UngetChars(token.str.size());
@@ -826,7 +867,7 @@ TKVMExprCode_base *TKawariCompiler::compileExpr5(void){
 		Token token=lexer->next(ID_MODE);
 		if (token.str==L"&"){
 			TKVMExprCode_base *r=compileExpr6();
-			if (!r) { lexer->error(RC.S(ERR_COMPILER_PARSE_ERROR_AFTER)+L"'&'"); return l; }
+			if (!r) { lexer->error(ERR_COMPILER_PARSE_ERROR_AFTER, L"'&'"); return l; }
 			l=new TKVMExprCodeBAND(l, r);
 		}else{
 			lexer->UngetChars(token.str.size());
@@ -844,11 +885,11 @@ TKVMExprCode_base *TKawariCompiler::compileExpr6(void){
 		Token token=lexer->next(ID_MODE);
 		if (token.str==L"+"){
 			TKVMExprCode_base *r=compileExpr7();
-			if (!r) { lexer->error(RC.S(ERR_COMPILER_PARSE_ERROR_AFTER)+L"'+'"); return l; }
+			if (!r) { lexer->error(ERR_COMPILER_PARSE_ERROR_AFTER, L"'+'"); return l; }
 			l=new TKVMExprCodePLUS(l, r);
 		}else if (token.str==L"-"){
 			TKVMExprCode_base *r=compileExpr7();
-			if (!r) { lexer->error(RC.S(ERR_COMPILER_PARSE_ERROR_AFTER)+L"'-'"); return l; }
+			if (!r) { lexer->error(ERR_COMPILER_PARSE_ERROR_AFTER, L"'-'"); return l; }
 			l=new TKVMExprCodeMINUS(l, r);
 		}else{
 			lexer->UngetChars(token.str.size());
@@ -866,15 +907,15 @@ TKVMExprCode_base *TKawariCompiler::compileExpr7(void){
 		Token token=lexer->next(ID_MODE);
 		if (token.str==L"*"){
 			TKVMExprCode_base *r=compileExpr8();
-			if (!r) { lexer->error(RC.S(ERR_COMPILER_PARSE_ERROR_AFTER)+L"'*'"); return l; }
+			if (!r) { lexer->error(ERR_COMPILER_PARSE_ERROR_AFTER, L"'*'"); return l; }
 			l=new TKVMExprCodeMUL(l, r);
 		}else if (token.str==L"/"){
 			TKVMExprCode_base *r=compileExpr8();
-			if (!r) { lexer->error(RC.S(ERR_COMPILER_PARSE_ERROR_AFTER)+L"'/'"); return l; }
+			if (!r) { lexer->error(ERR_COMPILER_PARSE_ERROR_AFTER, L"'/'"); return l; }
 			l=new TKVMExprCodeDIV(l, r);
 		}else if (token.str==L"%"){
 			TKVMExprCode_base *r=compileExpr8();
-			if (!r) { lexer->error(RC.S(ERR_COMPILER_PARSE_ERROR_AFTER)+L"'%'"); return l; }
+			if (!r) { lexer->error(ERR_COMPILER_PARSE_ERROR_AFTER, L"'%'"); return l; }
 			l=new TKVMExprCodeMOD(l, r);
 		}else{
 			lexer->UngetChars(token.str.size());
@@ -919,7 +960,7 @@ TKVMExprCode_base *TKawariCompiler::compileExpr9(void){
 		Token token=lexer->next(ID_MODE);
 		if (token.str==L"**"){
 			TKVMExprCode_base *r=compileExprFactor();
-			if (!r) { lexer->error(RC.S(ERR_COMPILER_PARSE_ERROR_AFTER)+L"'**'"); return l; }
+			if (!r) { lexer->error(ERR_COMPILER_PARSE_ERROR_AFTER, L"'**'"); return l; }
 			l=new TKVMExprCodePOW(l, r);
 		}else{
 			lexer->UngetChars(token.str.size());
@@ -937,7 +978,7 @@ TKVMExprCode_base *TKawariCompiler::compileExprFactor(void){
 		if (!c) return NULL;
 		t=lexer->skipWS(ID_MODE);
 		if (t!=(int)L')'){
-			lexer->error(RC.S(ERR_COMPILER_EXPR_BLOCK_NOT_CLOSED));
+			lexer->error(ERR_COMPILER_EXPR_BLOCK_NOT_CLOSED);
 		}else{
 			lexer->skip();
 		}
@@ -964,7 +1005,7 @@ TKVMExprCode_base *TKawariCompiler::compileExprWord(void){
 					// 十進数値しか許されない
 					wstring tmps=lexer->getDecimalLiteral();
 					if (!tmps.size()){
-						lexer->error(RC.S(ERR_COMPILER_ILLCHAR_IN_EXPRESSION));
+						lexer->error(ERR_COMPILER_ILLCHAR_IN_EXPRESSION);
 						escape=true;
 						break;
 					}
@@ -1000,7 +1041,7 @@ TKVMExprCode_base *TKawariCompiler::compileExprWord(void){
 // エントリ呼び出し ( '{' EntryExpr '}' )
 TKVMCode_base *TKawariCompiler::compileEntryCallSubst(void) {
 	if (lexer->peek(ID_MODE)!=(int)L'{'){
-		lexer->error(RC.S(ERR_COMPILER_INTERNAL_ENTRYCALL));
+		lexer->error(ERR_COMPILER_INTERNAL_ENTRYCALL);
 		lexer->getRestOfLine();
 		return NULL;
 	}
@@ -1010,7 +1051,7 @@ TKVMCode_base *TKawariCompiler::compileEntryCallSubst(void) {
 		lexer->skip();
 		wstring fnum=lexer->getDecimalLiteral();
 		if (lexer->skipWS(ID_MODE)!=(int)L'}'){
-			lexer->error(RC.S(ERR_COMPILER_ENTRYCALL_NOT_CLOSED));
+			lexer->error(ERR_COMPILER_ENTRYCALL_NOT_CLOSED);
 		}else{
 			lexer->skip();
 		}
@@ -1020,7 +1061,7 @@ TKVMCode_base *TKawariCompiler::compileEntryCallSubst(void) {
 	TKVMSetCode_base *code=compileSetExpr0();
 
 	if (lexer->peek(ID_MODE)!=(int)L'}'){
-		lexer->error(RC.S(ERR_COMPILER_ENTRYCALL_NOT_CLOSED));
+		lexer->error(ERR_COMPILER_ENTRYCALL_NOT_CLOSED);
 	}else{
 		lexer->skip();
 	}
@@ -1057,11 +1098,11 @@ TKVMSetCode_base *TKawariCompiler::compileSetExpr0(void){
 	Token token=lexer->next(ID_MODE);
 	if (token.str==L"+"){
 		TKVMSetCode_base *r=compileSetExpr0();
-		if (!r) { lexer->error(RC.S(ERR_COMPILER_PARSE_ERROR_AFTER)+L"'+'"); return l; }
+		if (!r) { lexer->error(ERR_COMPILER_PARSE_ERROR_AFTER, L"'+'"); return l; }
 		return new TKVMSetCodePLUS(l, r);
 	}else if (token.str==L"-"){
 		TKVMSetCode_base *r=compileSetExpr0();
-		if (!r) { lexer->error(RC.S(ERR_COMPILER_PARSE_ERROR_AFTER)+L"'-'"); return l; }
+		if (!r) { lexer->error(ERR_COMPILER_PARSE_ERROR_AFTER, L"'-'"); return l; }
 		return new TKVMSetCodeMINUS(l, r);
 	}else{
 		lexer->UngetChars(token.str.size());
@@ -1077,7 +1118,7 @@ TKVMSetCode_base *TKawariCompiler::compileSetExpr1(void){
 	Token token=lexer->next(ID_MODE);
 	if (token.str==L"&"){
 		TKVMSetCode_base *r=compileSetExpr1();
-		if (!r) { lexer->error(RC.S(ERR_COMPILER_PARSE_ERROR_AFTER)+L"'&'"); return l; }
+		if (!r) { lexer->error(ERR_COMPILER_PARSE_ERROR_AFTER, L"'&'"); return l; }
 		return new TKVMSetCodeAND(l, r);
 	}else{
 		lexer->UngetChars(token.str.size());
@@ -1094,7 +1135,7 @@ TKVMSetCode_base *TKawariCompiler::compileSetExprFactor(void){
 		if (!c) return NULL;
 		t=lexer->skipWS(ID_MODE);
 		if (t!=(int)L')'){
-			lexer->error(RC.S(ERR_COMPILER_SETEXPR_BLOCK_NOT_CLOSED));
+			lexer->error(ERR_COMPILER_SETEXPR_BLOCK_NOT_CLOSED);
 		}else{
 			lexer->skip();
 		}
