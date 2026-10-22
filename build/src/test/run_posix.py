@@ -150,9 +150,10 @@ def test_check(bin_dir, work, timeout):
             result(False, "check:" + name, ["kosui did not finish within %d seconds" % timeout])
             continue
         # kosui prints the folder as getcwd() gives it. On macOS the temporary folder is a
-        # symbolic link (/var -> /private/var), so remove the real path as well
+        # symbolic link (/var -> /private/var), so remove the real path as well. The real path
+        # goes first: removing d first would leave "/private" of "/private/var/..." behind
         out = run.stdout.decode("latin-1").replace("\r\n", "\n")
-        for prefix in (d, os.path.realpath(d)):
+        for prefix in (os.path.realpath(d), d):
             out = out.replace(prefix + "/", "")
         with open(os.path.join(src, "expect"), encoding="latin-1", newline="") as f:
             expected = f.read().replace("\r\n", "\n")
