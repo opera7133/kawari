@@ -29,8 +29,11 @@ ChangeLog
    - "too few/many arguments" of KIS commands are K-W1001 / K-W1002; the
      errors of regex_* are K-E1100..1102; other KIS errors are K-E1000 and
      SAORI errors are K-E1200 (the same text as before)
-   - the message of a quoted string that reaches the end of the file is now
-     the EOF one (K-E0002), and "load/save failed" has a space before the path
+   - the lexer used the EOL message also for a quoted string that reaches the
+     end of the file; it now uses the EOF one (K-E0002). The preprocessor adds
+     a final newline, so a quote left open in a file is still reported as
+     K-E0001 and K-E0002 is rarely reached
+   - "load/save failed" has a space before the path
  * add "kosui --check": loads the dictionary in the sandbox, reports the
    diagnostics and quits, without reading the standard input
        kosui --check [--format text|json] [--werror] [--decl]
