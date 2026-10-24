@@ -3,11 +3,12 @@
 #
 # The same case files as run.ps1 are used:
 #   kosui   feeds one line to kosui and compares its output (test/kosui/cases.txt)
+#   check   runs "kosui --check" on the dictionary of every folder of test/check
 #   shiori  loads the shared library with ctypes, sends the SHIORI/3.0 requests of
 #           test/shiori/cases.txt in order and checks the responses
 #   utf8    a few requests with Charset: UTF-8 and non-ASCII references
 #
-#   python3 build/src/test/run_posix.py [--bin-dir build/mach/linux] [--suite all|kosui|shiori|utf8]
+#   python3 build/src/test/run_posix.py [--bin-dir build/mach/linux] [--suite all|kosui|check|shiori|utf8]
 #
 # Exit codes: 0 = all passed, 1 = a case failed, 2 = the tests could not run.
 
@@ -15,6 +16,7 @@ import argparse
 import ctypes
 import os
 import re
+import shlex
 import shutil
 import subprocess
 import sys
@@ -113,6 +115,61 @@ def test_kosui(bin_dir, work, timeout):
             continue
         actual = m.group(1)
         result(actual == expected, name, ["expected: " + show(expected), "actual:   " + show(actual)])
+
+
+# ---- check --------------------------------------------------------------------------------
+
+# kosui --check: every folder of test/check is one case (see run.ps1).
+#   args    the arguments after "--check" (shell-like quoting)
+#   expect  the whole standard output (the work folder path is removed from it)
+#   exit    the exit code
+# The folder must have the same files after the run: --check must not write anything.
+def test_check(bin_dir, work, timeout):
+    exe = os.path.join(bin_dir, "kosui")
+    if not os.path.isfile(exe):
+        stop_setup("kosui was not found in " + bin_dir)
+    root = os.path.join(HERE, "check")
+    names = sorted(n for n in os.listdir(root) if os.path.isdir(os.path.join(root, n)))
+
+    print("== check (%d cases)" % len(names))
+    for name in names:
+        src = os.path.join(root, name)
+        d = os.path.join(work, "check_" + name)
+        os.mkdir(d)
+        for f in os.listdir(src):
+            if f not in ("args", "expect", "exit"):
+                shutil.copy(os.path.join(src, f), d)
+        before = sorted(os.listdir(d))
+
+        with open(os.path.join(src, "args"), encoding="latin-1") as f:
+            args = shlex.split(f.read().strip())
+        try:
+            run = subprocess.run([exe, "--check"] + args, cwd=d,
+                                 stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=timeout)
+        except subprocess.TimeoutExpired:
+            result(False, "check:" + name, ["kosui did not finish within %d seconds" % timeout])
+            continue
+        # kosui prints the folder as getcwd() gives it. On macOS the temporary folder is a
+        # symbolic link (/var -> /private/var), so remove the real path as well. The real path
+        # goes first: removing d first would leave "/private" of "/private/var/..." behind
+        out = run.stdout.decode("latin-1").replace("\r\n", "\n")
+        for prefix in (os.path.realpath(d), d):
+            out = out.replace(prefix + "/", "")
+        with open(os.path.join(src, "expect"), encoding="latin-1", newline="") as f:
+            expected = f.read().replace("\r\n", "\n")
+        with open(os.path.join(src, "exit"), encoding="latin-1") as f:
+            expected_exit = int(f.read().strip())
+
+        detail = []
+        if run.returncode != expected_exit:
+            detail.append("exit code: expected %d, actual %d" % (expected_exit, run.returncode))
+        if out != expected:
+            detail.append("expected: " + show(expected))
+            detail.append("actual:   " + show(out))
+        after = sorted(os.listdir(d))
+        if before != after:
+            detail.append("files changed: %s -> %s" % (before, after))
+        result(not detail, "check:" + name, detail)
 
 
 # ---- shiori -------------------------------------------------------------------------------
@@ -220,7 +277,7 @@ def test_utf8(bin_dir, work):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--bin-dir", default=None)
-    ap.add_argument("--suite", default="all", choices=("all", "kosui", "shiori", "utf8"))
+    ap.add_argument("--suite", default="all", choices=("all", "kosui", "check", "shiori", "utf8"))
     ap.add_argument("--timeout", type=int, default=30)
     args = ap.parse_args()
 
@@ -236,6 +293,8 @@ def main():
     try:
         if args.suite in ("all", "kosui"):
             test_kosui(bin_dir, work, args.timeout)
+        if args.suite in ("all", "check"):
+            test_check(bin_dir, work, args.timeout)
         # Each suite loads the library once; the module keeps one instance per process,
         # so the SHIORI suites run in child processes.
         for suite in ("shiori", "utf8"):

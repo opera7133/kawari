@@ -98,9 +98,8 @@ bool TRegex::Compile(const wstring &pattern, const wstring &options, bool global
 		case L'x': case L'X': flags|=CRegexpW::EXTENDED; break;
 		case L' ': case L',': break;
 		default:
-			if(logger.Check(LOG_ERROR))
-				logger.GetStream() << L"KIS[" << command << L"] error : unknown option '"
-					<< *it << L"' (i, s, m, x are available)." << endl;
+			logger.Diag(LOG_ERROR, kawari_log::E_KIS_REGEX_OPTION) << L"KIS[" << command << L"] unknown option '"
+				<< *it << L"' (i, s, m, x are available).";
 			return false;
 		}
 	}
@@ -116,9 +115,8 @@ bool TRegex::Resolve(const wchar_t *name, CRegexpString &pattern, void *user)
 	// 定義の無い名前は、エンジンが構文エラー(名前入り)にする
 	if(self->engine->EntrySize(name)==0) return false;
 	if(ResolveDepth>=RESOLVE_MAX_DEPTH){
-		if(self->logger.Check(LOG_ERROR))
-			self->logger.GetStream() << L"KIS[" << self->command
-				<< L"] error : the subroutine '" << name << L"' is nested too deeply." << endl;
+		self->logger.Diag(LOG_ERROR, kawari_log::E_KIS_REGEX_NESTED) << L"KIS[" << self->command
+			<< L"] the subroutine '" << name << L"' is nested too deeply.";
 		return false;
 	}
 
@@ -148,21 +146,23 @@ void TRegex::Report(const CRegexpException &ex)
 {
 	if(!logger.Check(LOG_ERROR)) return;
 
-	logger.GetStream() << L"KIS[" << command << L"] error : ";
+	// 出力は ds が破棄されるときにまとめて行われる
+	TDiagStream ds=logger.Diag(LOG_ERROR, kawari_log::E_KIS_REGEX);
+	ds << L"KIS[" << command << L"] ";
 	switch(ex.GetCode()){
 	case CRegexpException::ERR_SYNTAX:
-		logger.GetStream() << L"bad regular expression (" << AsciiToW(ex.what()) << L")";
+		ds << L"bad regular expression (" << AsciiToW(ex.what()) << L")";
 		if(ex.GetPosition()>=0)
-			logger.GetStream() << L" at " << ex.GetPosition() << L" of the pattern";
+			ds << L" at " << ex.GetPosition() << L" of the pattern";
 		break;
 	case CRegexpException::ERR_STEP_LIMIT:
-		logger.GetStream() << L"the match took too many steps and was stopped";
+		ds << L"the match took too many steps and was stopped";
 		break;
 	default:
-		logger.GetStream() << L"regular expression error (" << AsciiToW(ex.what()) << L")";
+		ds << L"regular expression error (" << AsciiToW(ex.what()) << L")";
 		break;
 	}
-	logger.GetStream() << L"." << endl;
+	ds << L".";
 }
 //---------------------------------------------------------------------------
 void TRegex::CollectGroups(const CRegexpContext &ctx, const wstring &str, vector<wstring> &out) const

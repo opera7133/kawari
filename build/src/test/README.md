@@ -3,7 +3,7 @@
 ビルド済みの `kosui.exe` と `shiori.dll` を確かめる、最低限のテスト。リポジトリには何も書き込まず、作業ファイルは一時フォルダに作る。
 
 ```
-powershell -NoProfile -ExecutionPolicy Bypass -File build/src/test/run.ps1 [-Suite kosui|shiori] [-BinDir <dir>] [-CC <gcc>] [-KeepWork]
+powershell -NoProfile -ExecutionPolicy Bypass -File build/src/test/run.ps1 [-Suite kosui|check|shiori|baseware] [-BinDir <dir>] [-CC <gcc>] [-KeepWork]
 ```
 
 - 先に `build/src` で `gmake -f gcc.mak` を済ませておく。`-BinDir` の既定は `build/mach/mingw`。
@@ -24,8 +24,24 @@ cmd size npw       # command モード ($(size npw) として評価する)
 - ケースごとに `kosui/kawarirc.kis` を新しいフォルダへコピーして実行するので、ケース同士は影響しない。
 - 辞書には**カンマを書かない**。カンマは単語の区切りで、複数単語のエントリはランダムに 1 つが選ばれる。
 - 期待値は ASCII のみ。
-- kosui は入力が尽きると無限ループするため、ランナーが必ず `exit` を付け、`-TimeoutSeconds` (既定 30 秒) で打ち切る。
+- ランナーは入力の最後に必ず `exit` を付け、`-TimeoutSeconds` (既定 30 秒) で打ち切る (9.1.1 までの kosui は入力が尽きると無限ループした)。
 - 動作中のゴースト (SSP など) があると kosui が `Attach :` を聞いてくる。ランナーはそれを検出して `0` (インタプリタモード) と答え、そのケースからやり直す (`note:` の行が出る)。
+
+## check スイート (`check/`)
+
+`kosui --check` (安全モードで辞書を読み、診断を出して終了する検査モード) のテスト。`check/` の下の**フォルダ 1 つが 1 ケース**。
+
+| ファイル | 内容 |
+|---|---|
+| `kawarirc.kis` (と他の辞書) | 作業フォルダへそのままコピーして読ませる。ASCII のみ |
+| `args` | `--check` の後ろの引数。`'...'` / `"..."` で語をまとめられる (展開はしない)。例: `--eval '${mid}' kawarirc.kis` |
+| `expect` | 標準出力の全体 (作業フォルダのパスは取り除いて比べる) |
+| `exit` | 終了コード (0 = 問題なし / 1 = 警告のみ / 2 = エラー / 3 = 実行できない) |
+
+- 実行後に作業フォルダのファイルが増減していたら失敗にする (`--check` は何も書いてはいけない)。
+- 期待値は、出力を目で確かめてから作ること。フォルダごとの `expect` / `exit` は、手で書くか、`kosui --check` の出力を確認した上で保存する。
+- 入れてある観点: 複数行ブロックの 2 番目の単語の行 (`block_line`)、`=kis` の `function` と呼び出し連鎖 (`function_zone`)、`decl` が最も内側の 1 フレームだけを出すこと (`decl_innermost`)、`--werror` (`werror`)、GC で再利用された単語 ID に古い位置が残らないこと (`id_reuse`。`EraseWord` を外すと落ちる)、安全モード (`sandbox`。ファイル・SAORI・ログの出力先)、JSON (`json_block`)、読めない初期化ファイル (`missing_ini`)。静的検査 (Lint) は `lint_undefined` (K-W2001。定義済みと見なす名前の網羅)、`lint_command` (K-W2002)、`lint_clean` (警告ゼロ)、`lint_json`、`lint_off` (`--no-lint`)、`lint_regex` (K-W2003 / K-W2004)、`lint_suppress` (`# lint:disable-next-line=`)。実行時の診断を見るケースは、Lint の警告が混ざらないよう `--no-lint` を付けている。
+- ランダムに選ばれる単語で結果が揺れないよう、エラーを出す単語はエントリに 1 つだけ置くか、`--seed` を使う。
 
 ## shiori スイート (`shiori/`, `harness/`)
 

@@ -43,8 +43,40 @@
 //  Kawari Virtual Machine  (former TKisEngine)
 //
 //==========================================================================
-class TKawariVM {
+class TKawariVM : public IDiagContext {
 public:
+
+	// 診断用の実行フレーム
+	// 今どの単語(または =kis ゾーン)を実行しているかを積み、
+	// エラー時に「どの辞書の何行目か」と呼び出し連鎖を示すために使う。
+	// 実行の意味には一切関わらず、loglevel にも依存しない (途中で変わっても積み降ろしが崩れないため)。
+	struct TFrame {
+		bool zone;				// true : 辞書ファイルの =kis ゾーン
+		TEntry entry;			// zone=false : 単語を持つエントリ。分からなければ無効なエントリ
+		TWordID wid;			// zone=false : 実行中の単語
+		unsigned int file;		// zone=true : ファイル名の添字 (TSourceMap)
+		unsigned int line;		// zone=true : 実行中の文の行
+		TFrame(const TEntry &e, TWordID w) : zone(false), entry(e), wid(w), file(0), line(0) {}
+		TFrame(unsigned int f, unsigned int l) : zone(true), entry(NULL, 0), wid(0), file(f), line(l) {}
+	};
+
+	// 単語の実行を囲んで、フレームの積み降ろしを確実にする
+	class TWordFrame {
+	private:
+		TKawariVM &vm;
+	public:
+		TWordFrame(TKawariVM &v, const TEntry &entry, TWordID wid) : vm(v) { vm.PushWordFrame(entry, wid); }
+		~TWordFrame() { vm.PopFrame(); }
+	};
+
+	// =kis ゾーンの実行を囲む
+	class TZoneFrame {
+	private:
+		TKawariVM &vm;
+	public:
+		TZoneFrame(TKawariVM &v, unsigned int file, unsigned int line) : vm(v) { vm.PushZoneFrame(file, line); }
+		~TZoneFrame() { vm.PopFrame(); }
+	};
 
 	// インタプリタ内部状態
 	struct InterpState {
@@ -78,10 +110,34 @@ private:
 
 	// ロガー
 	class TKawariLogger &logger;
+
+	// 診断用の実行フレーム
+	std::vector<TFrame> frames;
+
+	// フレームの位置 (ファイル名と行) を調べる。分からなければ false
+	bool FrameLocation(const TFrame &f, std::wstring &file, int &line) const;
 public:
 	TKawariVM(class TKawariEngine &e, class TNS_KawariDictionary &d, class TKawariLogger &lgr);
 
 	~TKawariVM();
+
+	//=====================================================================
+	// 診断 (実行位置と呼び出し連鎖)
+	//=====================================================================
+
+	void PushWordFrame(const TEntry &entry, TWordID wid) { frames.push_back(TFrame(entry, wid)); }
+	void PushZoneFrame(unsigned int file, unsigned int line) { frames.push_back(TFrame(file, line)); }
+	void PopFrame(void) { if (frames.size()) frames.pop_back(); }
+
+	// 最も内側のフレームが =kis ゾーンなら、実行中の文の行を更新する
+	void SetZoneLine(unsigned int line) { if (frames.size()&&frames.back().zone) frames.back().line=line; }
+
+	// 今実行している場所を辞書ファイルの位置として得る (function 文などが定義位置を記録するため)
+	bool GetCurrentSource(unsigned int &file, unsigned int &line) const;
+
+	// IDiagContext
+	virtual bool GetLocation(std::wstring &file, int &line) const;
+	virtual void GetCallChain(std::vector<std::wstring> &lines, unsigned int maxdepth) const;
 
 	// "System.function."
 	static const std::wstring SYSTEM_FUNCTION_PREFIX;

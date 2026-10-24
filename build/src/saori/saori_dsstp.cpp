@@ -102,8 +102,8 @@ void CallDirectSSTPModule(const dsstp::TBasewareLink &link, TKawariLogger &logge
 	// Direct SSTPは呼び出し元によらずLocalとして扱われるので、externalなリクエストからは呼ばない
 	if (!link.IsAllowed()){
 		MakeError(response, 400, L"external request is not allowed");
-		logger.GetStream(LOG_WARNING) << L"[SAORI DirectSSTP] (" << module
-			<< L") refused: the request is not from local." << endl;
+		logger.Diag(LOG_WARNING, kawari_log::W_SAORI) << L"[SAORI DirectSSTP] (" << module
+			<< L") refused: the request is not from local.";
 		return;
 	}
 	if (dsstp::HasForbiddenChar(module)){
@@ -135,8 +135,8 @@ void CallDirectSSTPModule(const dsstp::TBasewareLink &link, TKawariLogger &logge
 		if (dsstp::HasForbiddenChar(value)){
 			// 送ると後ろにヘッダを足せてしまう
 			MakeError(response, 400, L"Argument"+IntToString((int)i)+L" contains a line break");
-			logger.GetStream(LOG_WARNING) << L"[SAORI DirectSSTP] (" << module
-				<< L") Argument" << i << L" contains a line break. not sent." << endl;
+			logger.Diag(LOG_WARNING, kawari_log::W_SAORI) << L"[SAORI DirectSSTP] (" << module
+				<< L") Argument" << i << L" contains a line break. not sent.";
 			return;
 		}
 		text+=L"Argument"+IntToString((int)i)+L": "+value+L"\r\n";
@@ -146,9 +146,9 @@ void CallDirectSSTPModule(const dsstp::TBasewareLink &link, TKawariLogger &logge
 	string resbytes;
 	if (!link.Send(WtoUTF8(text), resbytes, timeout_ms)){
 		MakeError(response, 500, L"no response from baseware");
-		logger.GetStream(LOG_ERROR) << L"[SAORI DirectSSTP] (" << module
+		logger.Diag(LOG_ERROR, kawari_log::E_SAORI) << L"[SAORI DirectSSTP] (" << module
 			<< L") no response from baseware"
-			<< (link.IsReady()?L".":L" (the window of the baseware is unknown yet).") << endl;
+			<< (link.IsReady()?L".":L" (the window of the baseware is unknown yet).");
 		return;
 	}
 
@@ -164,8 +164,8 @@ void CallDirectSSTPModule(const dsstp::TBasewareLink &link, TKawariLogger &logge
 	if (response.GetStartline().compare(0, 6, L"SAORI/")!=0){
 		MakeError(response, 500, L"baseware does not support SAORI over DirectSSTP");
 		rcs=KC_NULL;
-		logger.GetStream(LOG_ERROR) << L"[SAORI DirectSSTP] (" << module
-			<< L") the baseware does not support SAORI over DirectSSTP." << endl;
+		logger.Diag(LOG_ERROR, kawari_log::E_SAORI) << L"[SAORI DirectSSTP] (" << module
+			<< L") the baseware does not support SAORI over DirectSSTP.";
 		return;
 	}
 
@@ -177,8 +177,8 @@ void CallDirectSSTPModule(const dsstp::TBasewareLink &link, TKawariLogger &logge
 		wstring description;
 		TPHMessage::const_iterator ei=response.find(L"ErrorDescription");
 		if (ei!=response.end()) description=ei->second;
-		logger.GetStream(LOG_WARNING) << L"[SAORI DirectSSTP] (" << module << L") "
-			<< startline << (description.empty()?L"":L" / ") << description << endl;
+		logger.Diag(LOG_WARNING, kawari_log::W_SAORI) << L"[SAORI DirectSSTP] (" << module << L") "
+			<< startline << (description.empty()?L"":L" / ") << description;
 	}
 }
 //---------------------------------------------------------------------------

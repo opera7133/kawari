@@ -163,7 +163,9 @@ wostream &TKVMExprUnaryCode_base::Debug(wostream& os, unsigned int level) const{
 		TValue r=rhs->Evaluate(vm);\
 		if (r.IsError()) return r;\
 		if (!l.CanInteger()||!r.CanInteger()) return TValue::Error();\
-		if (r.AsInteger()==0) { vm.GetLogger().GetStream(kawari_log::LOG_ERROR) << RC.S(ERR_CODEEXPR_DIVIDED_BY_ZERO) << endl; return TValue::Error(); }\
+		if (r.AsInteger()==0) { vm.GetLogger().Diag(kawari_log::LOG_ERROR, kawari_log::E_DIVIDED_BY_ZERO) << RC.S(ERR_CODEEXPR_DIVIDED_BY_ZERO); return TValue::Error(); }\
+		/* INT_MIN / -1 は例外で落ちるので、-1 で割るときは符号反転 (余りは 0) を unsigned で計算する */\
+		if (r.AsInteger()==-1) { int n=(int)(0u-(unsigned int)l.AsInteger()); return TValue(((-1) rel (-1))==1 ? n : 0); }\
 		return TValue(l.AsInteger() rel r.AsInteger());\
 	}\
 

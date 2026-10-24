@@ -1,0 +1,16 @@
+=kis
+set made_in_zone 1;
+echo ${made_in_zone} ${zone_missing};
+echo ${@local} ${System.Request.ID};
+echo "$(setstr embedded_var 1)" ${embedded_var};
+echo $(copy built_${made_in_zone}_x built_y) ${built_9_x};
+=end
+defined : value
+uses_defined : ${defined}
+uses_missing : ${word_missing}
+dyn_name : ${prefix_${defined}}
+set_expr : ${defined + set_missing}
+indexed : $defined[0] $index_missing[0]
+func_missing : $(
+    echo ${in_inline_missing};
+)

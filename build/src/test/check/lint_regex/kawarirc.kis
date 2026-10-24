@@ -1,0 +1,14 @@
+=kis
+regex_match (a) x;
+regex_match "(a)" x;
+# lint:disable-next-line=K-W2003
+regex_match (b) x;
+regex_replace abc "(b)" ${1};
+regex_replace abc "(b)" "${1}";
+regex_replace_first abc "(b)" X${1}Y;
+echo $(regex_count x (c));
+=end
+quoted : $(regex_match "(d)" x)
+unquoted : $(regex_find x (e))
+# lint:disable-next-line=K-W2003
+muted : $(regex_find x (f))

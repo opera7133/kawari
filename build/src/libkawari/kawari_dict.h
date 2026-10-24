@@ -29,6 +29,7 @@ using namespace std;
 #include "libkawari/kawari_ns.h"
 #include "libkawari/kawari_code.h"
 #include "libkawari/wordcollection.h"
+#include "libkawari/kawari_diag.h"
 //---------------------------------------------------------------------------
 // 華和梨辞書
 class TNS_KawariDictionary: public TGarbageCollector {
@@ -67,6 +68,9 @@ private:
 
 	// PVWを保持する
 	set<TWordID> PVWSet;
+
+	// 辞書ファイルから読み込んだ単語の定義位置 (診断用)
+	TSourceMap srcmap;
 
 
 	// コンテキスト関係
@@ -191,6 +195,16 @@ public:
 	// ロガーを返す
 	TKawariLogger &GetLogger(void) {
 		return logger;
+	}
+
+	// 単語の定義位置の記録
+	TSourceMap &SourceMap(void) {
+		return srcmap;
+	}
+
+	// グローバルなエントリか (定義位置を記録しているのはグローバルのみ)
+	bool IsGlobalEntry(const TEntry &entry) const {
+		return (entry.GetNameSpace()==GlobalNameSpace);
 	}
 
 };

@@ -12,6 +12,8 @@
 //---------------------------------------------------------------------------
 #include "libkawari/kawari_log.h"
 #include <cstdio>
+#include <iomanip>
+#include <sstream>
 //---------------------------------------------------------------------------
 class nullstreambuf : public wstreambuf {
 public:
@@ -147,6 +149,10 @@ TWideOStream::~TWideOStream()
 //---------------------------------------------------------------------------
 TKawariLogger::TKawariLogger(void){
 	errlevel=0;
+	diagctx=NULL;
+	diagsink=NULL;
+	collector=NULL;
+	levellocked=false;
 	StdOutStream=NULL;
 	LogStream=NullStream=new wostream(new nullstreambuf);
 }
@@ -164,6 +170,66 @@ TKawariLogger::~TKawariLogger(void){
 void TKawariLogger::SetStreamStdOut(void){
 	if(!StdOutStream) StdOutStream=new TWideOStream(&cout, KC_ACP);
 	LogStream=StdOutStream;
+}
+//---------------------------------------------------------------------------
+// 診断メッセージの出力
+// 形式 : [位置: ]error K-E0001: 本文
+//        (続けて呼び出し連鎖が "    in ..." の形で 1 フレーム 1 行)
+void TKawariLogger::EmitDiag(kawari_log::LOGLEVEL lvl, unsigned int code, bool explicitloc,
+							 const wstring &file, int line, unsigned int depth, const wstring &msg) const
+{
+	wstring locfile=file;
+	int locline=line;
+	bool hasloc=explicitloc;
+	if ((!hasloc)&&diagctx)
+		hasloc=diagctx->GetLocation(locfile, locline);
+
+	wostringstream o;
+	if (hasloc) {
+		o << locfile;
+		if (locline>0) o << L"(" << locline << L")";
+		o << L": ";
+	}
+	bool iserror=(lvl==kawari_log::LOG_ERROR);
+	o << (iserror ? L"error K-E" : L"warning K-W");
+	o << setw(4) << setfill(L'0') << code << setfill(L' ') << L": ";
+
+	// 本文末尾の改行は、ここで付けるので取り除く
+	wstring body=msg;
+	while (body.size()&&((body[body.size()-1]==L'\n')||(body[body.size()-1]==L'\r')))
+		body.erase(body.size()-1);
+	o << body << L"\n";
+
+	vector<wstring> chain;
+	if (diagctx&&depth)
+		diagctx->GetCallChain(chain, depth);
+	for (vector<wstring>::const_iterator it=chain.begin(); it!=chain.end(); ++it)
+		o << L"    " << *it << L"\n";
+
+	if (collector) {
+		if (iserror) collector->errors++; else collector->warnings++;
+		if (collector->keep) {
+			TDiagRecord r;
+			r.iserror=iserror;
+			r.code=code;
+			r.hasloc=hasloc;
+			if (hasloc) { r.file=locfile; r.line=locline; }
+			r.message=body;
+			r.chain=chain;
+			collector->records.push_back(r);
+		}
+	}
+
+	if (diagsink)
+		*diagsink << o.str() << flush;
+	else
+		GetStream(lvl) << o.str() << flush;
+}
+//---------------------------------------------------------------------------
+TDiagStream::~TDiagStream()
+{
+	if (active&&logger)
+		logger->EmitDiag(lvl, code, explicitloc, file, line, depth, buf);
 }
 //---------------------------------------------------------------------------
 //TKawariLogger Logger;

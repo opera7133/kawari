@@ -1,0 +1,6 @@
+=kis
+function foo $(
+  undefined_fn_b;
+);
+=end
+top : $(foo)

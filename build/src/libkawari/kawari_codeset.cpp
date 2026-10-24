@@ -31,6 +31,8 @@ wstring TKVMSetCode_base::Run(TKawariVM &vm){
 
 	TKVMCode_base *code=vm.Dictionary().GetWordFromID(*it);
 	if (!code) return L"";
+	// どのエントリの単語かは分からない
+	TKawariVM::TWordFrame frame(vm, TEntry(NULL, 0), *it);
 	wstring retstr=vm.RunWithNewContext(code);
 
 	return retstr;
@@ -219,6 +221,7 @@ wstring TKVMCodePVW::Run(class TKawariVM &vm){
 	if (!wid) return L"";
 
 	TKVMCode_base *code=vm.Dictionary().GetWordFromID(wid);
+	TKawariVM::TWordFrame frame(vm, eid, wid);
 	wstring retstr=vm.RunWithNewContext(code);
 
 	vm.Dictionary().PushToHistory(retstr);

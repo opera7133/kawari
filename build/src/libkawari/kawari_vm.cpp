@@ -61,14 +61,106 @@ TKawariVM::TKawariVM(TKawariEngine &eng, TNS_KawariDictionary &d, TKawariLogger 
 	#include "kis/kis_config.h"
 
 	#undef INLINE_SCRIPT_REGIST
+
+	// 診断の位置情報の提供元になる
+	frames.reserve(64);
+	logger.SetDiagContext(this);
 }
 
 //---------------------------------------------------------------------------
 // デストラクタ
 TKawariVM::~TKawariVM(){
+	if (logger.GetDiagContext()==this)
+		logger.SetDiagContext(NULL);
 	for (vector<TKisFunction_base *>::iterator it=FunctionList.begin();it!=FunctionList.end();it++)
 		if (*it)
 			delete (*it);
+}
+//---------------------------------------------------------------------------
+// フレームの位置 (ファイル名と行) を調べる。分からなければ false
+bool TKawariVM::FrameLocation(const TFrame &f, wstring &file, int &line) const{
+	if (f.zone){
+		if (!f.file) return false;
+		file=dictionary.SourceMap().FileName(f.file);
+		line=f.line;
+		return true;
+	}
+	unsigned int eid=0;
+	if (f.entry.IsValid()){
+		// 位置を記録しているのはグローバルなエントリだけ
+		if (!dictionary.IsGlobalEntry(f.entry)) return false;
+		eid=f.entry.GetID();
+	}
+	TSourceMap::Loc loc;
+	if (!dictionary.SourceMap().FindWord(eid, f.wid, loc)) return false;
+	file=dictionary.SourceMap().FileName(loc.file);
+	line=loc.line;
+	return true;
+}
+//---------------------------------------------------------------------------
+// 位置を持つ最も内側のフレームの位置
+bool TKawariVM::GetLocation(wstring &file, int &line) const{
+	for (vector<TFrame>::const_reverse_iterator it=frames.rbegin(); it!=frames.rend(); ++it)
+		if (FrameLocation(*it, file, line)) return true;
+	return false;
+}
+//---------------------------------------------------------------------------
+// 今実行している場所を、辞書ファイルの位置として得る
+bool TKawariVM::GetCurrentSource(unsigned int &file, unsigned int &line) const{
+	for (vector<TFrame>::const_reverse_iterator it=frames.rbegin(); it!=frames.rend(); ++it){
+		if (it->zone){
+			if (!it->file) continue;
+			file=it->file;
+			line=it->line;
+			return true;
+		}
+		unsigned int eid=0;
+		if (it->entry.IsValid()){
+			if (!dictionary.IsGlobalEntry(it->entry)) continue;
+			eid=it->entry.GetID();
+		}
+		TSourceMap::Loc loc;
+		if (dictionary.SourceMap().FindWord(eid, it->wid, loc)){
+			file=loc.file;
+			line=loc.line;
+			return true;
+		}
+	}
+	return false;
+}
+//---------------------------------------------------------------------------
+// 呼び出し連鎖を内側から外側へ 1 フレーム 1 行で返す
+// 書式 : in ${エントリ} at ファイル(行)    (ユーザ関数は in $(関数名))
+void TKawariVM::GetCallChain(vector<wstring> &lines, unsigned int maxdepth) const{
+	unsigned int count=0;
+	for (vector<TFrame>::const_reverse_iterator it=frames.rbegin(); it!=frames.rend(); ++it){
+		if (count>=maxdepth){
+			unsigned int rest=(frames.rend()-it);
+			lines.push_back(L"... "+IntToString(rest)+L" more");
+			break;
+		}
+		wstring text=L"in ";
+		if (it->zone){
+			text+=L"<kis zone>";
+		}else if (it->entry.IsValid()){
+			wstring name=it->entry.GetName();
+			if ((name.size()>SYSTEM_FUNCTION_PREFIX.size())&&
+				(name.compare(0, SYSTEM_FUNCTION_PREFIX.size(), SYSTEM_FUNCTION_PREFIX)==0))
+				text+=L"$("+name.substr(SYSTEM_FUNCTION_PREFIX.size())+L")";
+			else
+				text+=L"${"+name+L"}";
+		}else{
+			text+=L"<word>";
+		}
+		wstring file;
+		int line=0;
+		if (FrameLocation(*it, file, line)){
+			text+=L" at "+file;
+			if (line>0) text+=L"("+IntToString(line)+L")";
+		}
+		lines.push_back(text);
+		count++;
+	}
 }
 //---------------------------------------------------------------------------
 
@@ -143,7 +235,11 @@ wstring TKawariVM::FunctionCall(const vector<wstring>& args){
 				}
 			}
 			// コード実行
-			wstring retstr=code->Run(*this);
+			wstring retstr;
+			{
+				TWordFrame frame(*this, entry, id);
+				retstr=code->Run(*this);
+			}
 
 			// コンテキスト削除
 			dictionary.DeleteContext();
@@ -161,7 +257,8 @@ wstring TKawariVM::FunctionCall(const vector<wstring>& args){
 			return (FunctionTable[args[0]]->Function(args));
 		}
 	}
-	logger.GetStream(kawari_log::LOG_ERROR) << RC.S(ERR_VM_UNDEFINED_FUNCTION1) << args[0] << RC.S(ERR_VM_UNDEFINED_FUNCTION2) << endl;
+	logger.Diag(kawari_log::LOG_ERROR, kawari_log::E_UNDEFINED_FUNCTION)
+		<< RC.S(ERR_VM_UNDEFINED_FUNCTION1) << args[0] << RC.S(ERR_VM_UNDEFINED_FUNCTION2);
 	return L"";
 }
 //---------------------------------------------------------------------------

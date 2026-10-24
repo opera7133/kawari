@@ -50,6 +50,36 @@ public:
 			engine.LoadKawariDict(inifile);
 	}
 
+	// 検査用 (kosui --check)
+	// 安全モードにしてから辞書を読み込み、出た診断を collector に集計する。
+	//  diagsink : 診断の出力先 (NULL なら出力しない)
+	//  level    : 診断として出すレベル (loglevel 文では変えられない)
+	//  loaded   : 起動する辞書を読めたか
+	TKawariKosuiAdapter(const wstring& datapath, const wstring& inifile,
+						wostream *diagsink, TDiagCollector *collector,
+						unsigned int level, bool useseed, unsigned int seed, bool &loaded)
+	{
+		SRandom(useseed ? seed : (unsigned int)time(NULL));
+
+		// 辞書を読む前に、外へ影響する経路を全て止める
+		engine.SetSandbox(true);
+		engine.SetKeepZones(true);
+		TKawariLogger &logger=engine.GetLogger();
+		logger.SetStream(NULL);
+		logger.SetDiagSink(diagsink);
+		logger.SetDiagCollector(collector);
+		logger.SetErrLevel(level);
+		logger.LockLevel(true);
+
+		engine.CreateEntry(L"System.DataPath").Push(engine.CreateStrWord(datapath));
+		engine.WriteProtect(L"System.DataPath");
+		engine.SetDataPath(datapath);
+
+		loaded=true;
+		if (inifile.size())
+			loaded=engine.LoadKawariDict(inifile);
+	}
+
 	~TKawariKosuiAdapter()
 	{
 		TEntry entry=engine.GetEntry(L"System.Callback.OnUnload");
@@ -64,6 +94,12 @@ public:
 			"Version : " KAWARI_NAME "/" KAWARI_MAJOR "." KAWARI_MINOR "." KAWARI_SUBMINOR "\n"
 			"Kernel Version : " KAWARI_CORE_VERSION "  / " KAWARI_CORE_CODENAME "\n"
 			KAWARI_CORE_CREDITS));
+	}
+
+	// 読み込んだ辞書を静的に検査する (検査用のコンストラクタで作ったときだけ意味がある)
+	unsigned int Lint(void)
+	{
+		return engine.Lint();
 	}
 
 	// 与えられたスクリプトを解釈・実行する

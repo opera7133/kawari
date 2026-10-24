@@ -101,6 +101,12 @@ TKVMKISCodeIF::TKVMKISCodeIF(const vector<TKVMCode_base *> &clist,
 	if ((clist.size()==l.size())||((clist.size()+1)==l.size())){
 		condlist.insert(condlist.end(), clist.begin(), clist.end());
 		list.insert(list.end(), l.begin(), l.end());
+	}else{
+		// 数が合わないものは保持しないので、ここで解放する
+		for (vector<TKVMCode_base *>::const_iterator it=clist.begin(); it!=clist.end(); it++)
+			if (*it) delete (*it);
+		for (vector<TKVMCode_base *>::const_iterator it=l.begin(); it!=l.end(); it++)
+			if (*it) delete (*it);
 	}
 }
 // デストラクタ

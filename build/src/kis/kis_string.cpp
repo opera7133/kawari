@@ -146,7 +146,8 @@ wstring KIS_char_at::Function(const vector<wstring>& args){
 
 	wstring target=(args[1]);
 	int idx=normalizeIndex(StringToInt(args[2]), target.length());
-	if(idx<0) return (L"");
+	// 空文字列の index 0 は normalizeIndex が通すので、ここで弾く
+	if((idx<0)||(idx>=static_cast<int>(target.length()))) return (L"");
 	wstring retstr;
 	retstr+=target[idx];
 	return (retstr);

@@ -21,6 +21,7 @@
 //  2008.01.23  Phase 8.2.5   isexist(ルートディレクトリ誤認対策)
 //  2008.03.30  Phase 8.2.8   textsave修正(複数のエントリを保存できない)
 //  2026.10.18  Phase 9.0.0   wchar_t化 (textload自動判定/textsave UTF-8, ListDirectory/PathStat使用)
+//  2026.10.22  Phase 9.1.1   textload_charset/textsave_charset/textappend_charset追加
 //
 //---------------------------------------------------------------------------
 #include "config.h"
@@ -44,16 +45,16 @@ void KIS_save::Run(const vector<wstring>& args, bool crypt)
 	vector<wstring> entry;
 	entry.insert(entry.end(),args.begin()+2,args.end());
 
-	// saveは相対パスのみ
+	// saveは相対パスのみ (絶対パスはファイル名だけを取り、データのフォルダに書く)
 	wstring filename;
 	if (IsAbsolutePath(CanonicalPath(args[1])))
-		filename=PathToFileName(args[1]);
+		filename=CanonicalPath(Engine->GetDataPath(), PathToFileName(args[1]));
 	else
 		filename=CanonicalPath(Engine->GetDataPath(), args[1]);
 
 	if(!Engine->SaveKawariDict(filename,entry,crypt)) {
 		// エラー
-		GetLogger().GetStream(LOG_ERROR) << args[0] << RC.S(ERR_KIS_FILE_SAVE_FAILED) << filename << endl;
+		GetLogger().Diag(LOG_ERROR, kawari_log::E_KIS_FILE_SAVE_FAILED) << args[0] << RC.S(ERR_KIS_FILE_SAVE_FAILED) << L" " << filename;
 	}
 
 	return;
@@ -67,22 +68,58 @@ wstring KIS_load::Function(const vector<wstring>& args)
 
 	if(!Engine->LoadKawariDict(filename)) {
 		// エラー
-		GetLogger().GetStream(LOG_ERROR) << args[0] << RC.S(ERR_KIS_FILE_LOAD_FAILED) << filename << endl;
+		GetLogger().Diag(LOG_ERROR, kawari_log::E_KIS_FILE_LOAD_FAILED) << args[0] << RC.S(ERR_KIS_FILE_LOAD_FAILED) << L" " << filename;
 	}
 
 	return(L"");
 }
 //---------------------------------------------------------------------------
-wstring KIS_textload::Function(const vector<wstring>& args)
+// 文字コード名を解釈する。allowautoなら"auto"で自動判定(KC_NULL)
+static bool ParseCharsetArg(const wstring& name, bool allowauto, TKawariCharset& cs)
 {
-	if(!AssertArgument(args, 3, 3)) return (L"");
+	cs=CharsetFromNameExt(name);
+	if(cs!=KC_NULL) return true;
+
+	if(allowauto) {
+		wstring n;
+		for(wstring::size_type i=0;i<name.size();i++) {
+			wchar_t c=name[i];
+			if((c>=L'A')&&(c<=L'Z')) c=(wchar_t)(c-L'A'+L'a');
+			n+=c;
+		}
+		if(n==L"auto") return true;
+	}
+	return false;
+}
+//---------------------------------------------------------------------------
+wstring KIS_textload::Function_(const vector<wstring>& args,bool withcs)
+{
+	if(withcs) {
+		if(!AssertArgument(args, 4, 4)) return (L"");
+	} else {
+		if(!AssertArgument(args, 3, 3)) return (L"");
+	}
+
+	// 指定が無ければ自動判定 (UTF-8 / Shift_JIS)
+	TKawariCharset cs=KC_NULL;
+	if(withcs&&!ParseCharsetArg(args[3], true, cs)) {
+		GetLogger().Diag(LOG_ERROR, kawari_log::E_KIS_ERROR) << args[0] << L": unknown charset: " << args[3];
+		return(L"");
+	}
 
 	wstring filename=CanonicalPath(Engine->GetDataPath(), args[2]);
 
 	wstring text;
-	if(!ReadTextFile(filename, text)) {
+	string raw;
+	if(!ReadWholeFile(filename, raw)) {
 		// エラー
-		GetLogger().GetStream(LOG_ERROR) << args[0] << RC.S(ERR_KIS_FILE_LOAD_FAILED) << filename << endl;
+		GetLogger().Diag(LOG_ERROR, kawari_log::E_KIS_FILE_LOAD_FAILED) << args[0] << RC.S(ERR_KIS_FILE_LOAD_FAILED) << L" " << filename;
+		return(L"");
+	}
+	text=MBtoW(raw, cs);
+	if(text.empty()&&!raw.empty()&&(cs!=KC_NULL)&&(cs!=KC_UTF8)) {
+		// 変換できなかった (この環境で使えない文字コード)
+		GetLogger().Diag(LOG_ERROR, kawari_log::E_KIS_ERROR) << args[0] << L": cannot convert from " << args[3] << L": " << filename;
 		return(L"");
 	}
 
@@ -107,14 +144,23 @@ wstring KIS_textload::Function(const vector<wstring>& args)
 	return(L"");
 }
 //---------------------------------------------------------------------------
-wstring KIS_textsave::Function_(const vector<wstring>& args,bool flag)
+wstring KIS_textsave::Function_(const vector<wstring>& args,bool flag,bool withcs)
 {
-	if(!AssertArgument(args, 3)) return (L"");
+	// 文字コードを取るときは File1 Charset Entry1 ...
+	unsigned int first=withcs ? 3 : 2;
+	if(!AssertArgument(args, first+1)) return (L"");
 
-	// saveは相対パスのみ
+	// 指定が無ければUTF-8 (BOMなし)
+	TKawariCharset cs=KC_UTF8;
+	if(withcs&&(!ParseCharsetArg(args[2], false, cs))) {
+		GetLogger().Diag(LOG_ERROR, kawari_log::E_KIS_ERROR) << args[0] << L": unknown charset: " << args[2];
+		return(L"");
+	}
+
+	// saveは相対パスのみ (絶対パスはファイル名だけを取り、データのフォルダに書く)
 	wstring filename;
 	if (IsAbsolutePath(CanonicalPath(args[1])))
-		filename=PathToFileName(args[1]);
+		filename=CanonicalPath(Engine->GetDataPath(), PathToFileName(args[1]));
 	else
 		filename=CanonicalPath(Engine->GetDataPath(), args[1]);
 
@@ -124,7 +170,7 @@ wstring KIS_textsave::Function_(const vector<wstring>& args,bool flag)
 	const wchar_t *eol=L"\n";
 #endif
 	wstring text;
-	for(unsigned int i=2;i<args.size();i++) {
+	for(unsigned int i=first;i<args.size();i++) {
 		TEntry entry=Engine->CreateEntry(args[i]);
 		unsigned int size=entry.Size();
 
@@ -134,10 +180,17 @@ wstring KIS_textsave::Function_(const vector<wstring>& args,bool flag)
 		}
 	}
 
-	// UTF-8 (BOMなし)で書き出す
-	if(!WriteTextFile(filename, text, KC_UTF8, false, !flag)) {
+	// 変換に失敗したら、上書きする前に中止する
+	string data=WtoMB(text, cs);
+	if(data.empty()&&!text.empty()) {
+		GetLogger().Diag(LOG_ERROR, kawari_log::E_KIS_ERROR) << args[0] << L": cannot convert to " << CharsetName(cs) << L": " << filename;
+		return(L"");
+	}
+
+	// BOMなしで書き出す
+	if(!WriteWholeFile(filename, data, !flag)) {
 		// エラー
-		GetLogger().GetStream(LOG_ERROR) << args[0] << RC.S(ERR_KIS_FILE_LOAD_FAILED) << filename << endl;
+		GetLogger().Diag(LOG_ERROR, kawari_log::E_KIS_FILE_SAVE_FAILED) << args[0] << RC.S(ERR_KIS_FILE_SAVE_FAILED) << L" " << filename;
 		return(L"");
 	}
 

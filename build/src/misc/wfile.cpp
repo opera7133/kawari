@@ -24,14 +24,29 @@
 #endif
 //---------------------------------------------------------------------------
 using namespace std;
+#include <cwchar>
 //---------------------------------------------------------------------------
 std::string PathToNative(const std::wstring &path)
 {
 	return WtoUTF8(path);
 }
 //---------------------------------------------------------------------------
+static bool FileWritesDisabled=false;
+//---------------------------------------------------------------------------
+void SetFileWritesDisabled(bool disabled)
+{
+	FileWritesDisabled=disabled;
+}
+//---------------------------------------------------------------------------
+bool GetFileWritesDisabled(void)
+{
+	return FileWritesDisabled;
+}
+//---------------------------------------------------------------------------
 FILE* kawari_wfopen(const std::wstring &path, const wchar_t *mode)
 {
+	// 書き込みを止めているとき、書き込み系のモードで開くことは拒否する (最後の砦)
+	if(FileWritesDisabled&&mode&&(wcspbrk(mode, L"wa+")!=NULL)) return NULL;
 #ifdef KAWARI_WIN32
 	return _wfopen(path.c_str(), mode);
 #else
@@ -57,6 +72,9 @@ bool ReadWholeFile(const std::wstring &path, std::string &out)
 //---------------------------------------------------------------------------
 bool WriteWholeFile(const std::wstring &path, const std::string &data, bool append)
 {
+	// 書き込みを止めているときは、書いたことにして何もしない
+	// (失敗扱いにすると、辞書の誤りでない save / textsave のエラーが出てしまう)
+	if(FileWritesDisabled) return true;
 	FILE *fp=kawari_wfopen(path, append ? L"ab" : L"wb");
 	if(!fp) return false;
 
@@ -144,9 +162,14 @@ bool PathStat(const std::wstring &path, bool *isdir, bool *isfile)
 bool GetEnvironmentW(const std::wstring &name, std::wstring &value)
 {
 #ifdef KAWARI_WIN32
-	const wchar_t *p=_wgetenv(name.c_str());
-	if(!p) return false;
-	value=p;
+	// _wgetenv は CRT の複製を見るため、ホストが後から SetEnvironmentVariable した値が見えない
+	DWORD n=::GetEnvironmentVariableW(name.c_str(), NULL, 0);
+	if(n==0) return false;
+	std::vector<wchar_t> buf(n);
+	DWORD r=::GetEnvironmentVariableW(name.c_str(), &buf[0], n);
+	if((r==0)&&(::GetLastError()==ERROR_ENVVAR_NOT_FOUND)) return false;
+	if(r>=n) return false;	// 間に値が伸びた
+	value.assign(&buf[0], r);
 	return true;
 #else
 	const char *p=getenv(PathToNative(name).c_str());

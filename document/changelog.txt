@@ -1,5 +1,174 @@
 ChangeLog
 
+2026/10/23 Phase 9.2.0 (Core 4.2.0)
+ * Phase 9 can replace Phase 8 (8.2.x) as it is: the dictionaries, the SAORI
+   modules and the baseware link of a Phase 8 ghost work by only replacing
+   shiori.dll. There is no incompatible change like the one from Phase 7 to
+   8. The intended differences are the UTF-8 (BOM) files written by
+   "save"/"savecrypt" (8.2.9 and earlier cannot read them), the Charset
+   header, and the Unicode code point order (see 9.0.0 below)
+ * "date" and "mktime" use 64 bit seconds (the year 2038 problem). The
+   32-bit mingw-w64 (msvcrt) has a 32 bit time_t, so the 64 bit CRT functions
+   (_time64, _localtime64, _mktime64) are called directly. "date %s 4102444800"
+   and "mktime 2100 1 1 0 0 0" work. The limits of the C runtime of the
+   Windows build (msvcrt) remain: a time before 1970 and a time after about
+   the end of the year 3000 ("date" gives an empty string, "mktime" gives -1;
+   measured: "date" up to 3001/01/01 00:00:00 UTC, "mktime" up to 3001 but not
+   3100). The POSIX build follows the time_t of the OS. The integers of the
+   expressions ($[ ]) are still 32 bit, so
+   a calculation with seconds of 2038 or later (a difference of two
+   $(date %s)) is not correct yet. (misc: Int64ToString / StringToInt64)
+ * diagnostics: every error and warning of the compiler, the interpreter, the
+   dictionary and the KIS commands/SAORI now has a code and a location, in
+   one format:
+       file(line): error K-E0028: undefined function "foo" called.
+           in $(foo) at file(line)
+           in ${OnBoot} at file(line)
+   - the codes are K-E<number> / K-W<number>; the numbers are listed in
+     kawari_log.h (enum DiagCode) and are never changed or reused
+   - the compile errors used to be "file line: error: message" (the format
+     changed; the text of the messages is the same). The location of a
+     runtime diagnostic is the dictionary file and the line of the word being
+     run, found by (entry, word): a word that is shared by several entries
+     has one location per entry. Words made at run time (adddict, set) have no
+     location, and the location of a word that was freed is forgotten (IDs
+     are reused). The statements of "=kis" zones have their own lines, and a
+     "function" / "lambda" made there is located at its statement
+   - the call chain (up to 8 frames) is printed under the diagnostic: "in
+     ${entry}" for a word, "in $(name)" for a user function, "in <kis zone>"
+     for the =kis zone being loaded. "decl" warnings print only the innermost
+     frame
+   - nothing is printed or recorded for a level that "loglevel" does not
+     enable (quiet is still the default), and the meaning of a dictionary is
+     not changed: an undefined entry is still empty. Running cost: a push and
+     a pop of a small frame per word run, not measurable in the hot path
+   - "too few/many arguments" of KIS commands are K-W1001 / K-W1002; the
+     errors of regex_* are K-E1100..1102; other KIS errors are K-E1000 and
+     SAORI errors are K-E1200 (the same text as before)
+   - the lexer used the EOL message also for a quoted string that reaches the
+     end of the file; it now uses the EOF one (K-E0002). The preprocessor adds
+     a final newline, so a quote left open in a file is still reported as
+     K-E0001 and K-E0002 is rarely reached
+   - "load/save failed" has a space before the path
+ * add "kosui --check": loads the dictionary in the sandbox, reports the
+   diagnostics and quits, without reading the standard input
+       kosui --check [--format text|json] [--werror] [--decl]
+             [--eval <script>]... [--seed <n>] [<rcfile>]
+   - exit code: 0 = nothing, 1 = warnings only, 2 = errors (--werror makes
+     warnings errors), 3 = could not run (the rcfile cannot be read)
+   - the output is only diagnostics (a line "check: N error(s), M warning(s)"
+     at the end); the "echo" of KIS and "loglevel" / "logfile" do not change
+     it. json prints one JSON document in UTF-8 whatever the console is
+   - --eval runs a script after the load (as typed in kosui), so the
+     diagnostics of the events can be found; it samples random choices, use
+     --seed to repeat. --decl also reports reads of empty entries (K-W0003)
+   - the sandbox (engine->SetSandbox) stops everything that reaches out of the
+     dictionary: files are not written (save, textsave, logfile... succeed
+     without writing), SAORI modules are not loaded (a call to a registered or
+     internal_* module answers Result: 0), and the baseware is not reached
+     (Direct SSTP). It is for static checking only: "=kis" is really run, so
+     a loop that never ends hangs --check
+ * add the static check (lint) to "kosui --check": after the load (and before
+   --eval) it walks every word of the dictionary and every "=kis" zone, and
+   warns about what is wrong without running it. "--no-lint" turns it off
+   - K-W2001: a reference to an entry that is defined nowhere (${x},
+     ${a + x}, $x[0]), which is silently empty at run time
+   - K-W2002: a command that is neither built in, nor defined by "function"
+     (or as System.Function.<name>), nor a forced built-in call (".name")
+   - K-W2003: a regex_* command with an unquoted ( ) in an argument. The
+     parentheses of a bare word are the block syntax of Kawari and are
+     removed, so the regular expression never sees them: regex_match (a) x
+     matches "a" without a group. Quote the pattern: regex_match "(a)" x.
+     This one is found by the compiler (the tree keeps no trace of the
+     parentheses) while it loads the dictionary, only when checking
+   - K-W2004: regex_replace / regex_replace_first with an unquoted ${N} in the
+     replacement string. It is expanded as a history reference before the
+     command runs, so the back reference never reaches the regex
+   - a comment line "# lint:disable-next-line=K-W2001, K-W2003" suppresses
+     the listed lint warnings (K-W2xxx) on the next line of the file. Only a
+     whole-line "#" is a comment in Kawari, so there is no end-of-line form.
+     A warning in a multi-line word is located at the first line of the
+     word, so the comment goes above the entry
+   - to keep false positives down, these names count as defined: entries that
+     exist after the load, any literal given as an argument of a statement
+     (set / adddict / foreach variables...) or written in a "$(...)" inside a
+     string, a name whose head is a literal and whose tail is built at run
+     time (launch_a_${n}), System.* and @local. Names built by ${...} are not
+     checked at all. These are warnings: --werror makes them errors
+   - the entries of the warnings are sorted by file and line. A multi-line
+     word is located at its first line
+   - the compiled "=kis" zones are kept (engine->SetKeepZones) until the check
+     is done; they are freed right after the run as before otherwise
+   - TKVMCode_base::GetChildren() lists the children of a code node, for the
+     walk. It is not used when running
+ * add the check suite to test/run.ps1 and test/run_posix.py (test/check/*)
+
+2026/10/22 Phase 9.1.1 (Core 4.1.1)
+ * add "textload_charset", "textsave_charset" and "textappend_charset": the
+   same as "textload", "textsave" and "textappend" with the charset of the
+   file as an argument (textload_charset Entry File Charset,
+   textsave_charset File Charset Entry...). The charsets are Shift_JIS,
+   UTF-8, EUC-JP, ISO-2022-JP, EUC-KR and GB2312 (Windows uses the code pages
+   20932, 50220, 949 and 936, so GB2312 is GBK and EUC-KR is UHC; POSIX uses
+   iconv). "auto" is also accepted by textload_charset. An unknown or
+   unsupported charset is an error: the entry is not changed and the file is
+   not overwritten. "textload", "textsave" and "textappend" are unchanged
+ * fixed crashes:
+   - a dictionary word with "$" not followed by a substitution (x : ${$})
+     put a NULL code into the word and crashed on evaluation or "save"
+   - "$[ (-2147483647-1) / -1 ]" (and "%") raised a division fault
+   - "date" with a time that localtime() cannot convert (a negative value)
+     dereferenced NULL
+   - an exception in "load", "request" or "unload" (and the so_* object
+     interface) went out of the module into the host; GlobalAlloc failure
+     is now checked
+ * fixed bugs in the interpreter:
+   - after a word of the form ${entry} was collected and its ID reused, the
+     new word was dropped from the set operations (${a+b}, size etc.)
+   - "char_at" on an empty string returned a NUL character
+   - "inc" / "dec" overflowed at the int limits; they now stop at the limit
+   - an integer value of INT_MIN was printed as garbage, and "-" alone was
+     taken as the integer 0
+   - numbers out of the int range are now clamped also where long is 64 bit
+   - "mktime" ignored daylight saving time (now the same as "date")
+   - "save" / "savecrypt" / "textsave" given an absolute path wrote the file
+     name into the current directory of the host; it is now written into the
+     ghost's directory, as with a relative path. "textsave" logged "load
+     failed" on a write error
+   - "$(if cond)" without a body leaked the condition
+   - the lexer could read the last character again at the end of a file
+   - the message table is built when the module is loaded, not on its first
+     use from possibly several threads
+ * fixed bugs in SAORI and the platform layer:
+   - loading the same SAORI DLL twice left an extra LoadLibrary reference,
+     so the DLL stayed loaded after the last unload
+   - a SAORI without "request" got "unload" without "load"; on POSIX,
+     dlclose(NULL) was called for a library that failed to open
+   - POSIX: an unencodable character in ISO-2022-JP output was written in
+     the kanji shift state and garbled the rest; errno was read too late
+   - POSIX: Direct SSTP to ninix could die by SIGPIPE, and failed when the
+     4-byte length header arrived in pieces
+   - Windows: environment variables are read with GetEnvironmentVariableW, so
+     the values set by the host after start are seen
+   - a base path at the root ("/" or "/a" with "../b") lost the root
+ * fixed bugs in the tools:
+   - kosui no longer loops forever at the end of its input without "exit"
+   - kosui (Direct SSTP mode) read past the WM_COPYDATA data, could keep the
+     mutex, and lost replies that came after SendMessageTimeout returned
+   - kawari_encode / kawari_encode2 / kawari_decode2 took a "." in a folder
+     name as the extension, and could overwrite the input file with the
+     output (such a file is now skipped)
+   - the ghost list of kosui read the FMO size with sign extension
+   - shiori/py_shiori.cpp passed the handle with a wrong format code
+ * merged the pull requests #7 and #8 of the upstream (Narazaka):
+   - MACH_TYPE = js exports the utility functions of Emscripten (ccall,
+     cwrap, intArrayFromString and intArrayToString), which newer Emscripten
+     does not export unless it is told to (and the build is -Os)
+   - add MACH_TYPE = wasm (WebAssembly, loaded asynchronously)
+   - the JavaScript API is changed: "Kawari" is replaced by "newKawari
+     (onRuntimeInitialized)", which calls the callback with { Module, FS,
+     PATH, ERRNO_CODES, NODEFS, IDBFS, WORKERFS } once the runtime is ready
+
 2026/10/19 Phase 9.1.0 (Core 4.1.0)
  * add "lambda": defines an anonymous function and returns its name
    (System.Lambda.<n>, never the same as a defined function). The body is

@@ -36,7 +36,7 @@ TModule *TModuleFactoryPython::CreateModule(const wstring &path){
 	// Pythonとはパスを従来どおりShift_JISのバイト列で受け渡す
 	SAORI_HANDLE handle=(SAORI_HANDLE)py_saori_exist(WtoSJIS(path).c_str());
 	if (!handle){
-		GetLogger().GetStream(LOG_ERROR) << L"[SAORI Python] Module ("+fn+L") load failed." << endl;
+		GetLogger().Diag(LOG_ERROR, kawari_log::E_SAORI) << L"[SAORI Python] Module ("+fn+L") load failed.";
 		return NULL;
 	}
 	TModulePython *ret=new TModulePython((*this), fn, handle);

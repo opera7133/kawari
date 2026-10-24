@@ -160,7 +160,7 @@ wstring TKawariLexer::getQuotedLiteral(void){
 				pp->unget();
 		}else if(0x0a==ch){
 			// 改行
-			error(RC.S(ERR_LEXER_EOL_IN_QUOTED_STRING));
+			error(ERR_LEXER_EOL_IN_QUOTED_STRING);
 			closed=true;
 			break;
 		}else{
@@ -169,7 +169,7 @@ wstring TKawariLexer::getQuotedLiteral(void){
 	}
 	if (!closed)
 		// 解析中にEOFに達してしまった
-		error(RC.S(ERR_LEXER_EOL_IN_QUOTED_STRING));
+		error(ERR_LEXER_EOF_IN_QUOTED_STRING);
 	return result;
 }
 //---------------------------------------------------------------------------
@@ -259,7 +259,8 @@ Token::Type TKawariLexer::peek(Mode m){
 		return (Token::T_EOF);
 
 	wchar_t ch;
-	pp->peek(ch);
+	if (!pp->peek(ch))
+		return (Token::T_EOF);
 	return checkType(m, ch);
 }
 
@@ -273,7 +274,8 @@ Token TKawariLexer::next(Mode m){
 	if (!hasNext()) return (result.set(Token::T_EOF));
 
 	wchar_t ch;
-	pp->getch(ch);
+	// 最終行の読み込みでEOFになると、hasNext()が真でも読めないことがある
+	if (!pp->getch(ch)) return (result.set(Token::T_EOF));
 	if (IsLexChar((int)m, ch)){
 		// ベア文字列
 		pp->unget();
@@ -447,7 +449,8 @@ bool TKawariLexer::simpleSkipTo(wchar_t ch, bool noret){
 	static const wstring CRLF(L"\x0d\x0a");
 	while (hasNext()){
 		wchar_t c;
-		pp->peek(c);
+		if (!pp->peek(c))
+			break;
 		if (c==ch)
 			return true;
 		else if (noret && (CRLF.find(c)!=wstring::npos))
@@ -501,6 +504,7 @@ bool TKawariPreProcessor::processNextLine(void){
 					continue;
 				}else if (linebuf[i]==L'#'){
 					// comment
+					if (lintnotes) lintnotes->ReadComment(lintfile, ln, linebuf.substr(i+1));
 					linebuf=L"";
 				}
 				break;

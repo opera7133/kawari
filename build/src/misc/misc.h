@@ -14,6 +14,7 @@
 //---------------------------------------------------------------------------
 #include <string>
 #include <cstdlib>
+#include <climits>
 #include <cwchar>
 using namespace std;
 //---------------------------------------------------------------------------
@@ -54,9 +55,18 @@ wstring IntToString(int n);
 // 文字列から整数値を得る (atoi相当。数値で始まらなければ0)
 inline int StringToInt(const std::wstring &str)
 {
-	return (int)wcstol(str.c_str(), NULL, 10);
+	// long が 64bit の環境 (LP64) でも int の範囲に飽和させる
+	long v=wcstol(str.c_str(), NULL, 10);
+	if(v>INT_MAX) v=INT_MAX;
+	if(v<INT_MIN) v=INT_MIN;
+	return (int)v;
 }
 
+//---------------------------------------------------------------------------
+// 64bit整数版 (時刻の通算秒数用。式の評価は int のまま)
+wstring Int64ToString(long long n);
+// 文字列から64bit整数値を得る (StringToInt と同じ規則。範囲外は飽和)
+long long StringToInt64(const std::wstring &str);
 //---------------------------------------------------------------------------
 // 整数値判定
 bool IsInteger (const std::wstring &str);

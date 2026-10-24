@@ -52,7 +52,8 @@ static PyObject *wrap_load(PyObject *self, PyObject *args)
 	Py_INCREF(Py_True);
 	return Py_True;
 #else
-	return Py_BuildValue("d", shiori_handle);
+	// The handle is passed to Python as a float. Do not pass an unsigned int to the "d" format.
+	return Py_BuildValue("d", (double)shiori_handle);
 #endif
 }
 
@@ -61,11 +62,12 @@ static PyObject *wrap_unload(PyObject *self, PyObject *args)
 #if 0
 	if(!PyArg_ParseTuple(args, ""))
 #else
-	unsigned int shiori_handle = 0;
+	double handle_d = 0;
 
-	if(!PyArg_ParseTuple(args, "d", &shiori_handle))
+	if(!PyArg_ParseTuple(args, "d", &handle_d))
 #endif
 		return NULL;
+	unsigned int shiori_handle = (unsigned int)handle_d;
 
 	if (!TKawariShioriFactory::GetFactory().DisposeInstance(shiori_handle)){
 		Py_INCREF(Py_False);
@@ -98,11 +100,12 @@ static PyObject *wrap_request(PyObject *self, PyObject *args)
 
 	if(!PyArg_ParseTuple(args, "s", &requeststr))
 #else
-	unsigned int shiori_handle = 0;
+	double handle_d = 0;
 
-	if(!PyArg_ParseTuple(args, "ds", &shiori_handle, &requeststr))
+	if(!PyArg_ParseTuple(args, "ds", &handle_d, &requeststr))
 #endif
 		return NULL;
+	unsigned int shiori_handle = (unsigned int)handle_d;
 
 	aistr = TKawariShioriFactory::GetFactory().RequestInstance(
 		shiori_handle, string(requeststr));

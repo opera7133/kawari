@@ -1,0 +1,15 @@
+data : abc
+=kis
+loglevel quiet;
+logfile sandbox_log.txt;
+save sandbox_save.kis data;
+savecrypt sandbox_crypt.kis data;
+textsave sandbox_text.txt data;
+textappend sandbox_append.txt data;
+saoriregist nosuch_sandbox.dll mysaori preload;
+set R $(callsaori mysaori a b);
+echo ECHO_SHOULD_NOT_SHOW;
+callsaori neverregistered 1;
+callsaori internal_foo 1;
+load missing_sandbox_file.kis;
+=end

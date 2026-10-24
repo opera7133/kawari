@@ -80,7 +80,7 @@ bool KIS_callsaori::CallSaori(
 	if ((!Engine->RequestToSAORIModule(saoriname, request, response))
 		||(!response.GetStartline().size())){
 		// Failed
-		GetLogger().GetStream(LOG_ERROR) << RC.S(ERR_KIS_SAORI_CALL_FAILED1) << saoriname << RC.S(ERR_KIS_SAORI_CALL_FAILED2) << endl;
+		GetLogger().Diag(LOG_ERROR, kawari_log::E_KIS_SAORI_CALL_FAILED) << RC.S(ERR_KIS_SAORI_CALL_FAILED1) << saoriname << RC.S(ERR_KIS_SAORI_CALL_FAILED2);
 		return false;
 	}
 

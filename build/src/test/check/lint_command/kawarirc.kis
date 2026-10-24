@@ -1,0 +1,18 @@
+=kis
+function greet $(
+    echo hi $@arg[1];
+);
+bogus_zone 1;
+greet x;
+.echo forced;
+.bogus_forced 1;
+echo ok;
+if $[ 1 ] $(echo yes) else $(bogus_else);
+loop 2 $(echo ${defined});
+foreach item defined $(echo ${item});
+=end
+System.Function.dict_fn : $(echo dict)
+defined : value
+call_known : $(greet 1) $(dict_fn) $(size defined)
+call_unknown : $(bogus_word 1)
+call_nested : $(echo $(bogus_nested))

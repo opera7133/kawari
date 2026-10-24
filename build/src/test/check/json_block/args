@@ -1,0 +1,1 @@
+--no-lint --format=json --eval '${mid}' kawarirc.kis

@@ -131,8 +131,8 @@ SAORI_HANDLE load_library(const wstring &wfile){
 		if (sym_load != NULL && sym_unload != NULL && sym_request != NULL) {
 		    do_fallback = false;
 		}
+		::dlclose(handle);	// dlopenに失敗したNULLは閉じない
 	    }
-	    ::dlclose(handle);
 	}
 	
 	if (do_fallback) {
@@ -141,7 +141,7 @@ SAORI_HANDLE load_library(const wstring &wfile){
 	    if (fallback_lib.length() == 0) {
 		// 無い
 		// Loggerを使うには、この関数がIModuleFactoryのメソッドでなければならない…
-		return NULL;
+		return 0;	// SAORI_HANDLEは整数型
 	    }
 	    else {
 		// あったので、これを使う。
@@ -170,14 +170,14 @@ TModule *TModuleFactoryNative::CreateModule(const wstring &path){
 
 	SAORI_HANDLE handle=load_library(fn);
 	if (!handle){
-		GetLogger().GetStream(LOG_ERROR) << L"[SAORI Native] Library ("+fn+L") load failed." << endl;
+		GetLogger().Diag(LOG_ERROR, kawari_log::E_SAORI) << L"[SAORI Native] Library ("+fn+L") load failed.";
 		return NULL;
 	}
 	TModuleNative *ret=new TModuleNative((*this), fn, handle);
 	if (ret->Initialize()){
 		return ret;
 	}else{
-		ret->Unload();
+		// Loadしていないのでunloadは呼ばない
 		DeleteModule(ret);
 		return NULL;
 	}
@@ -209,7 +209,7 @@ bool TModuleNative::Initialize(void){
 	func_request=(MEMORY_HANDLE (SHIORI_CALL *)(MEMORY_HANDLE, long *))get_symbol(handle, "request");
 
 	if (func_request==NULL){
-		GetFactory().GetLogger().GetStream(LOG_ERROR) << L"[SAORI Native] importing 'request' from ("+path+L") failed." << endl;
+		GetFactory().GetLogger().Diag(LOG_ERROR, kawari_log::E_SAORI) << L"[SAORI Native] importing 'request' from ("+path+L") failed.";
 		return false;
 	}
 	return true;

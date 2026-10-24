@@ -159,8 +159,8 @@ wstring TKVMCodeScriptStatement::Run(TKawariVM &vm){
 			vm.SetState(TKawariVM::InterpState(TKawariVM::InterpState::BREAK, L""));
 		}else{
 			// error
-			vm.GetLogger().GetStream(kawari_log::LOG_ERROR)
-				<< RC.S(kawari::resource::ERR_CODE_BREAK_OUTOF_LOOP) << endl;
+			vm.GetLogger().Diag(kawari_log::LOG_ERROR, kawari_log::E_BREAK_OUTOF_LOOP)
+				<< RC.S(kawari::resource::ERR_CODE_BREAK_OUTOF_LOOP);
 		}
 		retstr=L"";
 	}else if(arg0==L"continue"){
@@ -168,8 +168,8 @@ wstring TKVMCodeScriptStatement::Run(TKawariVM &vm){
 			vm.SetState(TKawariVM::InterpState(TKawariVM::InterpState::CONTINUE, L""));
 		}else{
 			// error
-			vm.GetLogger().GetStream(kawari_log::LOG_ERROR)
-				<< RC.S(kawari::resource::ERR_CODE_CONTINUE_OUTOF_LOOP) << endl;
+			vm.GetLogger().Diag(kawari_log::LOG_ERROR, kawari_log::E_CONTINUE_OUTOF_LOOP)
+				<< RC.S(kawari::resource::ERR_CODE_CONTINUE_OUTOF_LOOP);
 		}
 		retstr=L"";
 	}else if(arg0==L"return"){
@@ -194,6 +194,10 @@ wstring TKVMCodeScriptStatement::Run(TKawariVM &vm){
 					TKawariCompiler::Compile(funcdecl, vm.GetLogger()));
 				entry.Clear();
 				entry.Push(id);
+				// 定義した場所を覚える (診断用)
+				unsigned int srcfile, srcline;
+				if (vm.GetCurrentSource(srcfile, srcline))
+					vm.Dictionary().SourceMap().RecordWord(entry.GetID(), id, srcfile, srcline);
 			}
 		}else if(list.size()==2){
 			wstring funcname=vm.RunWithCurrentContext(list[1]);
@@ -227,6 +231,10 @@ wstring TKVMCodeScriptStatement::Run(TKawariVM &vm){
 					TKawariCompiler::Compile(funcdecl, vm.GetLogger()));
 				entry.Clear();
 				entry.Push(id);
+				// 定義した場所を覚える (診断用)
+				unsigned int srcfile, srcline;
+				if (vm.GetCurrentSource(srcfile, srcline))
+					vm.Dictionary().SourceMap().RecordWord(entry.GetID(), id, srcfile, srcline);
 				retstr=funcname;
 			}
 		}else{
@@ -323,8 +331,13 @@ wstring TKVMCodeScriptStatement::Run(TKawariVM &vm){
 					// 敵は別エントリ中の単語なので、コンテキストを作成
 					TKVMCode_base *code=dict.GetWordFromID(*it);
 					if (!code) continue;
+					wstring wordstr;
+					{
+						TKawariVM::TWordFrame wordframe(vm, listentry, *it);
+						wordstr=vm.RunWithNewContext(code);
+					}
 					TWordID wid=dict.CreateWord(
-						TKawariCompiler::CompileAsString(vm.RunWithNewContext(code)));
+						TKawariCompiler::CompileAsString(wordstr));
 					tmpentry.Clear();
 					tmpentry.Push(wid);
 
@@ -377,6 +390,10 @@ wstring TKVMCodeInlineScript::Run(TKawariVM &vm){
 	unsigned int frame=vm.Dictionary().LinkFrame();
 	for (TCodePVector::iterator it=list.begin(); (it!=list.end())&&(!vm.IsOnException()); it++){
 		// おのおのの行について
+		if (lines.size()){
+			unsigned int idx=it-list.begin();
+			if (idx<lines.size()) vm.SetZoneLine(lines[idx]);
+		}
 		TKVMCodeScriptStatement *code=dynamic_cast<TKVMCodeScriptStatement *>(*it);
 		if (code){
 			if(code->GetArg0()==L"silent"){
@@ -422,6 +439,7 @@ wstring TKVMCodeEntryIndex::Run(TKawariVM &vm){
 	TKVMCode_base *code=vm.Dictionary().GetWordFromID(id);
 	if (!code) return(L"");
 
+	TKawariVM::TWordFrame frame(vm, entry, id);
 	wstring retstr=vm.RunWithNewContext(code);
 	vm.Dictionary().PushToHistory(retstr);
 	return retstr;

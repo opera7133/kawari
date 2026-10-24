@@ -41,6 +41,7 @@ using namespace std;
 #include "libkawari/kawari_code.h"
 #include "libkawari/kawari_vm.h"
 #include "libkawari/kawari_log.h"
+#include "libkawari/kawari_lint.h"
 #include "saori/saori.h"
 #include "misc/dsstp.h"
 #include "misc/charset.h"
@@ -66,6 +67,15 @@ private:
 
 	// 本体(SSP, ninixなど)への接続 (Direct SSTP)
 	dsstp::TBasewareLink *Baseware;
+
+	// 安全モード
+	bool Sandbox;
+
+	// 静的検査のために残す =kis ゾーンの中間コード
+	bool KeepZones;
+	vector<TKawariLint::Zone> Zones;
+	// 読み込み中にコンパイラが集める所見と抑制コメント (KeepZones のときだけ集める)
+	TLintNotes LintNotes;
 
 public:
 	// 範囲外のインデックス
@@ -257,6 +267,27 @@ public:
 
 	// 本体への接続を得る
 	dsstp::TBasewareLink &GetBaseware(void) { return *Baseware; }
+
+
+	// 安全モード API (kosui --check 用)
+
+	// 安全モードにする。辞書を読み込む前に呼ぶこと。
+	// 有効の間は、辞書の =kis や KIS が外へ影響を及ぼさない。
+	//  - ファイルを書かない (save / textsave / logfile など。書いたことにして成功を返す)
+	//  - SAORI の実体を作らない (DLL も exe も起動しない。呼び出しは Result: 0 で成功する)
+	//  - 本体への通信 (Direct SSTP) をしない
+	// ファイルを書き込めないのは、このプロセス全体に及ぶ (misc/wfile.h)。
+	void SetSandbox(bool enable);
+	bool IsSandbox(void) const { return Sandbox; }
+
+	// 静的検査 API (kosui --check 用)
+
+	// 辞書の =kis ゾーンの中間コードを、Lint() まで残す。辞書を読み込む前に呼ぶこと。
+	void SetKeepZones(bool enable);
+
+	// 読み込み済みの辞書と、残しておいたゾーンを静的に検査し、警告を出す (kawari_lint.h)。
+	// 戻り値 : 出した警告の数
+	unsigned int Lint(void);
 
 
 	// コンテキスト関係 API

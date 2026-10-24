@@ -15,6 +15,8 @@
 #include "config.h"
 //--------------------------------------------------------------------------
 #include "libkawari/kawari_log.h"
+#include "libkawari/kawari_rc.h"
+#include "libkawari/kawari_diag.h"
 #include "misc/charset.h"
 //--------------------------------------------------------------------------
 #include <iostream>
@@ -143,11 +145,14 @@ public:
 
 	~TKawariLexer ();
 
-	// コンパイルエラー
-	void error(const std::wstring &message);
+	// コンパイルエラー (メッセージはリソース ID。suffix は末尾に続ける)
+	void error(kawari::resource::ID id, const std::wstring &suffix=L"");
 
-	// コンパイルエラー
-	void warning(const std::wstring &message);
+	// コンパイル警告
+	void warning(kawari::resource::ID id, const std::wstring &suffix=L"");
+
+	// 静的検査用の情報の受け取り先 (NULL で何もしない)。コメント行の抑制指定を拾う。
+	void SetLintNotes(TLintNotes *notes);
 
 private:
 	// 文字からトークンタイプを得る
@@ -165,7 +170,8 @@ class TKawariPreProcessor {
 public:
 	TKawariPreProcessor(std::wistream &input, int lineno=0, bool preprocess=true,
 						TKawariCharset cryptcharset=KC_SJIS)
-		: is(input), pp(preprocess), mc(false), isMS(false), ln(lineno), pos(0), cryptcs(cryptcharset) {}
+		: is(input), pp(preprocess), mc(false), isMS(false), ln(lineno), pos(0), cryptcs(cryptcharset),
+	  lintnotes(NULL) {}
 	bool peek(wchar_t &ch);
 	bool getch(wchar_t &ch);
 	bool eof(void);
@@ -186,6 +192,9 @@ public:
 	// モードフラグのリセット
 	void ResetModeSwitch(void){ isMS=false; }
 
+	// 静的検査用 : コメント行の抑制指定を notes に渡す (file はその所属ファイル名)
+	void SetLintNotes(TLintNotes *notes, const std::wstring &file){ lintnotes=notes; lintfile=file; }
+
 private:
 	bool processNextLine(void);
 	// 入力ストリーム
@@ -205,7 +214,14 @@ private:
 	TKawariCharset cryptcs;
 	// 出力バッファ
 	std::wstring linebuf;
+	// 静的検査用の受け取り先 (無ければ NULL)
+	TLintNotes *lintnotes;
+	std::wstring lintfile;
 };
+//---------------------------------------------------------------------------
+inline void TKawariLexer::SetLintNotes(TLintNotes *notes){
+	pp->SetLintNotes(notes, fn);
+}
 //---------------------------------------------------------------------------
 // 次のトークンがあるか
 inline bool TKawariLexer::hasNext(void){
@@ -216,20 +232,25 @@ inline void TKawariLexer::ResetModeSwitch(void){
 	pp->ResetModeSwitch();
 }
 //---------------------------------------------------------------------------
-inline void TKawariLexer::error(const std::wstring &message){
-	logger.GetStream(kawari_log::LOG_ERROR) << getFileName() << " " << getLineNo()
-		<< ": error: " << message << std::endl;
+// ファイル名が無い (実行時に文字列をコンパイルしている) ときは、
+// 字句解析器の行ではなく実行中の位置を使う。
+inline void TKawariLexer::error(kawari::resource::ID id, const std::wstring &suffix){
+	TDiagStream ds=logger.Diag(kawari_log::LOG_ERROR, kawari::diag::NumberOf(id));
+	if (getFileName()!=L"<unknown>") ds.At(getFileName(), getLineNo());
+	ds << RC.S(id) << suffix;
 }
 //---------------------------------------------------------------------------
-inline void TKawariLexer::warning(const std::wstring &message){
-	logger.GetStream(kawari_log::LOG_WARNING) << getFileName() << " " << getLineNo()
-		<< ": warning: " << message << std::endl;
+inline void TKawariLexer::warning(kawari::resource::ID id, const std::wstring &suffix){
+	TDiagStream ds=logger.Diag(kawari_log::LOG_WARNING, kawari::diag::NumberOf(id));
+	if (getFileName()!=L"<unknown>") ds.At(getFileName(), getLineNo());
+	ds << RC.S(id) << suffix;
 }
 //---------------------------------------------------------------------------
 inline bool TKawariPreProcessor::peek(wchar_t &ch){
-	bool ret = getch(ch);
+	// EOFで読めなかったときに戻すと、最後の文字がまた読めてしまう
+	if (!getch(ch)) return false;
 	unget();
-	return ret;
+	return true;
 }
 //---------------------------------------------------------------------------
 inline bool TKawariPreProcessor::getch(wchar_t &ch){

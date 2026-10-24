@@ -45,14 +45,14 @@ namespace{
 		jsize nVMs;
 		if (JNI_OK!=JNI_GetCreatedJavaVMs(vm, (jsize)1, &nVMs)){
 		    cout << "[SAORI Java] can not find Java VM" << endl;
-			lgr.GetStream(LOG_ERROR) << L"[SAORI Java] JNI_GetCreatedJavaVMs failed." << endl;
+			lgr.Diag(LOG_ERROR, kawari_log::E_SAORI) << L"[SAORI Java] JNI_GetCreatedJavaVMs failed.";
 			return JNI_ERR;
 		}
 	    cout << "[SAORI Java] " << (int)nVMs << "Java VM(s) found." << endl;
 		if (JNI_OK!=(*vm)->GetEnv((void **)env, JNI_VERSION_1_2)){
 		    cout << "[SAORI Java] current thread is not attached to VM." << endl;
 			if (JNI_OK!=(*vm)->AttachCurrentThread((void **)env, NULL)){
-				lgr.GetStream(LOG_ERROR) << L"[SAORI Java] AttachCurrentThread failed" << endl;
+				lgr.Diag(LOG_ERROR, kawari_log::E_SAORI) << L"[SAORI Java] AttachCurrentThread failed";
 				return JNI_ERR;
 			}
 		}
@@ -77,7 +77,7 @@ TModuleFactoryJava::TModuleFactoryJava(TKawariLogger &lgr) : IModuleFactory(lgr)
 	jstring val=(jstring)env->CallStaticObjectMethod(
 		cls_System, mid_getProperty, jpropKey);
 	if ((val==NULL)||(0==env->GetStringUTFLength(val))){
-		GetLogger().GetStream(LOG_ERROR) << L"[SAORI Java] No factory class is specified." << endl;
+		GetLogger().Diag(LOG_ERROR, kawari_log::E_SAORI) << L"[SAORI Java] No factory class is specified.";
 		return;
 	}
 	const char *clazznamestr=env->GetStringUTFChars(val, NULL);
@@ -85,7 +85,7 @@ TModuleFactoryJava::TModuleFactoryJava(TKawariLogger &lgr) : IModuleFactory(lgr)
 	// FindClass(clazzname);
 	jclass lref_cls=env->FindClass(clazznamestr);
 	if (lref_cls==NULL){
-		GetLogger().GetStream(LOG_ERROR) << L"[SAORI Java] Can not find factory class \"" << UTF8toW(clazznamestr) << L"\"" << endl;
+		GetLogger().Diag(LOG_ERROR, kawari_log::E_SAORI) << L"[SAORI Java] Can not find factory class \"" << UTF8toW(clazznamestr) << L"\"";
 		env->ReleaseStringUTFChars(val, clazznamestr);
 		return;
 	}
@@ -98,7 +98,7 @@ TModuleFactoryJava::TModuleFactoryJava(TKawariLogger &lgr) : IModuleFactory(lgr)
 		cls_SaoriFactory, "createModule", "(Ljava/lang/String;)Ljava/lang/Object;");
 
 	if ((mid_init==NULL)||(mid_createModule==NULL)){
-		GetLogger().GetStream(LOG_ERROR) << L"[SAORI Java] factory class has illegal structure." << endl;
+		GetLogger().Diag(LOG_ERROR, kawari_log::E_SAORI) << L"[SAORI Java] factory class has illegal structure.";
 		env->DeleteGlobalRef(cls_SaoriFactory);
 		cls_SaoriFactory=NULL;
 		return;
@@ -107,7 +107,7 @@ TModuleFactoryJava::TModuleFactoryJava(TKawariLogger &lgr) : IModuleFactory(lgr)
 	// clazz.newInstance();
 	jobject lref_obj=env->NewObject(cls_SaoriFactory, mid_init);
 	if (lref_obj==NULL){
-		GetLogger().GetStream(LOG_ERROR) << L"[SAORI Java] Can not create factory object." << endl;
+		GetLogger().Diag(LOG_ERROR, kawari_log::E_SAORI) << L"[SAORI Java] Can not create factory object.";
 		env->DeleteGlobalRef(cls_SaoriFactory);
 		cls_SaoriFactory=NULL;
 		return;
@@ -139,7 +139,7 @@ TModule *TModuleFactoryJava::CreateModule(const wstring &path){
 	jobject jmodule=env->CallObjectMethod(
 		obj_SaoriFactory, mid_createModule, jfn);
 	if (jmodule==NULL){
-		GetLogger().GetStream(LOG_ERROR) << L"[SAORI Java] Create module failed." << endl;
+		GetLogger().Diag(LOG_ERROR, kawari_log::E_SAORI) << L"[SAORI Java] Create module failed.";
 		return NULL;
 	}
 	jobject gref_jmodule=env->NewGlobalRef(jmodule);
@@ -147,7 +147,7 @@ TModule *TModuleFactoryJava::CreateModule(const wstring &path){
 	if (ret->Initialize()){
 		return ret;
 	}else{
-		GetLogger().GetStream(LOG_ERROR) << L"[SAORI Java] Initialize module failed." << endl;
+		GetLogger().Diag(LOG_ERROR, kawari_log::E_SAORI) << L"[SAORI Java] Initialize module failed.";
 		ret->Unload();
 		DeleteModule(ret);
 		return NULL;
@@ -186,7 +186,7 @@ bool TModuleJava::Initialize(void){
 	mid_request=env->GetMethodID(cls_saori, "request", "([B)[B");
 
 	if (mid_request==NULL){
-		GetFactory().GetLogger().GetStream(LOG_ERROR) << L"[SAORI Java] importing 'request' from ("+path+L") failed." << endl;
+		GetFactory().GetLogger().Diag(LOG_ERROR, kawari_log::E_SAORI) << L"[SAORI Java] importing 'request' from ("+path+L") failed.";
 		return false;
 	}
 	return true;

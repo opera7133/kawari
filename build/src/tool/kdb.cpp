@@ -63,7 +63,12 @@ void GetGhostList(map<HWND,wstring> &ghostlist)
 	HANDLE hFmo=OpenFileMappingW(FILE_MAP_READ,FALSE,L"Sakura");
 	if(!hFmo) return;	// 時々FileMappingObjectが壊れている
 
-	char *fmobuff=(char*)MapViewOfFile(hFmo,FILE_MAP_READ,0,0,0);
+	// 0x80以上のバイトが符号拡張されないよう unsigned char で読む
+	const unsigned char *fmobuff=(const unsigned char*)MapViewOfFile(hFmo,FILE_MAP_READ,0,0,0);
+	if(!fmobuff) {
+		CloseHandle(hFmo);
+		return;
+	}
 
 	// File Mapping Object のサイズ
 	// エンディアン嘘つかない
@@ -72,8 +77,13 @@ void GetGhostList(map<HWND,wstring> &ghostlist)
 	 +(((unsigned int)fmobuff[2])<<16)
 	 +(((unsigned int)fmobuff[1])<<8)
 	 +(((unsigned int)fmobuff[0]));
+	if(fmosize<4) {
+		UnmapViewOfFile(fmobuff);
+		CloseHandle(hFmo);
+		return;
+	}
 
-	istringstream *ifs=new istringstream(string(&fmobuff[4], fmosize-4));
+	istringstream *ifs=new istringstream(string((const char*)&fmobuff[4], fmosize-4));
 
 	map<string,HWND> idmap;
 	map<string,wstring> namemap;

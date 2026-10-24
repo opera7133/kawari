@@ -96,7 +96,7 @@ void TBind::Attach(void){
 	if (module) return;
 	module=factory.CreateModule(libpath);
 	if (!module){
-		logger.GetStream(LOG_ERROR) << L"[SAORI] module attach failed" << endl;
+		logger.Diag(LOG_ERROR, kawari_log::E_SAORI) << L"[SAORI] module attach failed";
 		return;
 	}
 
@@ -115,7 +115,7 @@ void TBind::Attach(void){
 		sendcs=KC_SJIS;
 
 	if (response.GetStartline().find(L"SAORI/1.")!=0){
-		logger.GetStream(LOG_ERROR) << L"[SAORI] SAORI version mismatch." << endl;
+		logger.Diag(LOG_ERROR, kawari_log::E_SAORI) << L"[SAORI] SAORI version mismatch.";
 		Detach();
 		return;
 	}else{
@@ -137,6 +137,12 @@ TBind::~TBind(){
 //---------------------------------------------------------------------------
 // モジュールの登録
 void TSaoriPark::RegisterModule(const wstring &aliasname, const wstring &path, const saori::LOADTYPE type){
+	if (sandbox){
+		// 安全モードでは実体を作らない (preload でも DLL を読まない)
+		stubs.insert(aliasname);
+		logger.GetStream(LOG_INFO) << L"[SAORI] Registered \"" << aliasname << L"\" = (" << path << L") (sandbox: not loaded)" << endl;
+		return;
+	}
 	// 2002/09/02 多重ロード対策 suikyo@yk.rim.or.jp
 	if (aliasmap.count(aliasname))
 		EraseModule(aliasname);
@@ -148,13 +154,15 @@ void TSaoriPark::RegisterModule(const wstring &aliasname, const wstring &path, c
 //---------------------------------------------------------------------------
 // モジュール登録の削除
 void TSaoriPark::EraseModule(const wstring &alias){
-	if (aliasmap.count(alias)){
+	if (stubs.erase(alias)){
+		logger.GetStream(LOG_INFO) << L"[SAORI] Unregistered (" << alias << L")" << endl;
+	}else if (aliasmap.count(alias)){
 		TBind *module=aliasmap[alias];
 		delete module;
 		aliasmap.erase(alias);
 		logger.GetStream(LOG_INFO) << L"[SAORI] Unregistered (" << alias << L")" << endl;
 	}else{
-		logger.GetStream(LOG_WARNING) << L"[SAORI] Can not unregister (" << alias << L"). not found." << endl;
+		logger.Diag(LOG_WARNING, kawari_log::W_SAORI) << L"[SAORI] Can not unregister (" << alias << L"). not found.";
 	}
 }
 //---------------------------------------------------------------------------
@@ -165,7 +173,7 @@ TBind * const TSaoriPark::GetModule(const wstring &alias) {
 	}else if (RegisterInternalModule(alias)){
 		return aliasmap[alias];
 	}else{
-		logger.GetStream(LOG_ERROR) << L"[SAORI] module (" << alias << L") not found." << endl;
+		logger.Diag(LOG_ERROR, kawari_log::E_SAORI) << L"[SAORI] module (" << alias << L") not found.";
 		return NULL;
 	}
 }
@@ -249,6 +257,10 @@ int TSaoriPark::ListModule(vector<wstring> &list)
 {
 	logger.GetStream(LOG_INFO) << L"listmodule" << endl;
 	int ret=0;
+	for(set<wstring>::const_iterator sit=stubs.begin(); sit!=stubs.end(); sit++){
+		list.push_back(*sit);
+		ret++;
+	}
 	map<wstring, TBind *>::const_iterator it=aliasmap.begin();
 	for(;it!=aliasmap.end(); it++){
 		logger.GetStream(LOG_INFO) << L"[SAORI] found(" << it->first << L")" << endl;
@@ -258,8 +270,14 @@ int TSaoriPark::ListModule(vector<wstring> &list)
 	return ret;
 }
 //---------------------------------------------------------------------------
+// 安全モード中に、aliasが実体を作らずに受け付けるモジュールか
+bool TSaoriPark::IsSandboxStub(const wstring &alias) const{
+	if (!sandbox) return false;
+	return stubs.count(alias)||IsInternalModuleName(alias);
+}
+//---------------------------------------------------------------------------
 TSaoriPark::TSaoriPark(TKawariLogger &lgr, dsstp::TBasewareLink *lnk)
-	: logger(lgr), link(lnk), internalstate(IM_UNKNOWN) {
+	: logger(lgr), link(lnk), sandbox(false), internalstate(IM_UNKNOWN) {
 	factory=new TModuleFactoryMaster(logger, link);
 }
 //---------------------------------------------------------------------------

@@ -67,6 +67,11 @@ public:
 	virtual std::wstring DisCompile(void) const;
 	// デバッグ用ツリー表示
 	virtual std::wostream &Debug(std::wostream& os, unsigned int level=0) const;
+	// 子の列挙 (静的検査用)
+	virtual void GetChildren(std::vector<const TKVMCode_base *> &out) const {
+		if (lhs) out.push_back(lhs);
+		if (rhs) out.push_back(rhs);
+	}
 	// コンストラクタ
 	TKVMExprBinaryCode_base(TKVMExprCode_base *l, TKVMExprCode_base *r) : lhs(l), rhs(r) {}
 	// デストラクタ
@@ -91,6 +96,10 @@ public:
 	virtual std::wstring DisCompile(void) const;
 	// デバッグ用ツリー表示
 	virtual std::wostream &Debug(std::wostream& os, unsigned int level=0) const;
+	// 子の列挙 (静的検査用)
+	virtual void GetChildren(std::vector<const TKVMCode_base *> &out) const {
+		if (code) out.push_back(code);
+	}
 	// コンストラクタ
 	TKVMExprUnaryCode_base(TKVMExprCode_base *c) : code(c) {}
 	// デストラクタ
@@ -118,6 +127,10 @@ public:
 	}
 	// デバッグ用ツリー表示
 	virtual std::wostream &Debug(std::wostream& os, unsigned int level=0) const;
+	// 子の列挙 (静的検査用)
+	virtual void GetChildren(std::vector<const TKVMCode_base *> &out) const {
+		if (code) out.push_back(code);
+	}
 	// コンストラクタ
 	TKVMCodeExpression(TKVMExprCode_base *c) : code(c) {}
 	// デストラクタ
@@ -432,6 +445,10 @@ public:
 	// デバッグ用ツリー表示
 	virtual std::wostream &Debug(std::wostream& os, unsigned int level=0) const{
 		return code->Debug(os, level);
+	}
+	// 子の列挙 (静的検査用)
+	virtual void GetChildren(std::vector<const TKVMCode_base *> &out) const {
+		if (code) out.push_back(code);
 	}
 	// コンストラクタ
 	TKVMExprCodeWord(TKVMCode_base *c) : code(c) {}

@@ -10,8 +10,6 @@
 //---------------------------------------------------------------------------
 #include "config.h"
 //---------------------------------------------------------------------------
-#include <process.h>
-//---------------------------------------------------------------------------
 #include "tool/kosui_base.h"
 #include "tool/kosui_dsstp.h"
 #include "misc/phttp.h"
@@ -21,24 +19,6 @@
 #include <cstdio>
 #include <iostream>
 using namespace std;
-//---------------------------------------------------------------------------
-#if defined(__CYGWIN__)
-static void MsgLoopThread(void *);
-DWORD WINAPI ThreadWrapper(void *arg){
-	MsgLoopThread(arg);
-	return 1;
-}
-unsigned long _beginthread(void (*start_address)(void *), unsigned stack_size, void *arglist)
-{
-	DWORD thid;
-	::CreateThread(NULL, stack_size, &ThreadWrapper, arglist, 0, &thid);
-	return thid;
-}
-void _endthread (void)
-{
-	::ExitThread(0);
-}
-#endif
 //---------------------------------------------------------------------------
 namespace{
 	const unsigned int DIRECT_SSTP_PORT=9801;
@@ -67,7 +47,8 @@ static LRESULT CALLBACK MainWndProc(
 	case WM_COPYDATA:
 		pcds=(COPYDATASTRUCT*)lParam;
 		if((pcds!=NULL)&&(pcds->dwData==DIRECT_SSTP_PORT)){
-			string tmpstr((LPCSTR)pcds->lpData, 0, (DWORD)pcds->cbData);
+			// (ポインタ, 長さ)で作る。NUL終端は保証されない
+			string tmpstr((const char *)pcds->lpData, (size_t)pcds->cbData);
 			if(::WaitForSingleObject(mutex, 1000)!=WAIT_TIMEOUT){
 				response=tmpstr;
 				isResponseValid=true;
@@ -86,16 +67,21 @@ static LRESULT CALLBACK MainWndProc(
 	return 0L;
 }
 //---------------------------------------------------------------------------
-static void MsgLoopThread(void *){
-	MSG msg;
-
-	/* メッセージを受け取って発行するループ */
-	while( GetMessage(&msg, NULL, 0, 0) ){
-		TranslateMessage(&msg);
-		DispatchMessage(&msg);
+// 応答が届くか timeout_ms が過ぎるまでメッセージを処理する
+// ダミーの窓はこのスレッドのものなので、送られてきたWM_COPYDATAはこのスレッドでしか処理されない
+static void PumpMessagesUntilResponse(DWORD timeout_ms){
+	DWORD start=::GetTickCount();
+	while(!isResponseValid){
+		MSG msg;
+		while(::PeekMessageW(&msg, NULL, 0, 0, PM_REMOVE)){
+			::TranslateMessage(&msg);
+			::DispatchMessageW(&msg);
+		}
+		if(isResponseValid) break;
+		DWORD elapsed=::GetTickCount()-start;
+		if(elapsed>=timeout_ms) break;
+		::MsgWaitForMultipleObjects(0, NULL, FALSE, timeout_ms-elapsed, QS_ALLINPUT|QS_SENDMESSAGE);
 	}
-
-	_endthread();
 }
 //---------------------------------------------------------------------------
 // コンストラクタ
@@ -124,9 +110,6 @@ TKosuiDSSTPInterface::TKosuiDSSTPInterface (HWND hwnd, const wstring& evt)
 
 	// Mutex Objectを作成
 	mutex=::CreateMutexW(NULL, FALSE, NULL);
-
-	// メッセージループスレッドの開始
-	_beginthread(&MsgLoopThread, 0, NULL);
 }
 //---------------------------------------------------------------------------
 // デストラクタ
@@ -171,11 +154,16 @@ wstring TKosuiDSSTPInterface::Parse(const wstring& script){
 		dahwnd, WM_COPYDATA, (WPARAM)dumhwnd,
 		(LPARAM)&cds, SMTO_ABORTIFHUNG, 1000, &dwret);
 
+	// 送信の処理中に返らなかった応答を待つ
+	PumpMessagesUntilResponse(1000);
+
 	string respmes;
 
-	if((::WaitForSingleObject(mutex, 1000)!=WAIT_TIMEOUT)&&isResponseValid){
-		respmes=response;
-		isResponseValid=false;
+	if(::WaitForSingleObject(mutex, 1000)!=WAIT_TIMEOUT){
+		if(isResponseValid){
+			respmes=response;
+			isResponseValid=false;
+		}
 		::ReleaseMutex(mutex);
 	}
 	// 応答のCharsetに従う (無ければShift_JIS)

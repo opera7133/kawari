@@ -35,7 +35,7 @@ wstring KIS_xargs::Function(const vector<wstring>& args)
 		if(end<0) end=size+end;
 		if((st<0)||(end<0)||(st>end)) {
 			// ¥¨¥é¡¼
-			GetLogger().GetStream(kawari_log::LOG_ERROR) << args[0] << L" : Invalid index" << endl;
+			GetLogger().Diag(kawari_log::LOG_ERROR, kawari_log::E_KIS_INVALID_INDEX) << args[0] << L" : Invalid index";
 			return(L"");
 		}
 	}else{
@@ -52,8 +52,8 @@ wstring KIS_xargs::Function(const vector<wstring>& args)
 #else
 	TEntryRange range=Engine->GetEntryRange(args[1]);
 	if(range.Start==TKawariEngine::NPos){
-		GetLogger().GetStream(LOG_ERROR) << args[0]
-			<< RC.S(ERR_KIS_DICT_INVALID_INDEX) << endl;
+		GetLogger().Diag(LOG_ERROR, kawari_log::E_KIS_INVALID_INDEX) << args[0]
+			<< RC.S(ERR_KIS_DICT_INVALID_INDEX);
 		return(L"");
 	}
 

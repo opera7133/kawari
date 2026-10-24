@@ -43,6 +43,11 @@ public:
 	virtual std::wstring DisCompile(void) const;
 	// デバッグ用ツリー表示
 	virtual std::wostream &Debug(std::wostream& os, unsigned int level=0) const;
+	// 子の列挙 (静的検査用)
+	virtual void GetChildren(std::vector<const TKVMCode_base *> &out) const {
+		if (lhs) out.push_back(lhs);
+		if (rhs) out.push_back(rhs);
+	}
 	// コンストラクタ
 	TKVMSetBinaryCode_base(TKVMSetCode_base *l, TKVMSetCode_base *r) : lhs(l), rhs(r) {}
 	// デストラクタ
@@ -104,6 +109,10 @@ public:
 	}
 	// もしcodeがTKVMCodeIDStringならば、それを返す。
 	const TKVMCodeIDString *GetIfPVW(void) const;
+	// 子の列挙 (静的検査用)
+	virtual void GetChildren(std::vector<const TKVMCode_base *> &out) const {
+		if (code) out.push_back(code);
+	}
 	// コンストラクタ
 	TKVMSetCodeWord(TKVMCode_base *c) : code(c) {}
 	// デストラクタ
@@ -125,6 +134,10 @@ public:
 	virtual std::wstring DisCompile(void) const;
 	// デバッグ用ツリー表示
 	virtual std::wostream &Debug(std::wostream& os, unsigned int level=0) const;
+	// 子の列挙 (静的検査用)
+	virtual void GetChildren(std::vector<const TKVMCode_base *> &out) const {
+		if (code) out.push_back(code);
+	}
 	// コンストラクタ
 	TKVMCodeEntryCall(TKVMSetCode_base *c) : code(c) {}
 	// デストラクタ
@@ -138,6 +151,8 @@ class TKVMCodePVW : public TKVMCode_base {
 public:
 	// 参照エントリ名を返す
 	virtual std::wstring Get(void) { return entry; }
+	// 参照エントリ名 (静的検査用。const で取れる)
+	const std::wstring &EntryName(void) const { return entry; }
 	// 実行
 	virtual std::wstring Run(class TKawariVM &vm);
 	// 序列 同じクラスの場合のみ呼ばれる。

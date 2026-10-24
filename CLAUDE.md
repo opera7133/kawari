@@ -1,6 +1,6 @@
 # CLAUDE.md
 
-華和梨 (KAWARI) — 伺か用の SHIORI (擬似AI) モジュール。C++ 製、Phase 9.1.0 (Core 4.1.0)。
+華和梨 (KAWARI) — 伺か用の SHIORI (擬似AI) モジュール。C++ 製、Phase 9.2.0 (Core 4.2.0)。
 CI は無い。最低限のテストは `build/src/test/` (下記「テスト」)。
 旧 ACP (SJIS の std::string) 版のコードは `v8acp` ブランチに保存してある。
 
@@ -9,7 +9,7 @@ CI は無い。最低限のテストは `build/src/test/` (下記「テスト」
 - 内部のテキストはすべて `std::wstring` / `wchar_t`。文字数は wchar_t 1 要素 = 1 文字 (Windows のサロゲートペアは 2 文字)。`std::string` は外部とのバイト列 (ファイルの生バイト、SHIORI/SAORI の生リクエスト、暗号化の中間データ) にだけ使う。
 - 変換は `misc/charset.h` (`SJIStoW` / `UTF8toW` / `ACPtoW` / `MBtoW(str, cs)` / `DetectCharset` / `CharsetFromName` 等。Windows は Win32 API、POSIX は iconv)。ファイル I/O とパスは `misc/wfile.h` (`kawari_wfopen` / `ReadTextFile` / `WriteTextFile` / `ListDirectory` / `PathStat` / `GetEnvironmentW`)。旧 `ctow` / `wtoc` / `iskanji1st` / `misc/_dirent.*` は廃止 (`misc/l10n.h` は互換スタブ)。
 - ロガーは `std::wostream`。バイト出力先へは `TWideOStream` (`ostream*` か `FILE*` + charset、CRLF 変換可) を挟む。
-- 文字コードの規則 (変更時は `document/changelog.txt` と整合させる): 辞書は BOM か UTF-8 として正当なら UTF-8、でなければ SJIS。暗号化行はファイルに BOM があれば UTF-8、なければ SJIS。save/savecrypt は UTF-8 BOM あり、textsave/textappend とログファイルは UTF-8 BOM なし、コンソールは ACP。SHIORI はリクエストの Charset (無ければ SJIS) で応答も返す。`loadu` (UTF-8 パス) もエクスポート。SAORI は satoriya 互換 (UTF-8 で開始、GET Version に Charset が無ければ以後 SJIS、応答の Charset を次回に引き継ぐ。`loadu` があれば UTF-8 パス)。
+- 文字コードの規則 (変更時は `document/changelog.txt` と整合させる): 辞書は BOM か UTF-8 として正当なら UTF-8、でなければ SJIS。暗号化行はファイルに BOM があれば UTF-8、なければ SJIS。save/savecrypt は UTF-8 BOM あり、textsave/textappend とログファイルは UTF-8 BOM なし、コンソールは ACP。SHIORI はリクエストの Charset (無ければ SJIS) で応答も返す。`loadu` (UTF-8 パス) もエクスポート。`textload_charset` / `textsave_charset` / `textappend_charset` は文字コードを引数で取り (`CharsetFromNameExt`)、Shift_JIS / UTF-8 / EUC-JP / ISO-2022-JP / EUC-KR / GB2312 を扱う (Windows のコードページは 20932 / 50220 / 949 / 936。51932 は `MultiByteToWideChar` が非対応)。SAORI は satoriya 互換 (UTF-8 で開始、GET Version に Charset が無ければ以後 SJIS、応答の Charset を次回に引き継ぐ。`loadu` があれば UTF-8 パス)。
 - Win32 API は W 版 (`UNICODE` / `_UNICODE`、`WINVER` / `_WIN32_WINNT` = 0x0500 を `config.h` と `gcc-mach.mak` で定義)。ただし i686-posix の MinGW 8.1.0 は winpthreads 由来で `AddVectoredExceptionHandler` 等 (XP 以降) を import するので、生成物は実際には Windows 2000 では動かない (8.2.9 のリリース版も同じ)。
 - コード中の文字列リテラルに非 ASCII を直書きしない (`L"\x3042"` 等を使う)。
 
@@ -57,12 +57,12 @@ make -f gcc.mak
 - ソースファイルを追加・削除したら `build/src/files.mak` を編集し、`make depend` で `depend.mak` を作り直す。VC++ 用の `vc_kawari/*.sln|*.vcproj|*.dsp` は手動メンテで、gcc.mak と同期していない可能性が高い。
 - 任意機能は `gcc.mak` のフラグで切り替える: `SAORI_NATIVE` (デフォルト yes) / `SAORI_PYTHON` / `SAORI_JAVA` / `SHIORI_PYTHON` / `STLport`。Python 関連の記述は Python 2 構文 (`print sys.version[:3]`)。
 - mingw / cygwin で gcc3 系の `wstring` が通らない場合は STLport を使う (`STLport = yes`)。
-- `MACH_TYPE = js` は `em++` (Emscripten) でビルドし、`em-pre.js` / `em-post.js` で包んだ `Kawari` コンストラクタを `module.exports` する。公開する関数は `gcc-mach.mak` の `EXPORTED_FUNCTIONS`、JS 側へ露出するオブジェクトは `em-post.js` で管理している。
+- `MACH_TYPE = js` / `wasm` は `em++` (Emscripten) でビルドし、`em-pre.js` / `em-post.js` で包んだ `newKawari(onRuntimeInitialized)` を `module.exports` する (upstream の PR #7・#8 を取り込んだもの。旧 `Kawari` コンストラクタは廃止)。ランタイムの準備ができるとコールバックに `{ Module, FS, PATH, ERRNO_CODES, NODEFS, IDBFS, WORKERFS }` が渡る。公開する関数は `gcc-mach.mak` の `EXPORTED_FUNCTIONS`、JS 側へ露出するオブジェクトは `em-pre.js` で管理している。`wasm` は成果物を `build/mach/wasm` に出す (取り込みで `.keep` を追加)。Emscripten が無いので js / wasm のビルドは未検証。
 - bcc32 / VC++ でビルドするにはソースを SJIS に変換する必要がある (`build/conv.sh -c sjis src`、Ruby の `kconv` 前提で古い)。**ファイルをその場で書き換える**ので、作業ツリーではなくコピーに対して実行すること。
 
 ## テスト
 
-ビルド後に `powershell -NoProfile -ExecutionPolicy Bypass -File build/src/test/run.ps1` (詳細は `build/src/test/README.md`)。`kosui.exe` に 1 行ずつ評価させる kosui スイートと、`shiori.dll` を直接 `load` / `request` / `unload` する shiori スイート、本体の代役の窓を使う baseware スイート (Windows のみ) があり、ケースは `kosui/cases.txt` / `shiori/cases.txt` に足す。
+ビルド後に `powershell -NoProfile -ExecutionPolicy Bypass -File build/src/test/run.ps1` (詳細は `build/src/test/README.md`)。`kosui.exe` に 1 行ずつ評価させる kosui スイートと、`kosui --check` の診断・終了コードを 1 フォルダ 1 ケースで見る check スイート (`check/<名前>/{kawarirc.kis,args,expect,exit}`)、`shiori.dll` を直接 `load` / `request` / `unload` する shiori スイート、本体の代役の窓を使う baseware スイート (Windows のみ) があり、ケースは `kosui/cases.txt` / `shiori/cases.txt` / `check/` に足す。
 
 - POSIX (linux / darwin) では `python3 build/src/test/run_posix.py --bin-dir build/mach/linux` (同じ cases.txt を使い、SHIORI は ctypes で直接呼ぶ。UTF-8 の往復も見る)。GitHub Actions の `posix-build` (手動実行) がこれを走らせる。
 - shiori スイートは C のハーネスをその場でビルドするので、**DLL と同じ 32bit の gcc** が `PATH` の先頭に必要 (ビット数が違うとランナーが止まる)。
@@ -70,7 +70,7 @@ make -f gcc.mak
 - ハーネスは環境変数 `HARNESS_LOADU` があると `load` の代わりに `loadu` (UTF-8 パス) を呼ぶ。`HARNESS_DIR_W` (UTF-16 の環境変数) と併用すると ACP 外の文字を含むフォルダも試せる (DLL もそのフォルダから読む)。`HARNESS_RELOAD=<n>` で `load`/`unload` の繰り返し、`<出力ファイル>` に `-` で標準入出力の対話モード。
 - 実在のゴーストの互換テストは `python build/src/test/ghost_compat.py --ghost <ghost>/ghost/master` (基準の DLL と `bin/shiori.dll` に同じ SSP 風のリクエスト列を流して応答・SAORI への送信・セーブデータの読み込みを比べる)。詳細は `build/src/test/README.md`。**実ゴーストの辞書は SAORI 経由で本物の exe を起動する**ので、ハーネスに直接読ませず必ずこのドライバ (コピーの exe を消し、SAORI を `harness/stub_saori.c` に差し替える) を通すこと。
 - 9.0.0 の互換性の確認結果 (kakera + OpenKEEPS、8.2.8 との比較): 応答・SAORI への送信・UTF-8・日本語/ACP 外のパス・`load`/`unload` の繰り返しは差分なし。意図した差は、`GET Version SHIORI/2.6` の応答に `Charset` が付くことと、SAORI の `GET Version` を UTF-8 で問い合わせること。新版が書いた `save`/`savecrypt` は旧版で読めない (UTF-8 BOM)。
-- kosui を手で使うときの注意: 入力の最後に `exit` が無いと EOF で無限ループする。非 ASCII を含む出力は未検証。KIS の要素数は `size <エントリ>`。辞書のカンマは単語の区切りで、複数単語のエントリはランダムに 1 つが選ばれる (期待値が揺れる原因)。
+- kosui を手で使うときの注意: 入力の最後に `exit` が無くても EOF で終わる (9.1.1 までは無限ループした)。非 ASCII を含む出力は未検証。KIS の要素数は `size <エントリ>`。辞書のカンマは単語の区切りで、複数単語のエントリはランダムに 1 つが選ばれる (期待値が揺れる原因)。
 - .NET Framework の `Process` は標準入力の先頭に UTF-8 BOM を付ける。kosui のような stdin を読むツールには、`cmd /c "exe < file"` で渡すこと (`run.ps1` はそうしている)。
 
 ## 本体との連携 (Direct SSTP、9.0.0 β2 以降)
@@ -81,12 +81,32 @@ make -f gcc.mak
 - リクエストの SecurityLevel が local 以外なら `TBasewareLink::IsAllowed` が偽になり、上のどれも送らない (Direct SSTP は常に Local 扱いになるため)。
 - テストは `-Suite baseware` (`test/baseware/`)。ハーネスの `HARNESS_BASEWARE` が本体の代役の窓 (スタブ baseware) を同じプロセスに作り、リクエスト中の `%HWND%` を窓ハンドルに置き換える。POSIX 側 (ninix) と実際の SSP は未検証。
 
+## 診断 (エラー・警告) と `kosui --check` (Phase 9.2.0)
+
+- 書式は 1 つ: `ファイル(行): error K-E0028: 本文` に、呼び出し連鎖の `    in ${entry} at ファイル(行)` が続く。診断の出力は `logger.Diag(LOG_ERROR, kawari_log::E_XXX) << ...;` (`TDiagStream`。末尾の `endl` は不要)。コンパイラの診断は `lexer->error(ERR_ID, 後ろに足す文字列)`。**`GetStream()` に直接書くのは INFO・ダンプ・`echo` だけ**にする (コードも位置も付かず、`--check` の出力に混ざらない)。
+- 診断コードは `kawari_log.h` の `enum DiagCode` (`K-E<番号>` / `K-W<番号>` の番号部分)。**追記専用で、番号を変えない・再利用しない**。リソース ID との対応は `kawari_diag.cpp` の `NumberOf()`。メッセージ文を足すときは `kawari_rc.sjis` と `kawari_rc.cpp` の英語表と `kawari_rc.h` の enum を同じ順で更新し、`ruby sjis2ascii.rb libkawari/kawari_rc.sjis | tr -d '\r' > libkawari/kawari_rc_sjis_encoded.h` で再生成する (現状のファイルがこの手順でバイト単位で再現できることを確認済み)。
+- 位置: 単語は内容が同じなら 1 つに共有される (`TWordCollection::Insert`) ので、位置は中間コードのノードではなく **(エントリ, 単語 ID)** に付けて `TNS_KawariDictionary::SourceMap()` (`TSourceMap`, `kawari_diag.h`) が持つ。辞書ファイルの読み込み (`LoadKawariDictStream`) と `function` / `lambda` だけが記録する。単語を GC で消すときは必ず `EraseWord` する (ID が再利用されるため。`test/check/id_reuse` が見張っている)。
+- 実行フレーム: 単語を実行する箇所は `TKawariVM::TWordFrame` で囲む (`TKVMCodePVW::Run`、`TKVMSetCode_base::Run`、`TKVMCodeEntryIndex::Run`、ユーザ関数、`foreach`、`TKawariEngine::Parse(TWordID)`)。`=kis` ゾーンは `TZoneFrame` で、文ごとの行は `TKVMCodeInlineScript::lines`。**新しく「辞書の単語を実行する」コードを足したらフレームを積むこと**。フレームは loglevel に依存しない (途中で変わっても積み降ろしが崩れないため)。
+- 安全モード `TKawariEngine::SetSandbox(true)`: ファイル書き込み (`misc/wfile.cpp` の `WriteWholeFile` は書かずに成功を返し、`kawari_wfopen` は書き込みモードを拒否)、SAORI の実体 (`TSaoriPark::RegisterModule` が実体を作らない。登録済みと `internal_*` の呼び出しは `Result: 0`)、本体との通信 (`Baseware->SetAllowed(false)`)、`logfile` を止める。**外へ影響する新しい経路 (プロセス起動、ネットワーク、ファイル書き込み) を足すときは、ここで止まることを確かめる**。辞書を読む前に呼ぶこと (`TKawariKosuiAdapter` の検査用コンストラクタがそうしている)。
+- `kosui --check [--format text|json] [--werror] [--decl] [--no-lint] [--eval 式]... [--seed n] [rcfile]`: 終了コード 0 = なし / 1 = 警告のみ / 2 = エラー / 3 = 実行できない。出力は診断だけ (`echo` と `loglevel` / `logfile` は出力に影響しない)。JSON は常に UTF-8。`=kis` は実際に実行するので、終わらない繰り返しがあると終わらない。`AttachTarget` は通さない (稼動中のゴーストに繋がってしまう)。
+- `date` / `mktime` (`kis/kis_date.cpp`) は 64bit の通算秒数。32bit の mingw-w64 (msvcrt) は `__MINGW_USE_VC2005_COMPAT` が無いと `time_t` が 32bit なので、`_time64` / `_localtime64` / `_mktime64` を直接呼ぶ (`misc` の `Int64ToString` / `StringToInt64` を使う)。Windows (msvcrt) の C ランタイムの限界で、1970 年より前と 3000 年末あたりより後 (実測: `date` は 3001/01/01 00:00:00 UTC まで、`mktime` は 3001 年まで通り 3100 年は不可) は変換できず、`date` は空文字、`mktime` は -1 を返す (POSIX は OS の `time_t` 次第なので、テストはこの限界を期待値にしない)。**式 (`$[ ]`、`TValue`) の整数は 32bit のまま**なので、2038 年以降の通算秒数どうしの計算はまだ壊れる (64bit 化は未着手。`StringToInt` / `IntToString` の使用は libkawari・kis・saori・shiori に約 100 か所)。
+- `make depend` (ruby) が書く `depend.mak` は CRLF なので、`tr -d '\r'` で LF に戻してからコミットする。
+- Bash ツールで python のコードをヒアドキュメントで渡すと `\\` が潰れる。Write ツールでファイルにして実行する。
+- 静的 Lint (`libkawari/kawari_lint.*`、`--check` が既定で実行。`--no-lint` で止める): 辞書の全単語と、読み込み時に残しておいた `=kis` ゾーン (`TKawariEngine::SetKeepZones(true)`、検査用コンストラクタが呼ぶ。通常は従来通り実行後に `delete`) の中間コードの木を `TKVMCode_base::GetChildren()` で歩く。コードは **K-W2001** (どこにも定義されていないエントリの参照) と **K-W2002** (組み込み・`function`・`System.Function.*` のどれでもないコマンド名)。実行時のコストは無い (`--check` からだけ呼ぶ)。
+  - **子を持つ中間コードのクラスを足したら `GetChildren()` を上書きすること**。漏れると検査が黙って素通りする (`test/check/lint_undefined` は `TKVMCodeEntryCall` の上書きを外すと落ちる)。
+  - 1 周目で「定義されているもの」を集め、2 周目で検査する。定義済み扱いは、辞書に存在するエントリ、文の引数にリテラルで書かれた名前、文字列に埋め込まれた `$(...)` の中の単語、先頭だけリテラルで後ろを組み立てる名前 (`launch_a_${n}` の `launch_a_` を接頭辞として覚える)、`System.`・`@`。`${...}` で組み立てた名前は調べない。kakera (OpenKEEPS 入り) で 82 件 → 58 件に絞った。残りは本物の書き間違い (`serstr`、定義の無い `RandomTalkOn`、どこでも設定されない `status`) が多く、偽陽性があるとすれば動的に作られる名前。
+  - 警告は (ファイル, 行) の順にそろえて出す。複数行の単語は先頭行の位置になる (単語の中の行は中間コードに無い)。`=kis` ゾーンの文は `lines` から個別の行が付く。
+  - `kawari_lint.h` の `TKawariLint` は `Check()` (静的関数) 経由で使う。呼び出し側のスタックにクラスの実体を置くと、`depend.mak` がヘッダの変更を拾わないために `.o` の大きさが食い違ってクラッシュした。
+  - コンパイラで拾うもの (木には残らない): **K-W2003** (`regex_*` の引数に引用符のない `( )`。素の括弧は `compileBlock` が中身だけを残して消すので、`(a)` と `a` が同じ木になる)。`TKawariCompiler::SetLintNotes(TLintNotes *)` で受け取り先を付けたときだけ、`compileWord` が「スクリプト中にブロックを読んだ」旗 (`lastwordblock`) を立て、`compileScriptStatement` が所見を `TLintNotes` に積む。受け取り先は `TKawariEngine` が持ち (`LoadKawariDictStream` が `KeepZones` のときだけ付ける)、通常の読み込みでは NULL で何もしない。`compileWord` の旗は終わるときに設定するので、入れ子の単語の旗は外側が上書きする。木で拾うもの: **K-W2004** (`regex_replace(_first)` の置換文字列に引用符のない `${N}` = `TKVMCodeHistoryCall`)。
+  - 抑制は `# lint:disable-next-line=K-W2001, K-W2003` (次の行だけ。ユーザーが決めた)。`TKawariPreProcessor` がコメント行を捨てる所で `TLintNotes::ReadComment` に渡し、`TKawariLint::Run` が出力前に `IsSuppressed` で捨てる。K-W2xxx にだけ効き、実行時の診断は抑制しない。複数行の単語の所見は単語の先頭行なので、エントリ定義の前の行に書く。
+  - **まだ無い**: カンマによる意図しない単語分割 (「意図しない」を判定できず偽陽性が出るので見送り)。
+
 ## 正規表現 (KIS の regex_*)
 
 - `kis/kis_regex.*` が `regex_match` / `find` / `findall` / `count` / `replace(_first)` / `erase(_first)` / `split` / `escape`。仕様は `document/kis_reference.html` の「正規表現」。複数の結果は引数のエントリに入れる (`split` と違い、中身を置き換える)。
 - サブルーチン呼び出し: パターン内に定義の無い `(?&名前)` / `\g<名前>` は、`CRegexpW::Compile` のリゾルバ (`TRegex::Resolve`) が辞書の `${名前}` の展開結果に解決する。エントリが無ければ構文エラー (名前入り)。入れ子の展開は深さ 16 で打ち切る。
 - 取り込まれたサブルーチンのグループは、パターン自身のグループの**後ろ**に (サブルーチン内の括弧も含めて) 番号が振られ、`GetGroupCount()` にも数えられる。結果に出すのはパターン自身の分だけなので、`TRegex::GroupCount` は「最初に取り込まれた名前の番号 - 1」で数える (satoriya の実装は取り込み数を引いており、サブルーチン内に括弧があるとずれる)。
-- **辞書やスクリプトに書くパターンは、括弧を含むなら `"..."` で囲む**。素の `( )` は華和梨の構文 (グループ) として消える。`"..."` の中は `${}` `$()` が展開されないので、置換文字列の `${1}` も同様。`\n` は改行にならない。
+- **辞書やスクリプトに書くパターンは、括弧を含むなら `"..."` で囲む**。素の `( )` は華和梨の構文 (グループ) として消える (`kosui --check` が K-W2003 で、置換文字列の素の `${N}` を K-W2004 で警告する)。`"..."` の中は `${}` `$()` が展開されないので、置換文字列の `${1}` も同様。`\n` は改行にならない。
 - テストは `test/kosui/cases.txt` (フィクスチャは `kosui/kawarirc.kis` の `re_*`)。
 
 ## 華和梨スクリプト (KIS) の勘所

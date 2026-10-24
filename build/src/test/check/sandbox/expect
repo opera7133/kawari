@@ -1,0 +1,7 @@
+kawarirc.kis(12): error K-E1200: [SAORI] module (neverregistered) not found.
+    in <kis zone> at kawarirc.kis(12)
+kawarirc.kis(12): error K-E0036: calling SAORI (neverregistered) failed.
+    in <kis zone> at kawarirc.kis(12)
+kawarirc.kis(14): error K-E0035: load : load failed missing_sandbox_file.kis
+    in <kis zone> at kawarirc.kis(14)
+check: 3 error(s), 0 warning(s)

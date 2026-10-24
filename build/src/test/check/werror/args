@@ -1,0 +1,1 @@
+--no-lint --decl --werror --eval '${outer}' kawarirc.kis

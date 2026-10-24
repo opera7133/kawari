@@ -29,6 +29,7 @@ bool IsInteger (const std::wstring &str){
 	unsigned int max=str.length();
 	if (!max) return false;
 	unsigned int i=(str[0]==L'-')? 1:0;
+	if (i>=max) return false;	// "-" だけ
 	for(; i<max; i++)
 		if (!_isdigit(str[i]))
 			return false;
@@ -42,15 +43,17 @@ wstring IntToString(int n)
 	wchar_t *bp=buff;
 	wstring ret;
 
+	// INT_MIN の符号反転があふれないよう unsigned で扱う
+	unsigned int u=(unsigned int)n;
 	if(n<0) {
 		ret+=L'-';
-		n*=-1;
+		u=0u-u;
 	}
 
 	do {
-		*(bp++)=(wchar_t)((n%10)+L'0');
-		n/=10;
-	} while(n>0);
+		*(bp++)=(wchar_t)((u%10)+L'0');
+		u/=10;
+	} while(u>0);
 
 	while(bp!=buff) {
 		bp--;
@@ -58,6 +61,62 @@ wstring IntToString(int n)
 	}
 
 	return(ret);
+}
+//---------------------------------------------------------------------------
+// 64bit整数値から文字列を得る
+wstring Int64ToString(long long n)
+{
+	wchar_t buff[64];
+	wchar_t *bp=buff;
+	wstring ret;
+
+	// 最小値の符号反転があふれないよう unsigned で扱う
+	unsigned long long u=(unsigned long long)n;
+	if(n<0) {
+		ret+=L'-';
+		u=0ull-u;
+	}
+
+	do {
+		*(bp++)=(wchar_t)((u%10)+L'0');
+		u/=10;
+	} while(u>0);
+
+	while(bp!=buff) {
+		bp--;
+		ret+=*bp;
+	}
+
+	return(ret);
+}
+//---------------------------------------------------------------------------
+// 文字列から64bit整数値を得る (先頭の空白と符号を許し、数字でなくなるまで読む)
+long long StringToInt64(const std::wstring &str)
+{
+	std::wstring::size_type i=0, max=str.length();
+	while((i<max)&&((str[i]==L' ')||(str[i]==L'\t')||(str[i]==L'\r')||(str[i]==L'\n'))) i++;
+
+	bool neg=false;
+	if((i<max)&&((str[i]==L'-')||(str[i]==L'+'))) {
+		neg=(str[i]==L'-');
+		i++;
+	}
+
+	// 絶対値は負の側の限界まで持てるよう unsigned で数え、範囲外は飽和させる
+	const unsigned long long limit=neg ? 9223372036854775808ull : 9223372036854775807ull;
+	unsigned long long v=0;
+	for(; (i<max)&&_isdigit(str[i]); i++) {
+		unsigned int d=(unsigned int)(str[i]-L'0');
+		if(v>(limit-d)/10) {
+			v=limit;
+			// 残りの桁は読み捨てる
+			while((i<max)&&_isdigit(str[i])) i++;
+			break;
+		}
+		v=v*10+d;
+	}
+	if(neg) return (long long)(0ull-v);
+	return (long long)v;
 }
 //---------------------------------------------------------------------------
 // パス表現の正規化
@@ -87,7 +146,8 @@ wstring CanonicalPath(const wstring &basepath, const wstring &path){
 		return path;
 	if (!p.size())
 		return basepath;
-	if (bp[bp.length()-1]==SEPARATOR)
+	// ルート ("/" や "\") の区切りは残す
+	if ((bp.length()>1)&&(bp[bp.length()-1]==SEPARATOR))
 		bp=bp.substr(0, bp.length()-1);
 	while (bp.size()){
 		if (p[0]!=L'.')
@@ -97,6 +157,8 @@ wstring CanonicalPath(const wstring &basepath, const wstring &path){
 			wstring::size_type pos=bp.rfind(SEPARATOR);
 			if (pos==wstring::npos){
 				bp=L"";
+			}else if (pos==0){
+				bp=bp.substr(0, 1);	// ルートより上には行かない
 			}else{
 				bp=bp.substr(0, pos);
 			}
@@ -108,7 +170,7 @@ wstring CanonicalPath(const wstring &basepath, const wstring &path){
 			break;
 		}
 	}
-	if (bp.size()) bp+=SEPARATOR;
+	if (bp.size()&&(bp[bp.length()-1]!=SEPARATOR)) bp+=SEPARATOR;
 	return bp+p;
 }
 //---------------------------------------------------------------------------

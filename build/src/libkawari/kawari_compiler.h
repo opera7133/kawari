@@ -22,6 +22,7 @@
 class TKVMCode_base;		// 中間コード
 class TKVMExprCode_base;	// 式中間コード
 class TKVMSetCode_base;		// 集合演算式中間コード
+class TLintNotes;			// 静的検査用の受け取り先
 //-------------------------------------------------------------------------
 //
 // コンパイラ特集
@@ -53,10 +54,23 @@ public:
 
 	// エントリ定義を読む
 	// 戻り値 : ファイルの終了かモード切り替えでfalse. それ以外はtrue.
-	bool LoadEntryDefinition(std::vector<std::wstring> &entries, std::vector<TKVMCode_base *> &sentences);
+	// lines : 非NULLなら、sentences の各文が始まる行番号(1オリジン)を同じ順で追加する
+	bool LoadEntryDefinition(std::vector<std::wstring> &entries, std::vector<TKVMCode_base *> &sentences,
+							 std::vector<unsigned int> *lines=NULL);
 
 	// １つのKIS定義複文を全て読む
+	// 各文が始まる行番号は、返す中間コード(TKVMCodeInlineScript)に記録される
 	TKVMCode_base *LoadInlineScript(void);
+
+	// 読み込み中のファイル名
+	const std::wstring &GetFileName(void) const;
+
+	// 読み込み位置の行番号
+	int GetLineNo(void) const;
+
+	// 静的検査用の受け取り先を取り付ける (kosui --check)。NULL なら何もしない (既定)。
+	// 木には残らない記述の癖 (regex_* の引数の引用符のない括弧) と、抑制コメントを集める。
+	void SetLintNotes(TLintNotes *notes);
 
 
 	// 文字列をStatementとして中間コードへコンパイル
@@ -78,6 +92,13 @@ private:
 	// ロガー
 	class TKawariLogger &logger;
 
+	// 静的検査用の受け取り先 (無ければ NULL)
+	class TLintNotes *lintnotes;
+
+	// 直前に終わった compileWord() が、スクリプト中の単語として '(' ブロックを読んだか
+	// (ブロックは中身だけが残り、括弧は木に残らない)
+	bool lastwordblock;
+
 	//=====================================================================
 	// 非公開メソッド
 	//=====================================================================
@@ -88,11 +109,11 @@ private:
 
 	// 改行不可文並び。(注意)改行コードを読み込んで終了。
 	// return : 得られた文の数
-	int compileNRStatementList(std::vector<TKVMCode_base *> &list);
+	int compileNRStatementList(std::vector<TKVMCode_base *> &list, std::vector<unsigned int> *lines=NULL);
 
 	// 可文並び。')'で終了。
 	// return : 得られた文の数
-	int compileStatementList(std::vector<TKVMCode_base *> &list);
+	int compileStatementList(std::vector<TKVMCode_base *> &list, std::vector<unsigned int> *lines=NULL);
 
 	//=====================================================================
 	// 単語
